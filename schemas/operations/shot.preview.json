@@ -1,0 +1,98 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/shot.preview.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Render the preview of a shot then assemble it",
+  "properties": {
+    "engine": {
+      "anyOf": [
+        {
+          "enum": [
+            "WORKBENCH",
+            "EEVEE"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Engine"
+    },
+    "frame_end_exclusive": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Frame End Exclusive"
+    },
+    "frame_start": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Frame Start"
+    },
+    "height": {
+      "anyOf": [
+        {
+          "maximum": 8192,
+          "minimum": 16,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Height"
+    },
+    "label": {
+      "default": "preview",
+      "pattern": "^[A-Za-z0-9._-]{1,64}$",
+      "title": "Label",
+      "type": "string"
+    },
+    "step": {
+      "default": 1,
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Step",
+      "type": "integer"
+    },
+    "width": {
+      "anyOf": [
+        {
+          "maximum": 8192,
+          "minimum": 16,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Width"
+    }
+  },
+  "title": "ShotPreviewParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "blender",
+    "lot": "P0",
+    "op_class": "render",
+    "requires_shot": true
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "operation": "film.assemble",
+  "operation_id": "assemble-demo-001",
+  "project_id": "demo-studio",
+  "target": {},
+  "parameters": {"shot_ids": ["shot010"], "output_name": "film-preview"},
+  "dry_run": false
+}

@@ -1,0 +1,23 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/scene.checkpoint.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Snapshot of the current work file",
+  "properties": {
+    "label": {
+      "default": "manual",
+      "pattern": "^[A-Za-z0-9._-]{1,64}$",
+      "title": "Label",
+      "type": "string"
+    }
+  },
+  "title": "SceneCheckpointParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "host",
+    "lot": "P0",
+    "op_class": "write",
+    "requires_shot": true
+  }
+}

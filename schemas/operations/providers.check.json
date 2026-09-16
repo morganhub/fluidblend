@@ -1,0 +1,16 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/providers.check.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Check the declared providers (none enabled in P0)",
+  "properties": {},
+  "title": "NoParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "host",
+    "lot": "P0",
+    "op_class": "read",
+    "requires_shot": false
+  }
+}

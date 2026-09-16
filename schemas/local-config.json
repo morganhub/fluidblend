@@ -1,0 +1,137 @@
+{
+  "$defs": {
+    "McpLocalConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "call_timeout_s": {
+          "default": 60.0,
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Call Timeout S",
+          "type": "number"
+        },
+        "host": {
+          "default": "localhost",
+          "title": "Host",
+          "type": "string"
+        },
+        "port": {
+          "default": 9876,
+          "maximum": 65535,
+          "minimum": 1024,
+          "title": "Port",
+          "type": "integer"
+        },
+        "server_name": {
+          "default": "blender",
+          "title": "Server Name",
+          "type": "string"
+        },
+        "startup_timeout_s": {
+          "default": 20.0,
+          "maximum": 600,
+          "minimum": 1,
+          "title": "Startup Timeout S",
+          "type": "number"
+        }
+      },
+      "title": "McpLocalConfig",
+      "type": "object"
+    }
+  },
+  "$id": "https://fluidblend.local/schemas/local-config.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "`config/local.json`: absolute machine paths, not versioned, no secrets.",
+  "properties": {
+    "blender_executable": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Blender Executable"
+    },
+    "blender_startup_timeout_s": {
+      "default": 90.0,
+      "maximum": 3600,
+      "minimum": 5,
+      "title": "Blender Startup Timeout S",
+      "type": "number"
+    },
+    "ffmpeg_executable": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ffmpeg Executable"
+    },
+    "ffprobe_executable": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ffprobe Executable"
+    },
+    "gltf_validator_executable": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Gltf Validator Executable"
+    },
+    "godot_executable": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Godot Executable"
+    },
+    "mcp": {
+      "$ref": "#/$defs/McpLocalConfig"
+    },
+    "rhubarb_executable": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rhubarb Executable"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "title": "LocalConfig",
+  "type": "object"
+}

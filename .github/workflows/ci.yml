@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    # Supported target: Windows. Tests marked `blender` are skipped (not_run) without Blender 5.2.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.25"
+      - name: Sync the environment (locked)
+        run: uv sync --locked --python 3.13
+      - name: Lint
+        run: |
+          uv run ruff check src blender_runtime tests
+          uv run ruff format --check src blender_runtime tests
+      - name: Schemas up to date
+        run: uv run fluidblend schema check --out schemas
+      - name: Unit tests (without Blender)
+        run: uv run pytest tests/unit -q
+        env:
+          PYTHONIOENCODING: utf-8

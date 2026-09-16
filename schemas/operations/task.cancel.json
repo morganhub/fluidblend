@@ -1,0 +1,16 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/task.cancel.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Stop the identified worker of a task",
+  "properties": {},
+  "title": "NoParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "host",
+    "lot": "P0",
+    "op_class": "write",
+    "requires_shot": false
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "$id": "https://fluidblend.local/schemas/permissions.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "`config/permissions.json`: approved scope. The kit reads this file, it never writes it.",
+  "properties": {
+    "allow_network": {
+      "default": false,
+      "title": "Allow Network",
+      "type": "boolean"
+    },
+    "allow_new_dependencies": {
+      "default": false,
+      "title": "Allow New Dependencies",
+      "type": "boolean"
+    },
+    "allowed_operations": {
+      "description": "Operation names or `domain.*` patterns; `*` = every local operation",
+      "items": {
+        "type": "string"
+      },
+      "title": "Allowed Operations",
+      "type": "array"
+    },
+    "allowed_roots": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Allowed Roots",
+      "type": "array"
+    },
+    "approved_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Approved At"
+    },
+    "approved_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Approved By"
+    },
+    "profile": {
+      "default": "assisted",
+      "enum": [
+        "inspect",
+        "assisted",
+        "local_autonomous",
+        "batch_approved"
+      ],
+      "title": "Profile",
+      "type": "string"
+    },
+    "protected_paths": {
+      "description": "Glob patterns (relative to the project) that the kit never modifies",
+      "items": {
+        "type": "string"
+      },
+      "title": "Protected Paths",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "title": "Permissions",
+  "type": "object"
+}

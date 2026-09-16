@@ -1,0 +1,16 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/expression.apply.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Facial expressions",
+  "properties": {},
+  "title": "NoParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": false,
+    "backend": "blender",
+    "lot": "P1",
+    "op_class": "write",
+    "requires_shot": false
+  }
+}

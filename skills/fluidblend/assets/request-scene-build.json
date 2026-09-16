@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "operation": "scene.build",
+  "operation_id": "build-shot010-001",
+  "project_id": "demo-studio",
+  "target": {"shot_id": "shot010"},
+  "parameters": {"preset": "two_characters_prop", "frames": 240, "seed": 0},
+  "dry_run": false
+}

@@ -1,0 +1,183 @@
+{
+  "$defs": {
+    "CameraSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "focal_length_mm": {
+          "default": 35.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1200,
+          "title": "Focal Length Mm",
+          "type": "number"
+        },
+        "location": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Location",
+          "type": "array"
+        },
+        "look_at": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Look At",
+          "type": "array"
+        }
+      },
+      "title": "CameraSpec",
+      "type": "object"
+    },
+    "FrameRange": {
+      "additionalProperties": false,
+      "description": "Canonical half-open interval `[start, end_exclusive)`.",
+      "properties": {
+        "end_exclusive": {
+          "maximum": 1000001,
+          "minimum": -100000,
+          "title": "End Exclusive",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 1000000,
+          "minimum": -100000,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end_exclusive"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    },
+    "InstanceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "clip_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clip Id"
+        },
+        "initial_location": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Initial Location",
+          "type": "array"
+        },
+        "instance_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Instance Id",
+          "type": "string"
+        },
+        "phase_offset_frames": {
+          "default": 0,
+          "title": "Phase Offset Frames",
+          "type": "integer"
+        },
+        "rig_profile": {
+          "default": "fluidblend.simple_biped/1",
+          "title": "Rig Profile",
+          "type": "string"
+        },
+        "scale": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 10,
+          "title": "Scale",
+          "type": "number"
+        }
+      },
+      "required": [
+        "instance_id",
+        "asset_id"
+      ],
+      "title": "InstanceRef",
+      "type": "object"
+    }
+  },
+  "$id": "https://fluidblend.local/schemas/shot.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "`shots/<shot_id>/shot.json`: declarative timeline of a shot.",
+  "properties": {
+    "audio": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Audio",
+      "type": "array"
+    },
+    "camera": {
+      "$ref": "#/$defs/CameraSpec"
+    },
+    "frame_range": {
+      "$ref": "#/$defs/FrameRange"
+    },
+    "instances": {
+      "items": {
+        "$ref": "#/$defs/InstanceRef"
+      },
+      "title": "Instances",
+      "type": "array"
+    },
+    "notes": {
+      "default": "",
+      "title": "Notes",
+      "type": "string"
+    },
+    "props": {
+      "items": {
+        "$ref": "#/$defs/InstanceRef"
+      },
+      "title": "Props",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "shot_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Shot Id",
+      "type": "string"
+    },
+    "validation_state": {
+      "default": "draft",
+      "enum": [
+        "draft",
+        "technical_pass",
+        "visual_review_pending",
+        "art_approved"
+      ],
+      "title": "Validation State",
+      "type": "string"
+    }
+  },
+  "required": [
+    "shot_id"
+  ],
+  "title": "ShotManifest",
+  "type": "object"
+}

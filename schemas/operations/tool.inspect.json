@@ -1,0 +1,16 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/tool.inspect.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Inspect a custom tool",
+  "properties": {},
+  "title": "NoParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": false,
+    "backend": "host",
+    "lot": "P1",
+    "op_class": "read",
+    "requires_shot": false
+  }
+}

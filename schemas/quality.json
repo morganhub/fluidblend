@@ -1,0 +1,44 @@
+{
+  "$id": "https://fluidblend.local/schemas/quality.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audio_drift_max_frames": {
+      "default": 1.0,
+      "minimum": 0,
+      "title": "Audio Drift Max Frames",
+      "type": "number"
+    },
+    "contact_error_max_m": {
+      "default": 0.02,
+      "minimum": 0,
+      "title": "Contact Error Max M",
+      "type": "number"
+    },
+    "foot_slide_max_m": {
+      "default": 0.02,
+      "minimum": 0,
+      "title": "Foot Slide Max M",
+      "type": "number"
+    },
+    "loop_pose_error_max": {
+      "default": 0.001,
+      "minimum": 0,
+      "title": "Loop Pose Error Max",
+      "type": "number"
+    },
+    "preview_missing_frames_max": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Preview Missing Frames Max",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "title": "QualityThresholds",
+  "type": "object"
+}

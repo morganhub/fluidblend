@@ -1,0 +1,36 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/scene.build.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Build the demonstration scene of a shot",
+  "properties": {
+    "frames": {
+      "default": 240,
+      "maximum": 100000,
+      "minimum": 2,
+      "title": "Frames",
+      "type": "integer"
+    },
+    "preset": {
+      "const": "two_characters_prop",
+      "default": "two_characters_prop",
+      "title": "Preset",
+      "type": "string"
+    },
+    "seed": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    }
+  },
+  "title": "SceneBuildParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "blender",
+    "lot": "P0",
+    "op_class": "write",
+    "requires_shot": true
+  }
+}

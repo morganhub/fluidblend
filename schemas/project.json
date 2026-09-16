@@ -1,0 +1,237 @@
+{
+  "$defs": {
+    "Autonomy": {
+      "additionalProperties": false,
+      "properties": {
+        "approval_record": {
+          "default": "state/approvals/project-scope.json",
+          "title": "Approval Record",
+          "type": "string"
+        },
+        "max_repair_attempts": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Max Repair Attempts",
+          "type": "integer"
+        },
+        "mode": {
+          "default": "assisted",
+          "enum": [
+            "inspect",
+            "assisted",
+            "local_autonomous",
+            "batch_approved"
+          ],
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "title": "Autonomy",
+      "type": "object"
+    },
+    "Budgets": {
+      "additionalProperties": false,
+      "properties": {
+        "max_external_spend": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Max External Spend",
+          "type": "number"
+        },
+        "max_new_disk_gib": {
+          "default": 5.0,
+          "maximum": 10000,
+          "minimum": 0.01,
+          "title": "Max New Disk Gib",
+          "type": "number"
+        },
+        "max_preview_frames": {
+          "default": 240,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Max Preview Frames",
+          "type": "integer"
+        },
+        "max_task_minutes": {
+          "default": 20,
+          "maximum": 1440,
+          "minimum": 1,
+          "title": "Max Task Minutes",
+          "type": "integer"
+        }
+      },
+      "title": "Budgets",
+      "type": "object"
+    },
+    "Fps": {
+      "additionalProperties": false,
+      "description": "Rational frame rate (24/1, 30000/1001, ...).",
+      "properties": {
+        "denominator": {
+          "default": 1,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Denominator",
+          "type": "integer"
+        },
+        "numerator": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Numerator",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "numerator"
+      ],
+      "title": "Fps",
+      "type": "object"
+    },
+    "PreviewSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "engine": {
+          "default": "WORKBENCH",
+          "enum": [
+            "WORKBENCH",
+            "EEVEE"
+          ],
+          "title": "Engine",
+          "type": "string"
+        },
+        "height": {
+          "default": 360,
+          "maximum": 8192,
+          "minimum": 16,
+          "title": "Height",
+          "type": "integer"
+        },
+        "width": {
+          "default": 640,
+          "maximum": 8192,
+          "minimum": 16,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "title": "PreviewSettings",
+      "type": "object"
+    },
+    "Targets": {
+      "additionalProperties": false,
+      "properties": {
+        "film": {
+          "default": true,
+          "title": "Film",
+          "type": "boolean"
+        },
+        "game_engine": {
+          "default": "none",
+          "enum": [
+            "godot",
+            "web",
+            "none"
+          ],
+          "title": "Game Engine",
+          "type": "string"
+        }
+      },
+      "title": "Targets",
+      "type": "object"
+    }
+  },
+  "$id": "https://fluidblend.local/schemas/project.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "`project.json` (example §6.2).",
+  "properties": {
+    "autonomy": {
+      "$ref": "#/$defs/Autonomy"
+    },
+    "budgets": {
+      "$ref": "#/$defs/Budgets"
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Created At"
+    },
+    "dependency_lock": {
+      "default": "dependencies.lock.json",
+      "title": "Dependency Lock",
+      "type": "string"
+    },
+    "fluidblend_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fluidblend Version"
+    },
+    "fps": {
+      "$ref": "#/$defs/Fps"
+    },
+    "name": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Name",
+      "type": "string"
+    },
+    "preview": {
+      "$ref": "#/$defs/PreviewSettings"
+    },
+    "profile": {
+      "default": "film",
+      "enum": [
+        "film",
+        "game",
+        "hybrid"
+      ],
+      "title": "Profile",
+      "type": "string"
+    },
+    "project_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "style": {
+      "default": "stylized",
+      "maxLength": 64,
+      "title": "Style",
+      "type": "string"
+    },
+    "targets": {
+      "$ref": "#/$defs/Targets"
+    },
+    "units": {
+      "const": "meters",
+      "default": "meters",
+      "title": "Units",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id"
+  ],
+  "title": "ProjectManifest",
+  "type": "object"
+}

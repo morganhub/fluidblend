@@ -1,0 +1,22 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/shot.validate.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Check the frames, video and evidence of a shot",
+  "properties": {
+    "require_preview": {
+      "default": true,
+      "title": "Require Preview",
+      "type": "boolean"
+    }
+  },
+  "title": "ShotValidateParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "host",
+    "lot": "P0",
+    "op_class": "read",
+    "requires_shot": true
+  }
+}

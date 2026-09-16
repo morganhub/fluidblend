@@ -1,0 +1,28 @@
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Sorties locales du kit (jamais versionnées)
+/tmp/
+/.fluidblend-local/
+tests/_out/
+docs/acceptance-reports/*.tmp
+
+# Projets de démonstration générés
+/demo-projects/
+
+# Blender
+*.blend1
+*.blend2
+
+# IDE / OS
+.vscode/settings.json
+.idea/
+Thumbs.db
+.DS_Store

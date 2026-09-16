@@ -1,0 +1,16 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/scene.audit.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Technical checks on a scene",
+  "properties": {},
+  "title": "NoParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "blender",
+    "lot": "P0",
+    "op_class": "read",
+    "requires_shot": true
+  }
+}

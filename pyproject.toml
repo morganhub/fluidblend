@@ -1,0 +1,56 @@
+[project]
+name = "fluidblend"
+version = "0.1.1"
+description = "Local Blender production kit drivable by an AI: pluggable skill, tested Python engine, headless bpy runtime."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13,<3.14"
+authors = [{ name = "Morgan Vincent" }]
+dependencies = [
+    "pydantic>=2.12,<3",
+    "filelock>=3.20",
+    "mcp>=1.28,<2",
+]
+
+[project.urls]
+Homepage = "https://github.com/morganhub/fluidblend"
+Repository = "https://github.com/morganhub/fluidblend"
+Changelog = "https://github.com/morganhub/fluidblend/blob/main/CHANGELOG.md"
+
+[project.scripts]
+fluidblend = "fluidblend.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.9",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.0,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "fluidblend"
+module-root = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "blender: requires the real locked Blender (marked not_run when it is missing)",
+    "acceptance: acceptance scenarios A01-A13",
+    "slow: long render or export",
+]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+src = ["src", "blender_runtime", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S110", "S112"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S"]

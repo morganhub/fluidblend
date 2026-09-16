@@ -1,0 +1,25 @@
+{
+  "schema_version": "{{schema_version}}",
+  "project_id": "{{project_id}}",
+  "name": "{{project_name}}",
+  "profile": "{{profile}}",
+  "style": "stylized",
+  "units": "meters",
+  "fps": {"numerator": 24, "denominator": 1},
+  "targets": {"film": {{film_target}}, "game_engine": "{{game_engine}}"},
+  "autonomy": {
+    "mode": "assisted",
+    "approval_record": "state/approvals/project-scope.json",
+    "max_repair_attempts": 3
+  },
+  "budgets": {
+    "max_task_minutes": 20,
+    "max_preview_frames": 240,
+    "max_new_disk_gib": 5,
+    "max_external_spend": 0
+  },
+  "preview": {"width": 640, "height": 360, "engine": "WORKBENCH"},
+  "dependency_lock": "dependencies.lock.json",
+  "created_at": "{{created_at}}",
+  "fluidblend_version": "{{fluidblend_version}}"
+}

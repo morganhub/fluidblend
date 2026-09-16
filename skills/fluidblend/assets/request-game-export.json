@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "operation": "game.export",
+  "operation_id": "export-shot010-characters-001",
+  "project_id": "demo-studio",
+  "target": {"shot_id": "shot010"},
+  "parameters": {
+    "output_name": "shot010-characters",
+    "instance_ids": ["hero-01", "sidekick-01"],
+    "reimport_check": true,
+    "export_def_bones": false,
+    "export_influence_nb": 4,
+    "animation_mode": "ACTIONS",
+    "slide_to_zero": true,
+    "include_cameras": false,
+    "include_lights": false
+  },
+  "dry_run": false
+}

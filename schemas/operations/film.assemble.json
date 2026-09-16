@@ -1,0 +1,46 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/film.assemble.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Concatenate the shot previews",
+  "properties": {
+    "audio_path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Audio Path"
+    },
+    "output_name": {
+      "default": "film-preview",
+      "pattern": "^[A-Za-z0-9._-]{1,80}$",
+      "title": "Output Name",
+      "type": "string"
+    },
+    "shot_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Shot Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "shot_ids"
+  ],
+  "title": "FilmAssembleParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "host",
+    "lot": "P0",
+    "op_class": "render",
+    "requires_shot": false
+  }
+}

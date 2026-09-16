@@ -1,0 +1,83 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/game.export.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Export a GLB and re-import it",
+  "properties": {
+    "animation_mode": {
+      "default": "ACTIONS",
+      "enum": [
+        "ACTIONS",
+        "ACTIVE_ACTIONS",
+        "NLA_TRACKS",
+        "SCENE"
+      ],
+      "title": "Animation Mode",
+      "type": "string"
+    },
+    "export_def_bones": {
+      "default": false,
+      "title": "Export Def Bones",
+      "type": "boolean"
+    },
+    "export_influence_nb": {
+      "default": 4,
+      "maximum": 8,
+      "minimum": 1,
+      "title": "Export Influence Nb",
+      "type": "integer"
+    },
+    "include_cameras": {
+      "default": false,
+      "title": "Include Cameras",
+      "type": "boolean"
+    },
+    "include_lights": {
+      "default": false,
+      "title": "Include Lights",
+      "type": "boolean"
+    },
+    "instance_ids": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Instance Ids"
+    },
+    "output_name": {
+      "pattern": "^[A-Za-z0-9._-]{1,80}$",
+      "title": "Output Name",
+      "type": "string"
+    },
+    "reimport_check": {
+      "default": true,
+      "title": "Reimport Check",
+      "type": "boolean"
+    },
+    "slide_to_zero": {
+      "default": true,
+      "title": "Slide To Zero",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "output_name"
+  ],
+  "title": "GameExportParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "blender",
+    "lot": "P0",
+    "op_class": "export",
+    "requires_shot": true
+  }
+}

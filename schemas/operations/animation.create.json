@@ -1,0 +1,16 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/animation.create.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Create a clip from the library",
+  "properties": {},
+  "title": "NoParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": false,
+    "backend": "blender",
+    "lot": "P1",
+    "op_class": "write",
+    "requires_shot": false
+  }
+}

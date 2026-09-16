@@ -1,0 +1,16 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/tool.register.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Register a validated tool",
+  "properties": {},
+  "title": "NoParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": false,
+    "backend": "host",
+    "lot": "P1",
+    "op_class": "write",
+    "requires_shot": false
+  }
+}

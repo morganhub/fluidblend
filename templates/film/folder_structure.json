@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "description": "Structure of a fluidblend production project (film profile; game/hybrid also add game/ and exports/game).",
+  "directories": [
+    "config",
+    "requests",
+    "assets/characters",
+    "assets/props",
+    "assets/environments",
+    "animation/clips",
+    "animation/rig-maps",
+    "animation/recipes",
+    "shots",
+    "audio",
+    "tools/custom",
+    "reviews",
+    "renders",
+    "exports",
+    "state",
+    "state/tasks",
+    "state/locks",
+    "state/plans",
+    "state/diagnostics",
+    "state/approvals",
+    "checkpoints",
+    "licenses"
+  ],
+  "files": {
+    "project.json": "project.json.tmpl",
+    "config/local.json": "local.json.tmpl",
+    "config/providers.json": "providers.json.tmpl",
+    "config/quality.json": "quality.json.tmpl",
+    "config/permissions.json": "permissions.json.tmpl",
+    "shots/shot010/shot.json": "shot010.json.tmpl",
+    "AGENTS.md": "AGENTS.md.tmpl",
+    "CLAUDE.md": "CLAUDE.md.tmpl",
+    ".gitignore": "gitignore.tmpl",
+    ".gitattributes": "gitattributes.tmpl",
+    "licenses/README.md": "licenses-README.md.tmpl",
+    "state/approvals/README.md": "approvals-README.md.tmpl"
+  }
+}

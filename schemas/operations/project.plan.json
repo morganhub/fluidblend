@@ -1,0 +1,24 @@
+{
+  "$id": "https://fluidblend.local/schemas/operations/project.plan.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Plan a request without mutating anything",
+  "properties": {
+    "request_path": {
+      "title": "Request Path",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_path"
+  ],
+  "title": "ProjectPlanParams",
+  "type": "object",
+  "x-fluidblend": {
+    "available": true,
+    "backend": "host",
+    "lot": "P0",
+    "op_class": "read",
+    "requires_shot": false
+  }
+}
