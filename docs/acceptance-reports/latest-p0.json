@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-16 20:18 UTC",
+  "generated_at": "2026-09-16 20:49 UTC",
   "blender": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
   "scenarios": [
     {
@@ -15,7 +15,7 @@
       "scenario": "A02",
       "test": "tests/unit/test_scaffold_and_cli.py::test_A02_rerun_init_is_idempotent_and_keeps_manual_edits",
       "status": "passed",
-      "duration_s": 0.09,
+      "duration_s": 0.12,
       "detail": "",
       "title": "Re-run the initialization on the same project",
       "notes": []
@@ -24,7 +24,7 @@
       "scenario": "A03",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A03_live_mcp_inspection",
       "status": "passed",
-      "duration_s": 7.69,
+      "duration_s": 7.3,
       "detail": "",
       "title": "Inspect the scene through the configured MCP",
       "notes": [
@@ -35,7 +35,7 @@
       "scenario": "A04",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A04_build_two_characters_and_prop",
       "status": "passed",
-      "duration_s": 6.31,
+      "duration_s": 6.73,
       "detail": "",
       "title": "Build two simple articulated characters and one prop (240 frames at 24 fps)",
       "notes": [
@@ -46,7 +46,7 @@
       "scenario": "A05",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A05_replay_same_operation_id",
       "status": "passed",
-      "duration_s": 6.04,
+      "duration_s": 6.3,
       "detail": "",
       "title": "Re-run the same operation after a lost response",
       "notes": [
@@ -57,7 +57,7 @@
       "scenario": "A06",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A06_interrupted_worker_reconciles_without_loss",
       "status": "passed",
-      "duration_s": 10.83,
+      "duration_s": 10.34,
       "detail": "",
       "title": "Interrupt the worker after an output is created but before commit",
       "notes": [
@@ -68,7 +68,7 @@
       "scenario": "A07",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A07_manual_change_detected_and_preserved",
       "status": "passed",
-      "duration_s": 3.57,
+      "duration_s": 3.33,
       "detail": "",
       "title": "Manually modify a protected object between two operations",
       "notes": [
@@ -79,7 +79,7 @@
       "scenario": "A08",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A08_retime_on_variant_keeps_source",
       "status": "passed",
-      "duration_s": 8.92,
+      "duration_s": 7.91,
       "detail": "",
       "title": "Slow down an animation on a variant",
       "notes": [
@@ -90,18 +90,18 @@
       "scenario": "A09",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A09_preview_frames_and_video_proof",
       "status": "passed",
-      "duration_s": 26.17,
+      "duration_s": 17.93,
       "detail": "",
       "title": "Render then assemble the preview",
       "notes": [
-        "240/240 Workbench PNG in 17.194 s, MP4 24/1 yuv420p, ffprobe nb_read_frames=240, 10 s duration, shot.validate technical_pass"
+        "240/240 Workbench PNG in 10.801 s, MP4 24/1 yuv420p, ffprobe nb_read_frames=240, 10 s duration, shot.validate technical_pass"
       ]
     },
     {
       "scenario": "A10",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A10_export_glb_validate_and_reimport",
       "status": "passed",
-      "duration_s": 7.67,
+      "duration_s": 8.23,
       "detail": "",
       "title": "Export an animation as GLB",
       "notes": [
@@ -112,7 +112,7 @@
       "scenario": "A11",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A11_offline_execution",
       "status": "passed",
-      "duration_s": 3.18,
+      "duration_s": 3.76,
       "detail": "",
       "title": "Run without network after an approved preparation",
       "notes": [
@@ -139,6 +139,61 @@
       "title": "Exhaust the budget or request an unavailable permission",
       "notes": [
         "inspect profile -> PERMISSION_REQUIRED (exit 2); 240 frames > budget 24 -> BUDGET_EXCEEDED (exit 6); journal request_blocked"
+      ]
+    },
+    {
+      "scenario": "L01",
+      "test": "tests/acceptance/test_live_mcp.py::test_L01_live_inspect_with_identity",
+      "status": "passed",
+      "duration_s": 5.09,
+      "detail": "",
+      "title": "Live: identity check and read-only inspection of the open scene",
+      "notes": [
+        "identity (project, file, revision, runtime, clean) verified through bpy.ops.fluidblend.identity; scene.inspect ran in the GUI session; report published"
+      ]
+    },
+    {
+      "scenario": "L02",
+      "test": "tests/acceptance/test_live_mcp.py::test_L02_live_retime_publishes_version_and_reloads",
+      "status": "passed",
+      "duration_s": 11.55,
+      "detail": "",
+      "title": "Live: isolated write (retime) publishes a new version and reloads the session",
+      "notes": [
+        "retime executed in the open session; v002 saved as a copy, published, revision 2; session reloaded on v002; v001 hash unchanged"
+      ]
+    },
+    {
+      "scenario": "L03",
+      "test": "tests/acceptance/test_live_mcp.py::test_L03_dirty_scene_is_blocked",
+      "status": "passed",
+      "duration_s": 26.63,
+      "detail": "",
+      "title": "Live: unsaved manual changes block the write and are preserved",
+      "notes": [
+        "dirty session → SCENE_CONFLICT (exit 3), nothing published, manual change kept; scene.checkpoint snapshots the unsaved scene (copy=True)"
+      ]
+    },
+    {
+      "scenario": "L04",
+      "test": "tests/acceptance/test_live_mcp.py::test_L04_wrong_open_file_is_refused",
+      "status": "passed",
+      "duration_s": 20.7,
+      "detail": "",
+      "title": "Live: wrong file open in the session is refused",
+      "notes": [
+        "session opened on an unrelated unsaved scene → identity mismatch → SCENE_CONFLICT, no task executed in Blender"
+      ]
+    },
+    {
+      "scenario": "L05",
+      "test": "tests/acceptance/test_live_mcp.py::test_L05_lost_response_reconciles",
+      "status": "passed",
+      "duration_s": 22.27,
+      "detail": "",
+      "title": "Live: lost response leaves an unknown state that reconciliation resolves",
+      "notes": [
+        "call timeout → task unknown (exit 5); retry refused until reconcile; reconcile → failed (result found, not committed); retry succeeds on the clean session"
       ]
     }
   ]

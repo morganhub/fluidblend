@@ -2,7 +2,7 @@
 
 This document distinguishes three levels, and only one counts as a guarantee:
 
-- **proven**: used and measured on the reference machine during lot 1;
+- **proven**: used and measured on the reference machine during lots 1 and 2;
 - **not tested**: plausible, never run here; no promise;
 - **excluded**: known to be incompatible, or deliberately out of scope.
 
@@ -21,7 +21,8 @@ GeForce GTX 1080 Ti.
 | FFmpeg / ffprobe | 8.0.1 | preview assembly and proof (A09) |
 | pydantic | 2.12+ | contracts and schema export |
 | filelock | 3.20+ | project lock |
-| mcp (Python SDK) | 1.30 | probe client: fake server in unit tests, real `mcp-for-blender` server in A03 |
+| mcp (Python SDK) | 1.30 | probe client: fake server in unit tests, real `mcp-for-blender` server in A03; live client (stdio) in L01–L05 |
+| fluidblend runtime add-on | 0.2.0 (`bl_info` 0, 2, 0) | installed in the Blender 5.2 user add-ons directory and enabled headlessly; operators `fluidblend.identity`, `run_request`, `open_file` exercised by L01–L05 |
 
 ## Blender
 
@@ -71,7 +72,7 @@ No "pixel-identical" render is promised from one machine to another.
 
 | Client | Skill location | Status |
 | --- | --- | --- |
-| Claude Code | `<project>\.claude\skills\fluidblend\SKILL.md` | proven: the skill is copied, the frontmatter is valid; the project-scoped `.mcp.json` is read and probed (A03) |
+| Claude Code | `<project>\.claude\skills\fluidblend\SKILL.md` | proven: the skill is copied, the frontmatter is valid; the project-scoped `.mcp.json` is read and probed (A03) and used as the live transport (L01–L05) |
 | Codex | `<project>\.agents\skills\fluidblend\SKILL.md` | proven for the copy; this is the current official path, no longer `~/.codex/skills` |
 | VS Code (MCP) | generated `.vscode/mcp.json` | configuration generated, connection not tested |
 
@@ -85,7 +86,7 @@ No global skill is installed, in any client.
 | glTF-Validator | 2.0.0-dev.3.10 win64 | **present, proven** | Khronos validation executed, acceptance A10 passed |
 | Godot | 4.7.2 stable | **present, detected** | detected by `doctor` (`_console` variant), **not exercised by the kit**: no template and no engine import (lot 4) |
 | Rhubarb Lip Sync | 1.14.0 | **present, detected** | detected by `doctor`, **not exercised by the kit**: `lipsync.*` not implemented (lot 4) |
-| MCP for Blender add-on | add-on 1.7, protocol 7 (PyPI package 2.0.0) | **present, proven for reading** | acceptance A03 passed; live writing not implemented (lot 2) |
+| MCP for Blender add-on | add-on 1.7, protocol 7 (PyPI package 2.0.0) | **present, proven for reading and for the four live operations** | A03 (read-only probe) and L01–L05 (live mode) passed; safe mode left on, the engine only calls the runtime's operators |
 | Node.js | 22.17.0 | present | not used by the kit in P0 |
 
 ## P0 acceptance
@@ -106,10 +107,24 @@ No global skill is installed, in any client.
 | A12 escaping path or command in a parameter | passed | documented refusal, no effect outside the scope |
 | A13 exhausted budget or unavailable permission | passed | controlled stop, resumable state |
 
-All thirteen scenarios pass on this machine, with the external tools installed. On a machine without
-the Khronos validator, without the MCP add-on or without a GUI Blender session, A10 and A03 fall
-back to `not_run`: a `not_run` scenario is never counted as passed. The timestamped report is
-authoritative. Regenerate it with:
+## Live mode acceptance
+
+Lot 2, `--mode live`. Each scenario installs the runtime add-on if needed, opens its **own** Blender
+GUI session on the shot's work version, drives it through MCP and stops that single process. Port
+9876 must be free, otherwise the scenario declares itself `not_run`.
+
+| Scenario | Status | Note |
+| --- | --- | --- |
+| L01 identity check and read-only inspection of the open scene | passed | runtime version, project, open file and clean state verified through `bpy.ops.fluidblend.identity`; `scene.inspect` executed in the GUI session, report published, task recorded with `mode: live` |
+| L02 isolated write: retime publishes a new version and reloads the session | passed | new work version published, revision incremented, session reloaded on it, sha256 of the previous version unchanged |
+| L03 unsaved manual changes block the write and are preserved | passed | dirty session → `SCENE_CONFLICT` (exit 3), nothing published, the manual change is still there afterwards; `scene.checkpoint` snapshots the unsaved scene (`copy=True`, `was_dirty` metric) |
+| L04 an unrelated file open in the session is refused | passed | session on an unsaved default scene → identity mismatch → `SCENE_CONFLICT`, nothing executed in Blender |
+| L05 lost response leaves an `unknown` state that reconciliation resolves | passed | call timeout → task `unknown` (exit 5), retry refused, `task reconcile` → `failed`, then the same request succeeds on the clean session |
+
+The batch scenarios A01–A13 and the live scenarios L01–L05 pass on this machine, with the external
+tools installed. On a machine without the Khronos validator, without the MCP add-on, without `uvx`
+or without a free port 9876, A10, A03 and L01–L05 fall back to `not_run`: a `not_run` scenario is
+never counted as passed. The timestamped report is authoritative. Regenerate it with:
 
 ```powershell
 uv run pytest tests --acceptance-report docs/acceptance-reports/latest-p0

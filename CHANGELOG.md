@@ -3,6 +3,74 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## 0.2.0 — 2026-09-16 — live mode
+
+Writing into the Blender session the user has open, through the MCP add-on and an approved runtime
+installed as a Blender add-on. Four operations are covered; everything else stays in batch mode.
+
+### Added
+
+- **Live mode** (`fluidblend run --mode live`): `scene.inspect`, `scene.audit`, `animation.retime`
+  and `scene.checkpoint` run in the open Blender session instead of a dedicated headless process.
+  Any other operation keeps running in batch even when `--mode live` is passed: it works on the
+  published work version.
+- **Runtime installed as a Blender add-on** — new module `src/fluidblend/core/runtime_install.py`,
+  new commands `fluidblend runtime install [--enable] [--force]` and `fluidblend runtime status`.
+  The runtime package is copied into
+  `%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\fluidblend_runtime\` with a
+  `RUNTIME_MANIFEST.json` (version, tree hash, source, timestamp), then enabled headlessly in the
+  Blender user preferences. `runtime status` exits 2 when the add-on is missing or out of date.
+- **Runtime operators** (`blender_runtime/fluidblend_runtime/addon.py`, no UI, `bl_info` category
+  `System`): `bpy.ops.fluidblend.identity()`,
+  `bpy.ops.fluidblend.run_request(request_path=…, result_path=…)` and
+  `bpy.ops.fluidblend.open_file(filepath=…)`. Those three calls are everything the engine ever
+  transmits over MCP, so the add-on safe mode (`BLENDER_MCP_SAFE_MODE=1`) stays on.
+- **Live adapter** (`src/fluidblend/adapters/blender_live.py`): one `uvx --python 3.11
+  mcp-for-blender` stdio server per phase (identity, run, reload), using the `.mcp.json` entry named
+  by `config/local.json` → `mcp.server_name`, or a generated entry when that file has none.
+- **Identity check before every live operation**: runtime version equal to the kit version,
+  `project_id` of the open scene equal to the project, open file equal to the shot's latest work
+  version (real path comparison), and no unsaved change. Any mismatch is `SCENE_CONFLICT` (exit 3)
+  and nothing is executed, so a human edit in progress is never lost.
+- **`scene.checkpoint` in live mode**: snapshot of the open scene, unsaved work included, through
+  `save_as_mainfile(copy=True)`; the copy is recorded under `checkpoints/` and the result carries a
+  `was_dirty` metric. It is the only live operation that accepts a dirty session.
+- **`blender-instance` lock**: a live task holds it in addition to the project lock.
+- **`mode` field on task records** (`batch` or `live`) and two journal events,
+  `live_identity_checked` and `live_session_reloaded`.
+- **`fluidblend live status --project .`**: identity of the open session — file, project, shot,
+  revision, dirty flag, runtime and Blender versions. Exit 2 when the session is unreachable.
+- **`blender.runtime_addon` capability** in `fluidblend doctor`: `available`, `not_installed`, or
+  `incompatible` when the installed hash differs from the kit's.
+
+### Changed
+
+- `animation.retime` in live mode saves the new version as a **copy** (`copy=True`); the engine
+  publishes it as the next work version, records the new revision, then reloads the session on the
+  published file (`bpy.ops.fluidblend.open_file`). The previous version on disk is untouched. If
+  the reload fails, a warning asks the user to reopen the file manually before saving anything.
+- A live call that exceeds `config/local.json` → `mcp.call_timeout_s` (60 s by default) leaves the
+  task `unknown` (exit 5): the open scene may have been modified. A retry is refused until
+  `fluidblend task reconcile` has settled the task, and the latest work version must be reopened in
+  Blender before that retry.
+- The runtime refuses `scene.build`, `shot.preview` and `game.export` inside a live envelope with
+  `UNSUPPORTED_CAPABILITY`: they need a dedicated Blender process.
+- Documentation: live mode rewritten in `README.md`, `docs/cli.md`, `docs/architecture.md`,
+  `docs/security.md`, `docs/installation.md`, `docs/roadmap.md`, `docs/compatibility-matrix.md`,
+  and in the skill (`SKILL.md`, `references/environment.md`, `references/recovery.md`,
+  `references/project.md`).
+
+### Verified
+
+Acceptance L01 to L05 passed on the reference machine (Windows 11, Blender 5.2.2 LTS,
+`mcp-for-blender` 2.0.0 with add-on 1.7), alongside A01 to A13: identity check and read-only
+inspection of the open scene; isolated write publishing a new version and reloading the session,
+with the previous version's hash unchanged; dirty session blocked with the manual change preserved,
+and snapshotted by `scene.checkpoint`; unrelated file open in the session refused before anything
+runs; lost response left `unknown`, then reconciled and re-run. Each scenario starts and stops its
+own Blender GUI session and needs port 9876 free. Report:
+`docs/acceptance-reports/latest-p0.md`.
+
 ## 0.1.1 — 2026-09-16 — stable release
 
 Public release of the kit: documentation, code messages and skill entirely in English, external

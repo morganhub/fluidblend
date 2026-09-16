@@ -4,8 +4,25 @@ from __future__ import annotations
 
 import os
 import time
+from contextlib import contextmanager
 
 import bpy
+
+
+@contextmanager
+def quiet_display():
+    """In a GUI session, keep renders from opening a render window (live mode); no-op in background."""
+    if bpy.app.background:
+        yield
+        return
+    view = bpy.context.preferences.view
+    previous = view.render_display_type
+    view.render_display_type = "NONE"
+    try:
+        yield
+    finally:
+        view.render_display_type = previous
+
 
 ENGINES = {"WORKBENCH": "BLENDER_WORKBENCH", "EEVEE": "BLENDER_EEVEE"}
 
@@ -44,7 +61,8 @@ def render_sequence(
     scene.frame_step = step
     scene.render.filepath = os.path.join(out_dir, prefix)
     started = time.perf_counter()
-    result = bpy.ops.render.render(animation=True)
+    with quiet_display():
+        result = bpy.ops.render.render(animation=True)
     elapsed = time.perf_counter() - started
     expected = list(range(frame_start, frame_end_inclusive + 1, step))
     produced = sorted(f for f in os.listdir(out_dir) if f.startswith(prefix) and f.endswith(".png"))
@@ -68,7 +86,8 @@ def render_samples(scene, out_dir: str, frames: list[int], *, prefix: str = "fra
     for frame in frames:
         scene.frame_set(frame)
         scene.render.filepath = os.path.join(out_dir, f"{prefix}{frame:04d}")
-        bpy.ops.render.render(write_still=True)
+        with quiet_display():
+            bpy.ops.render.render(write_still=True)
         written.append(f"{prefix}{frame:04d}.png")
     return {"frames": frames, "files": written, "seconds": round(time.perf_counter() - started, 3)}
 

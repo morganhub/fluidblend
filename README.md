@@ -6,7 +6,8 @@ and deliver scenes for music videos, short films and game prototypes — reprodu
 and resumably. Every operation is validated, journaled, versioned and verified (ffprobe, Khronos
 glTF validator, re-import). Windows 11 only for now.
 
-Status: **0.1.1 — P0 lot**. The 13 acceptance scenarios (A01–A13) pass on the reference machine, see
+Status: **0.2.0 — P0 + live mode**. The batch scenarios (A01–A13) and the live ones (L01–L05) pass
+on the reference machine, see
 [docs/acceptance-reports/latest-p0.md](docs/acceptance-reports/latest-p0.md). What the kit does not
 do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is simulated.
 
@@ -23,6 +24,12 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
   with `ffprobe` proof (frame count, frame rate).
 - **GLB export** (`game.export`): explicit settings (Y-up, sampled animations), control re-import
   into Blender, Khronos validation when the validator is installed.
+- **Live mode** (`fluidblend run --mode live`): four operations — `scene.inspect`, `scene.audit`,
+  `animation.retime`, `scene.checkpoint` — run inside the Blender session you have open, through the
+  MCP add-on and an approved runtime add-on. Each one starts with an identity check (project, open
+  file, revision, runtime version, no unsaved change) and refuses rather than overwrite. A live
+  write is saved as a copy, published as the next work version, then the session is reloaded on that
+  file: the version already on disk is never touched. Every other operation stays in batch.
 - **Reliability**: same `operation_id` → same result (never a duplicate); a source edited by hand →
   conflict detected and preserved; interrupted worker → `unknown` state then reconciliation;
   permissions, budgets and out-of-scope paths → controlled stop with a documented exit code.
@@ -32,9 +39,10 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 ## What the kit does not do yet
 
 Rigify rigs and skinned characters, Action library, retargeting, multi-character interactions,
-lip-sync (Rhubarb), adjustment tools, Blender panel, Godot / Three.js prototype, writing to the open
-scene through MCP. These operations exist in the catalogue with `available: false` and answer
-`UNSUPPORTED_CAPABILITY`: the skill refuses, it does not improvise.
+lip-sync (Rhubarb), adjustment tools, Blender panel, Godot / Three.js prototype. These operations
+exist in the catalogue with `available: false` and answer `UNSUPPORTED_CAPABILITY`: the skill
+refuses, it does not improvise. Live mode covers four operations only — any other request runs in
+batch, on the published work version.
 
 ## Prerequisites
 
@@ -45,7 +53,7 @@ scene through MCP. These operations exist in the catalogue with `available: fals
 | [Blender](https://www.blender.org/download/lts/) | **5.2.x LTS** | locked; any other series is refused |
 | [FFmpeg](https://ffmpeg.org/) (`winget install Gyan.FFmpeg`) | ≥ 7 | video assembly and `ffprobe` proofs |
 | [glTF-Validator](https://github.com/KhronosGroup/glTF-Validator/releases) | 2.0.0-dev.3.10 | recommended: without it Khronos validation is `not_run` |
-| [MCP for Blender](https://github.com/ahujasid/mcp-for-blender) | 2.0.0 | optional: reading the open scene (live mode) |
+| [MCP for Blender](https://github.com/ahujasid/mcp-for-blender) | 2.0.0 (add-on 1.7) | optional: live mode (open GUI session) |
 | Godot 4.7, Rhubarb 1.14 | — | detected by the diagnostic, used in later lots |
 
 Optional binaries can be dropped into `%LOCALAPPDATA%\fluidblend\tools\<tool>\`: they are found
@@ -123,13 +131,28 @@ Exit codes: `0` success, `1` known failure, `2` blocked (permission, dependency)
 
 ## Live mode (MCP)
 
-The kit generates the configuration for the community server
-[MCP for Blender](https://github.com/ahujasid/mcp-for-blender)
-(`fluidblend client-config --client claude|codex|vscode`) with safe mode on and telemetry off.
-Blender must be open in its graphical interface; `fluidblend doctor --live` then lists the tools the
-server actually advertises and reads the scene without modifying it. Writing to the open scene is
-not implemented in this lot. The add-on socket is not authenticated: see
-[docs/security.md](docs/security.md).
+The engine can drive the Blender session you already have open, for four operations:
+`scene.inspect`, `scene.audit`, `animation.retime` and `scene.checkpoint`.
+
+```powershell
+uv run fluidblend runtime install --enable                      # approved runtime as a Blender add-on
+uv run fluidblend live status --project "D:\Projects\My Film"    # identity of the open session
+uv run fluidblend run --mode live --project . --operation requests/animation-retime.json
+```
+
+The transport is the community server
+[MCP for Blender](https://github.com/ahujasid/mcp-for-blender), whose configuration the kit
+generates (`fluidblend client-config --client claude|codex|vscode`) with safe mode on and telemetry
+off. Because that safe mode only allows `import bpy`, the kit's runtime is installed as an **enabled
+Blender add-on** (hash-checked, `fluidblend doctor` reports it as `blender.runtime_addon`): the
+engine transmits nothing but `bpy.ops.fluidblend.identity()`, `run_request(...)` and
+`open_file(...)`, never a generated script.
+
+Before every live operation the engine checks the session's identity — runtime version, project,
+open file equal to the shot's latest work version, no unsaved change — and answers `SCENE_CONFLICT`
+(exit 3) without executing anything otherwise, so work in progress is preserved. `scene.checkpoint`
+is the exception: it snapshots an unsaved scene on purpose. Blender must be open in its graphical
+interface, and the add-on socket is not authenticated: see [docs/security.md](docs/security.md).
 
 ## Repository layout
 
@@ -140,7 +163,7 @@ blender_runtime/        code executed inside Blender (stdlib + bpy): scene, reti
 schemas/                JSON Schema exported from the contracts
 templates/film/         project skeleton created by `init`
 scripts/                install-skill.ps1, bootstrap.ps1, demo.ps1
-tests/                  unit tests (no Blender), acceptance A01–A13 (with Blender 5.2)
+tests/                  unit tests (no Blender), acceptance A01–A13 (batch) and L01–L05 (live)
 docs/                   installation, CLI, architecture, security, compatibility, roadmap, sources
 ```
 
@@ -151,8 +174,10 @@ uv run pytest tests/unit -q                                   # without Blender,
 uv run pytest tests -q --acceptance-report docs/acceptance-reports/latest-p0   # with Blender, ~90 s
 ```
 
-Scenarios that depend on a missing tool are marked `not_run`, never counted as passed. The GitHub CI
-runs lint, schema consistency and the unit tests on Windows.
+Scenarios that depend on a missing tool are marked `not_run`, never counted as passed. The live
+scenarios (L01–L05) each open and close their own Blender GUI session and need port 9876 free; they
+declare themselves `not_run` otherwise. The GitHub CI runs lint, schema consistency and the unit
+tests on Windows.
 
 ## Documentation
 

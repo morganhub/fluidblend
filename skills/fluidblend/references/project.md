@@ -72,8 +72,8 @@ last two states are human decisions.
 
 `config/local.json` — absolute machine paths (`blender_executable`, `ffmpeg_executable`,
 `ffprobe_executable`, `gltf_validator_executable`, `godot_executable`, `rhubarb_executable`), the
-`mcp` block (`host`, `port`, `startup_timeout_s`, `call_timeout_s`) and
-`blender_startup_timeout_s`. This file never contains a secret and is not meant to be versioned.
+`mcp` block (`server_name`, `host`, `port`, `startup_timeout_s`, `call_timeout_s` — used by live
+mode) and `blender_startup_timeout_s`. This file never contains a secret and is not meant to be versioned.
 
 `config/quality.json` — `foot_slide_max_m` 0.02; `contact_error_max_m` 0.02;
 `audio_drift_max_frames` 1.0; `loop_pose_error_max` 0.001; `preview_missing_frames_max` 0. These are
@@ -154,6 +154,24 @@ fluidblend run --project . --operation requests/checkpoint.json   # scene.checkp
 a manifest (source, sha256, size, label, task, timestamp). The copy is verified by hash: if the file
 changes during the copy, the operation fails rather than recording a false checkpoint. The engine
 additionally creates an automatic checkpoint before any `write`-class operation.
+
+### Checkpoint of the open session (live mode)
+
+```powershell
+fluidblend run --mode live --project . --operation requests/checkpoint.json
+```
+
+In live mode the same operation snapshots the Blender session the user has open, **unsaved changes
+included**, with `save_as_mainfile(copy=True)`: the active file is not touched, not saved and not
+renamed. The copy is published, then recorded under `checkpoints/<ckpt-id>/` like any other
+checkpoint, and the result carries a `was_dirty` metric plus a `checkpoint-live.json` report (label,
+source file, identity read from the scene, size).
+
+It is the only live operation that accepts a dirty session — every other one answers
+`SCENE_CONFLICT` (exit 3) as long as changes are unsaved. Practical consequence: when a live
+operation is refused because the user has work in progress, offering a live `scene.checkpoint` is
+the right move; it protects that work without asking them to save over anything. Prerequisites and
+identity rules: `references/environment.md`.
 
 ## Publication
 

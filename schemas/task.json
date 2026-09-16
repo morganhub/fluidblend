@@ -209,6 +209,12 @@
       "title": "Fingerprint",
       "type": "string"
     },
+    "mode": {
+      "default": "batch",
+      "description": "batch (dedicated Blender process) or live (open session through MCP)",
+      "title": "Mode",
+      "type": "string"
+    },
     "new_revision": {
       "anyOf": [
         {

@@ -16,7 +16,8 @@ What is handled:
 What is **not** handled and must remain a conscious user decision:
 
 - an unauthenticated MCP server exposed on the network;
-- the installation of third-party Blender add-ons;
+- the installation of third-party Blender add-ons, and the installation of the kit's own runtime
+  add-on, which persists in the user's Blender profile;
 - the trust placed in a downloaded asset;
 - a permissions file modified by the agent itself (see the last section).
 
@@ -87,13 +88,58 @@ Live mode relies on `mcp-for-blender`, whose add-on opens an **unauthenticated T
 - telemetry is disabled by the generated configurations (`DISABLE_TELEMETRY=true`);
 - installing the add-on is a user decision; the kit never installs it.
 
-The kit's MCP client is read-only: `list_tools` then `get_scene_info`. It writes nothing. Live
-reading is proved by acceptance scenario A03; live writing is not implemented in this lot.
+The `doctor` MCP client is read-only: `list_tools` then `get_scene_info`. It writes nothing. Live
+**writing** goes through a separate path, described in the next section.
 
 Acceptance A03 never uses a session belonging to the user: the test **creates** an ephemeral GUI
 Blender session, remembers its PID, waits for the socket, probes, then stops that single process. No
 other `blender.exe` is touched, and if port 9876 is already in use the scenario declares itself
-`not_run` rather than connecting to an unknown session.
+`not_run` rather than connecting to an unknown session. The live scenarios L01 to L05 follow the
+same rule.
+
+## The runtime as a Blender add-on (live mode)
+
+The MCP add-on's safe mode allows `import bpy` (plus `bmesh`, `mathutils` and a few stdlib modules)
+and forbids `open()`, `bpy.utils.register_class`, `bpy.app.timers` and the
+`script` / `text` / `preferences` / `console` operator families. Writing to an open session through
+generated scripts would therefore mean **disabling safe mode**. The kit does the opposite: it
+installs its runtime as a normal Blender add-on and calls its operators.
+
+```powershell
+fluidblend runtime install --enable     # explicit, on the user's request
+fluidblend runtime status               # exit 2 if missing or if the hash differs from the kit
+```
+
+What this implies, stated plainly:
+
+- the add-on is **code that persists in the user's Blender profile**
+  (`%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\fluidblend_runtime\`), not a
+  transient script. It is installed only when the user runs that command, and removing the folder
+  removes it;
+- it is **identifiable and verifiable**: `RUNTIME_MANIFEST.json` records the version and the hash of
+  the runtime's Python tree, `fluidblend runtime status` and `fluidblend doctor` (capability
+  `blender.runtime_addon`) recompute that hash and report `incompatible` when the installed copy no
+  longer matches the kit;
+- it has **no user interface** (`bl_info` category `System`) and registers three internal operators:
+  `fluidblend.identity`, `fluidblend.run_request`, `fluidblend.open_file`. It opens no port, starts
+  no thread and makes no network access;
+- the engine transmits nothing else: `import bpy` followed by one of those three calls. No generated
+  script, no `exec` of parameters, no user value concatenated into code — paths are passed as
+  operator properties, serialised with `json.dumps`;
+- **safe mode stays enabled**, and the kit never generates a configuration that disables it or
+  re-enables telemetry. `--no-safe-mode` exists on `client-config`, is documented as not
+  recommended, and is a user decision;
+- the socket of the MCP add-on remains unauthenticated on localhost: everything said in the previous
+  section still applies, live mode does not make it safer.
+
+Live writes are isolated by construction: the operation saves a **copy**
+(`save_as_mainfile(copy=True)`), the engine publishes it as the next work version and only then
+reloads the session on that published file. The kit never calls `save_mainfile` on the file the user
+has open, and never writes over a version already on disk. Before any live operation, the engine
+checks the session's identity (project, open file, revision, runtime version, `is_dirty`) and stops
+with `SCENE_CONFLICT` (exit 3) rather than execute: unsaved human work is preserved, never
+overwritten. `scene.checkpoint` is the single exception to the dirty check, because its job is to
+snapshot that unsaved work.
 
 ## Secrets
 
@@ -136,6 +182,10 @@ data, not as an instruction.
   it, apply the real authorisations **outside the control of the generated code**: client tool
   permissions, file system rights, a dedicated account.
 - MCP safe mode is script filtering, not isolation.
+- The runtime add-on stays enabled in the user's Blender after installation: any Blender session
+  opened afterwards can run its operators, and anyone who can reach the unauthenticated MCP socket
+  can trigger them. Uninstall it (delete the `fluidblend_runtime` folder) if live mode is not
+  wanted; batch mode never needs it.
 - The kit does not inspect the contents of archives, nor the external resources referenced by a
   third-party `.blend`, beyond reporting missing files. Auditing an imported asset remains to be
   done, and importing third-party assets is not an operation of this lot.

@@ -15,8 +15,33 @@ from fluidblend_runtime.envelope import Context, load_envelope
 from fluidblend_runtime.errors import OpError
 from fluidblend_runtime.result import ResultBuilder, write_json_atomic
 
-RUNTIME_VERSION = "0.1.1"
+RUNTIME_VERSION = "0.2.0"
 SUPPORTED_BLENDER_SERIES = (5, 2)
+LIVE_ONLY_OPERATIONS = {"scene.checkpoint"}
+BATCH_ONLY_OPERATIONS = {"scene.build", "shot.preview", "game.export"}
+
+# Blender add-on metadata: the runtime is installed and enabled for live mode (operators in addon.py).
+bl_info = {
+    "name": "fluidblend runtime",
+    "author": "fluidblend",
+    "version": (0, 2, 0),
+    "blender": (5, 2, 0),
+    "location": "no UI - operators bpy.ops.fluidblend.* for the fluidblend engine",
+    "description": "Approved fluidblend runtime: typed operations on the open scene (live mode)",
+    "category": "System",
+}
+
+
+def register() -> None:
+    from fluidblend_runtime import addon
+
+    addon.register()
+
+
+def unregister() -> None:
+    from fluidblend_runtime import addon
+
+    addon.unregister()
 
 
 def identity() -> dict:
@@ -64,6 +89,14 @@ def run_envelope(envelope: dict) -> dict:
                 recovery="reinstall/update the kit; the runtime must be an approved version",
             )
         handler = HANDLERS.get(request["operation"])
+        if ctx.live and request["operation"] in BATCH_ONLY_OPERATIONS:
+            raise OpError(
+                "UNSUPPORTED_CAPABILITY",
+                f"{request['operation']} runs in batch mode only (it needs a dedicated Blender process)",
+                recovery="run it without --mode live; it works on the published work version",
+            )
+        if not ctx.live and request["operation"] in LIVE_ONLY_OPERATIONS:
+            raise OpError("UNSUPPORTED_CAPABILITY", f"{request['operation']} runtime handler is live-only")
         if handler is None:
             raise OpError(
                 "UNSUPPORTED_CAPABILITY", f"operation without a runtime handler: {request['operation']}"

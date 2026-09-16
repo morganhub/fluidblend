@@ -1,7 +1,7 @@
 # Roadmap
 
-Every item below, apart from "Lot 1", is **not implemented**. The technical decisions already taken
-are recorded to prepare the work, not to suggest that it is done.
+Every item below, apart from "Lot 1" and "Lot 2", is **not implemented**. The technical decisions
+already taken are recorded to prepare the work, not to suggest that it is done.
 
 No unimplemented operation is simulated: it answers `UNSUPPORTED_CAPABILITY` (exit 2) and points
 here. Check what is actually available at any time:
@@ -23,28 +23,31 @@ path protection, budgets, and the 19 P0 operations. Acceptance A01 to A13 run an
 machine, with external tools installed on approval (Khronos validator, MCP add-on). Details in
 `docs/compatibility-matrix.md` and in `docs/acceptance-reports/latest-p0.md`.
 
-## Lot 2 — Live writing into an open session — **not implemented**
+## Lot 2 — Live writing into an open session — **done (version 0.2.0)**
 
-Goal: **write** into an open Blender session. Live reading is proven (A03: `list_tools` then
-`get_scene_info`, without mutation, on a GUI session started and stopped by the test); everything
-below concerns writing and remains unimplemented.
+`fluidblend run --mode live` runs four operations in the Blender session the user has open:
+`scene.inspect`, `scene.audit`, `animation.retime`, `scene.checkpoint`. Anything else keeps the
+batch path, on the published work version. Acceptance L01 to L05 passed on the reference machine;
+details in `docs/compatibility-matrix.md` and `docs/acceptance-reports/latest-p0.md`.
 
-| Item | Status | Preparatory decision |
+| Item | Status | What was built |
 | --- | --- | --- |
-| MCP add-on installed and approved | **done** | add-on 1.7 (protocol 7, package `mcp-for-blender` 2.0.0, MIT) installed on 16/09 with `uvx --python 3.11 mcp-for-blender install-addon`, on explicit approval |
-| Live write adapter | not implemented | the runtime would be installed as a Blender extension (`blender_manifest.toml`, `blender_version_min = "5.2.0"`, pinned hash); the MCP call would be limited to one import plus one call, never a generated script |
-| Scene identity check | not implemented | verify `project_id`, the `.blend` path, the revision and the runtime version before any write; the `fluidblend_*` properties already exist |
-| Isolated writing | not implemented | a variant or a reversible temporary state, with an explicit revision on approval |
-| Acceptance A03 | **passed** | scene inspection through the configured MCP, without mutation; it does not cover writing |
-| Blender instance lock | not implemented | one mode per session, with a dedicated lock on top of the project lock |
+| MCP add-on installed and approved | **done** | add-on 1.7 (protocol 7, package `mcp-for-blender` 2.0.0, MIT), installed on explicit approval |
+| Live write adapter | **done** | `adapters/blender_live.py`: one `uvx mcp-for-blender` stdio server per phase; the call is limited to `import bpy` plus one approved operator, never a generated script |
+| Approved runtime in the session | **done** | installed as a Blender **add-on** rather than an extension (`fluidblend runtime install --enable`, hash + `RUNTIME_MANIFEST.json`, capability `blender.runtime_addon`); the MCP safe mode forbids `register_class`, so operators registered by an enabled add-on are the only way in — safe mode stays on |
+| Scene identity check | **done** | `project_id`, open file against the shot's latest work version, revision, runtime version and `is_dirty` verified before anything runs; mismatch → `SCENE_CONFLICT` (exit 3), journal event `live_identity_checked` (L01, L03, L04) |
+| Isolated writing | **done** | live `animation.retime` saves with `copy=True`, the engine publishes the next version, records the revision, then reloads the session on the published file (`live_session_reloaded`); the version on disk is untouched (L02) |
+| Blender instance lock | **done** | live tasks hold `blender-instance` on top of the project lock; task records carry `mode: batch\|live` |
+| Uncertain live state | **done** | a call past `mcp.call_timeout_s` leaves the task `unknown` (exit 5), retries refused until `task reconcile` (L05) |
 
-What already exists and must not be confused with live writing: client configuration generation
-(`fluidblend client-config`), detection of the configured servers and of the add-on by `doctor`, and
-a read-only MCP probe client, tested against a fake server in unit tests and against the real server
-in A03.
+Remaining live items, **not implemented**:
 
-**The kit cannot be announced as live-write compatible before the scene identity, instance lock and
-isolated writing tests exist.** What is proven today: reading.
+| Item | Status | Note |
+| --- | --- | --- |
+| Writes through the client's own MCP connection | not implemented | the AI client's direct connection stays read-only guidance (`get_scene_info`, `get_viewport_screenshot`, `get_object_info`); every write goes through `fluidblend run --mode live`, never an improvised `execute_blender_code` |
+| Undo / edit signal from the session | not implemented | the engine only sees the session at the moment it calls: identity is a snapshot, not a subscription. A programmatic property assignment does not flag the file dirty, whereas interactive edits (operators, undo steps) do; a human edit made *during* a live call cannot be detected |
+| Live mode for the other operations | not implemented | `scene.build`, `shot.preview` and `game.export` need a dedicated process and are refused in a live envelope with `UNSUPPORTED_CAPABILITY` |
+| Progress feedback during a live call | not implemented | the call is synchronous on Blender's main thread: nothing is reported until the operator returns, and only `mcp.call_timeout_s` bounds the wait |
 
 ## Lot 3 — P1 characters and adjustments — **not implemented**
 
@@ -100,14 +103,19 @@ on an individual project.
 What to do when faced with one of these requests: stop, explain that the lot does not implement it,
 offer the closest P0 operation if one exists, and simulate nothing.
 
-## Debts and open points of lot 1
+## Debts and open points of lots 1 and 2
 
-- Live writing never exercised: only reading is covered, by A03.
+- Live mode covers four operations only, on Windows with Blender 5.2 and the MCP add-on 1.7. It has
+  been exercised on the reference machine only, always on a session created by the test.
+- The kit's runtime add-on persists in the user's Blender profile once installed; there is no
+  `runtime uninstall` subcommand, removal is done by deleting the folder.
+- A live call reports nothing until it returns, and the session is left to the user if the reload
+  after a live write fails (a warning says so explicitly).
 - `game` profile not tested: Godot 4.7.2 is detected by `doctor`, but the kit provides neither a
   template nor an engine import (lot 4).
 - Lip-sync not implemented: Rhubarb 1.14.0 is detected, `lipsync.*` answers
   `UNSUPPORTED_CAPABILITY`.
-- Acceptance A03 depends on a GUI Blender session: if port 9876 is already in use, it declares
-  itself `not_run` instead of running.
+- Acceptance A03 and L01 to L05 depend on a GUI Blender session: if port 9876 is already in use,
+  they declare themselves `not_run` instead of running.
 - No automatic restore from a checkpoint: resumption is manual and documented.
 - `state/metrics.json` is calibrated on renders only; the other estimates use constants.

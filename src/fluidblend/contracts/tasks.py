@@ -39,6 +39,9 @@ class TaskRecord(StrictModel):
     errors: list[ErrorRecord] = Field(default_factory=list)
     result_path: str | None = None
     partial_effects: list[str] = Field(default_factory=list)
+    mode: str = Field(
+        default="batch", description="batch (dedicated Blender process) or live (open session through MCP)"
+    )
 
 
 class Plan(StrictModel):

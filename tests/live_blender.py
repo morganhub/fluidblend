@@ -54,10 +54,15 @@ def port_open(port: int, host: str = "127.0.0.1", timeout: float = 0.5) -> bool:
         return False
 
 
-def launch_live_blender(executable: str, *, port: int = 9876, wait_s: float = 90.0) -> LiveBlender | None:
+def launch_live_blender(
+    executable: str, *, port: int = 9876, wait_s: float = 90.0, blend: str | None = None
+) -> LiveBlender | None:
     if port_open(port):
         raise RuntimeError(f"port {port} is already in use: another Blender/MCP session is running")
-    cmd = [executable, "--python-expr", START_SERVER_EXPR.format(port=port)]
+    cmd = [executable]
+    if blend:
+        cmd.append(str(blend))
+    cmd += ["--python-expr", START_SERVER_EXPR.format(port=port)]
     process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     live = LiveBlender(process=process, port=port, executable=executable)
     deadline = time.monotonic() + wait_s

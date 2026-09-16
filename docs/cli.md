@@ -99,12 +99,14 @@ Executes a typed operation.
 | Option | Effect |
 | --- | --- |
 | `--operation PATH` | JSON request file, relative to the project or absolute |
+| `--mode batch\|live` | `batch` (default): a dedicated headless Blender process. `live`: the open Blender session, through MCP |
 | `--dry-run` | forces `dry_run: true`: plan recorded, task left `planned`, no write |
 | `--json` | structured output |
 
 ```powershell
 fluidblend run --project . --operation requests/scene-build.json
 fluidblend run --project . --operation requests/scene-build.json --dry-run
+fluidblend run --mode live --project . --operation requests/animation-retime.json
 ```
 
 Exit: the code matches the result of the operation (0 to 6). The human-readable output lists the
@@ -131,6 +133,40 @@ The other available operations are invoked through a dedicated subcommand, not t
 A `run` request targeting an operation that has a dedicated subcommand (`environment.doctor`,
 `project.*`, `task.*`, `capabilities.list`) is refused with `VALIDATION_FAILED` (exit 4), the
 subcommand to use being given in `recovery`.
+
+### `--mode live`
+
+Four operations run inside the Blender session the user has open: `scene.inspect`, `scene.audit`,
+`animation.retime` and `scene.checkpoint`. Any other operation passed with `--mode live` runs in
+batch as usual, on the published work version; the runtime refuses `scene.build`, `shot.preview` and
+`game.export` inside a live envelope with `UNSUPPORTED_CAPABILITY`.
+
+Prerequisites: Blender 5.2 open **in its graphical interface** with the MCP add-on server listening,
+and the kit's runtime installed and enabled (`fluidblend runtime install --enable`). Check both with
+`fluidblend live status --project .`.
+
+Before executing anything, the engine reads the session's identity and compares it with the request:
+
+| Checked | Failure |
+| --- | --- |
+| runtime version equal to the kit version | `SCENE_CONFLICT` (exit 3) |
+| `project_id` of the open scene equal to the project | `SCENE_CONFLICT` (exit 3) |
+| open file equal to the shot's latest work version (real path) | `SCENE_CONFLICT` (exit 3) |
+| no unsaved change in the session | `SCENE_CONFLICT` (exit 3) — except `scene.checkpoint`, which snapshots them on purpose |
+| runtime add-on reachable through MCP | `UNSUPPORTED_CAPABILITY` (exit 2) |
+| MCP server reachable | `MISSING_DEPENDENCY` (exit 2) |
+
+Nothing is executed when a check fails, so an edit in progress is never lost. A live task holds the
+`blender-instance` lock in addition to the project lock, and its task record carries `mode: live`.
+
+A live write is never saved over the open file: `animation.retime` saves a copy, the engine
+publishes it as the next work version, records the revision and then reloads the session on that
+published file. If the reload fails, the result carries a warning: reopen the file in Blender before
+saving anything, otherwise the previous version would be overwritten.
+
+If the call exceeds `mcp.call_timeout_s` (`config/local.json`, 60 s by default), the task is left
+`unknown` (exit 5) because the open scene may have been modified: run `fluidblend task reconcile`,
+then reopen the latest work version in Blender before retrying.
 
 ## `task`
 
@@ -229,9 +265,51 @@ The generated entry launches `uvx mcp-for-blender --host <host> --port <port>` w
 `BLENDER_MCP_SAFE_MODE=1` and `DISABLE_TELEMETRY=true`. Merging preserves the other servers. The
 TOML produced is re-validated after the merge. Exit: 0.
 
-Generating the configuration does not make live mode operational: the add-on must be installed and a
-**GUI** Blender session must be open. Only scene **reading** is exercised (acceptance A03); live
-writing belongs to lot 2 (`docs/roadmap.md`).
+Generating the configuration does not make live mode operational: the MCP add-on must be installed,
+a **GUI** Blender session must be open, and the kit's runtime must be installed and enabled
+(`fluidblend runtime install --enable`). The `--name` given here must match `mcp.server_name` in
+`config/local.json`, which is how the engine finds the server entry in the project's `.mcp.json`.
+
+## `runtime`
+
+Installs or checks the kit's runtime as a Blender add-on. Live mode needs it; batch mode does not
+(the batch worker imports the runtime straight from the kit).
+
+```powershell
+fluidblend runtime install --enable          # copy into the Blender add-ons dir, then enable it
+fluidblend runtime install --force --json    # reinstall even when the hash already matches
+fluidblend runtime status --json
+```
+
+| Option | Effect |
+| --- | --- |
+| `install --enable` | also enables the add-on in the Blender user preferences, headlessly (`addon_enable` then `save_userpref`) |
+| `install --force` | copies again even if the installed tree is already up to date |
+| `--json` | structured output |
+
+The package is copied to
+`%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\fluidblend_runtime\` (override the
+add-ons directory with `FLUIDBLEND_BLENDER_ADDONS_DIR`) with a `RUNTIME_MANIFEST.json` holding the
+version, the hash of the runtime's Python tree, its source and the installation time. The install is
+idempotent: an identical tree reports `action: up_to_date`.
+
+Exit codes: `install` returns 0, 2 when no Blender 5.2 was found to enable the add-on, 1 when the
+enable step itself failed. `status` returns 0 when the add-on is installed and up to date, **2**
+when it is missing or when its hash differs from the kit's (reinstall after any kit update).
+
+## `live`
+
+```powershell
+fluidblend live status --project . --json
+```
+
+Reads the identity of the open Blender session through the runtime add-on: open file, `project_id`,
+`shot_id`, revision, dirty flag, runtime and Blender versions, the server entry that was used, and
+the list of operations available in live mode. It modifies nothing.
+
+Exit: 0 when the session answers, **2** when it is unreachable — no GUI session, MCP server down,
+add-on not enabled — with the failure kind (`unreachable`, `timeout`, `tool_missing`,
+`not_configured`) in the output. 4 if the project is invalid.
 
 ## `capabilities`
 

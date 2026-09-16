@@ -46,6 +46,7 @@ class Context:
     quality: dict = field(default_factory=dict)
     runtime_expected_version: str | None = None
     test_hooks: dict = field(default_factory=dict)
+    live: bool = False
 
     @classmethod
     def from_envelope(cls, envelope: dict) -> Context:
@@ -70,6 +71,7 @@ class Context:
             quality=ctx.get("quality", {}),
             runtime_expected_version=ctx.get("runtime_expected_version"),
             test_hooks=ctx.get("test_hooks", {}) or {},
+            live=bool(ctx.get("live", False)),
         )
 
     @property

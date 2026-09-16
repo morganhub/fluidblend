@@ -165,7 +165,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     except (ProjectError, OSError, ValueError) as exc:
         _emit({"error": str(exc)}, as_json=args.json, human=f"error: {exc}")
         return exit_codes.INVALID
-    runner = TaskRunner(project)
+    runner = TaskRunner(project, mode=args.mode)
     outcome = runner.run(payload, force_dry_run=args.dry_run)
     result = outcome.result.model_dump(mode="json")
     result["exit_code"] = outcome.exit_code
@@ -366,6 +366,75 @@ def cmd_client_config(args: argparse.Namespace) -> int:
     return exit_codes.OK
 
 
+def cmd_runtime(args: argparse.Namespace) -> int:
+    from fluidblend.adapters import blender_discovery
+    from fluidblend.core import runtime_install
+
+    if args.runtime_command == "status":
+        data = runtime_install.runtime_status()
+        state = "installed" if data["installed"] else "not installed"
+        _emit(
+            data,
+            as_json=args.json,
+            human=f"runtime add-on {state} at {data['path']}; up to date: {data['up_to_date']}",
+        )
+        return exit_codes.OK if data["installed"] and data["up_to_date"] else exit_codes.BLOCKED
+    data = runtime_install.install_runtime(force=args.force)
+    lines = [
+        f"runtime add-on {data['action']} at {data['path']} (version {data['kit_version']}, hash {data['kit_hash'][:12]})"
+    ]
+    if args.enable:
+        candidate, _probe, notes = blender_discovery.select_blender(None, probe=False)
+        if candidate is None:
+            data["enable"] = {"ok": False, "notes": notes}
+            _emit(
+                data,
+                as_json=args.json,
+                human="\n".join(lines + ["no Blender 5.2 found to enable the add-on"]),
+            )
+            return exit_codes.BLOCKED
+        enabled = runtime_install.enable_runtime_addon(candidate.path)
+        data["enable"] = enabled
+        lines.append(f"enabled in Blender preferences: {enabled.get('ok')} ({candidate.path})")
+        if not enabled.get("ok"):
+            _emit(data, as_json=args.json, human="\n".join(lines))
+            return exit_codes.FAILED
+    _emit(data, as_json=args.json, human="\n".join(lines))
+    return exit_codes.OK
+
+
+def cmd_live(args: argparse.Namespace) -> int:
+    from fluidblend.adapters import blender_live
+
+    try:
+        project = _project(args)
+    except ProjectError as exc:
+        _emit({"error": str(exc)}, as_json=args.json, human=f"error: {exc}")
+        return exit_codes.INVALID
+    config = blender_live.server_config_for(project)
+    try:
+        ident = blender_live.identity(config)
+    except blender_live.LiveError as exc:
+        _emit(
+            {"error": str(exc), "kind": exc.kind, "server": config.source},
+            as_json=args.json,
+            human=f"live session unavailable ({exc.kind}): {exc}",
+        )
+        return exit_codes.BLOCKED
+    data = {
+        "server": config.source,
+        "identity": ident,
+        "live_operations": ["animation.retime", "scene.audit", "scene.checkpoint", "scene.inspect"],
+    }
+    human = [
+        f"live session: {ident.get('blend_path') or '(unsaved scene)'}",
+        f"  project {ident.get('project_id')!r}, shot {ident.get('shot_id')!r}, revision {ident.get('revision')}, dirty: {ident.get('is_dirty')}",
+        f"  runtime {ident.get('runtime_version')} on Blender {ident.get('blender_version')} (server: {config.source})",
+    ]
+    _emit(data, as_json=args.json, human="\n".join(human))
+    return exit_codes.OK
+
+
 def cmd_capabilities(args: argparse.Namespace) -> int:
     try:
         project = _project(args)
@@ -436,6 +505,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_plan)
 
     p = sub.add_parser("run", help="run a typed operation")
+    p.add_argument(
+        "--mode",
+        choices=["batch", "live"],
+        default="batch",
+        help="batch: dedicated Blender process (default); live: the open Blender session through MCP (scene.inspect, scene.audit, animation.retime, scene.checkpoint)",
+    )
     add_common(p)
     p.add_argument("--operation", required=True, help="request JSON file")
     p.add_argument("--dry-run", action="store_true", help="force dry_run=true")
@@ -489,6 +564,26 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-safe-mode", action="store_true")
     p.add_argument("--write", help="file to create/merge (otherwise printed to stdout)")
     p.set_defaults(func=cmd_client_config)
+
+    p = sub.add_parser("runtime", help="install or check the runtime add-on used by live mode")
+    runtime_sub = p.add_subparsers(dest="runtime_command", required=True)
+    rp = runtime_sub.add_parser(
+        "install", help="copy the runtime into the Blender user add-ons directory (hash-checked)"
+    )
+    rp.add_argument(
+        "--enable", action="store_true", help="also enable it in the Blender preferences (headless)"
+    )
+    rp.add_argument("--force", action="store_true")
+    rp.add_argument("--json", action="store_true")
+    sp = runtime_sub.add_parser("status")
+    sp.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_runtime)
+
+    p = sub.add_parser("live", help="live session (open Blender through MCP)")
+    add_common(p)
+    live_sub = p.add_subparsers(dest="live_command", required=True)
+    live_sub.add_parser("status", help="identity of the open session: file, project, revision, dirty flag")
+    p.set_defaults(func=cmd_live)
 
     p = sub.add_parser("capabilities", help="show the latest capabilities.json of the project")
     add_common(p)

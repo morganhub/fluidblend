@@ -336,6 +336,47 @@ def run_doctor(
             ),
         )
     )
+    from fluidblend.core import runtime_install
+
+    try:
+        rt = runtime_install.runtime_status()
+        if rt["installed"] and rt["up_to_date"]:
+            rt_status = CapabilityStatus.available
+        elif rt["installed"]:
+            rt_status = CapabilityStatus.incompatible
+        else:
+            rt_status = CapabilityStatus.not_installed
+        caps.append(
+            Capability(
+                capability_id="blender.runtime_addon",
+                provider="fluidblend runtime (Blender add-on)",
+                version=(rt.get("manifest") or {}).get("version"),
+                executable=rt["path"],
+                tools=["fluidblend.identity", "fluidblend.run_request", "fluidblend.open_file"],
+                status=rt_status,
+                verified_at=now_iso(),
+                evidence={
+                    "kit_hash": rt["kit_hash"],
+                    "installed_hash": rt["installed_hash"],
+                    "up_to_date": rt["up_to_date"],
+                },
+                error=None
+                if rt_status == CapabilityStatus.available
+                else "run `fluidblend runtime install --enable` (approved install into the Blender user add-ons directory)",
+                restrictions=["required for live mode only; batch mode uses the kit copy"],
+                fallback="batch mode",
+            )
+        )
+    except RuntimeError as exc:
+        caps.append(
+            Capability(
+                capability_id="blender.runtime_addon",
+                provider="fluidblend runtime (Blender add-on)",
+                status=CapabilityStatus.unverified,
+                verified_at=now_iso(),
+                error=str(exc),
+            )
+        )
     caps.extend(_mcp_capabilities(project_root, local, live=live))
     report = CapabilitiesReport(
         generated_at=now_iso(),

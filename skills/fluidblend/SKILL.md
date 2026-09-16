@@ -5,12 +5,13 @@ description: >-
   project, build a demo scene, inspect and audit a shot, retime an animation clip into a variant,
   render a preview and assemble it into video, export a verified GLB, diagnose the capabilities of
   the workstation and resume an interrupted task. Use for Blender production tasks driven by the
-  `fluidblend` CLI, not for 2D video generation alone. Lot P0: the character, retargeting,
+  `fluidblend` CLI, not for 2D video generation alone. Four of these operations can also run in the
+  Blender session the user has open (live mode, `--mode live`). Lot P0: the character, retargeting,
   interaction, lip-sync, adjustment-tool and game-prototype domains are not implemented and are
   explicitly refused, never simulated.
 license: MIT
 compatibility: Windows 11, Blender 5.2.x LTS, uv, PowerShell 7
-metadata: {version: "0.1.1", lot: "P0"}
+metadata: {version: "0.2.0", lot: "P0+live"}
 ---
 
 # fluidblend — driven Blender production
@@ -69,6 +70,9 @@ written next to the skill by the installer, then walking up to a `pyproject.toml
     from `state/journal.jsonl` and lists the tasks to reconcile.
 12. **Deliver files + evidence + limits**: published paths, measured metrics, checks that were not
     run (`not_run`) and the next useful decision.
+13. **Batch by default, live only when the user is working in Blender.** `--mode live` covers four
+    operations and refuses a session that does not match the request. Never modify an open session
+    with an improvised script through an MCP tool.
 
 Do not turn "fix the gaze" into permission to regenerate the character, change the rig or replace
 the dialogue.
@@ -85,6 +89,7 @@ the dialogue.
 | Shot preview, video, film assembly | film | `references/film.md` | `run` on `shot.preview` and `film.assemble`; `fluidblend validate` |
 | Export to a game engine, broken export | game | `references/game.md` | `run` on `game.export` |
 | "add a slider", custom adjustment tool | tools | `references/tool-development.md` | not implemented (P1) |
+| "look at the scene I have open", retime while the user watches | live | `references/environment.md` | `fluidblend live status --project .`, `fluidblend run --mode live` |
 | Stuck task, interrupted run, conflict, budget | recovery | `references/recovery.md` | `fluidblend task status/cancel/reconcile`, `resume`, `revision accept` |
 
 ## Trigger use cases
@@ -108,6 +113,48 @@ The five copy-ready example requests live in `assets/`:
 `project_id`, `operation_id` and `target`, then pass them to `plan` or `run`. The path given to
 `--operation` is relative to the project or absolute; the `requests/` folder used above is created
 by the scaffold.
+
+## Live mode: writing into the open Blender session
+
+Available since 0.2.0, for **four operations only**: `scene.inspect`, `scene.audit`,
+`animation.retime`, `scene.checkpoint`. Everything else runs in batch on the published work version,
+even when `--mode live` is passed.
+
+```powershell
+fluidblend runtime install --enable      # once, and again after every kit update
+fluidblend live status --project .       # exit 2 = no usable session
+fluidblend run --mode live --project . --operation requests/animation-retime.json
+```
+
+Use `--mode live` when the user is in Blender right now and asks about the scene in front of them.
+Otherwise prefer batch: it needs nothing open. Three prerequisites, all required: Blender 5.2 open
+**in its graphical interface** with the MCP add-on server listening, the kit's runtime add-on
+installed and enabled, and the open file being the shot's latest work version.
+`fluidblend live status` reports all of it in one call, and `fluidblend doctor` reports the add-on
+as capability `blender.runtime_addon`.
+
+The engine checks the session's identity before executing anything, and refuses rather than
+overwrite:
+
+| Situation | Answer | What to do |
+| --- | --- | --- |
+| unsaved changes in the session | `SCENE_CONFLICT`, exit 3 | ask the user to save or revert in Blender, then retry — never do it for them |
+| the open file is not the shot's latest work version | `SCENE_CONFLICT`, exit 3 | ask them to open that version; the message gives both paths |
+| scene of another project, or runtime version different from the kit | `SCENE_CONFLICT`, exit 3 | wrong session, or `fluidblend runtime install --enable` after a kit update |
+| runtime add-on not enabled, MCP server unreachable | exit 2 | install and enable it, or fall back to batch |
+| call timed out | `unknown`, exit 5 | `fluidblend task reconcile`, then have the latest work version reopened before retrying |
+
+A live write is never saved over the open file: the operation saves a copy, the engine publishes the
+next work version and reloads the session on it. If the result warns that the reload failed, tell
+the user to reopen the published file **before saving anything**, otherwise their next save would
+overwrite the previous version. `scene.checkpoint` is the only live operation that accepts unsaved
+changes: use it to snapshot work in progress.
+
+**Never write through the client's own MCP connection.** If the AI client has its own Blender MCP
+server, its direct tools are acceptable for read-only exploration only (`get_scene_info`,
+`get_viewport_screenshot`, `get_object_info`). Every write goes through
+`fluidblend run --mode live`, never through `execute_blender_code` with an improvised script: that
+path has no identity check, no lock, no checkpoint, no version and no journal.
 
 ## Invariants
 
@@ -135,11 +182,11 @@ and answers `UNSUPPORTED_CAPABILITY` (exit 2): `character.*`, `rig.*`,
 `expression.*`, `adjustment.*`, `shot.build`, `game.import_test`, `game.smoke_test`, `tool.*`.
 Check with `fluidblend ops --all`.
 
-Live MCP mode is **proven read-only** (acceptance scenario A03: `list_tools` then `get_scene_info`,
-with no mutation) and requires an open **GUI** Blender session with the add-on, which publishes its
-socket on `localhost:9876`. **Live writing does not exist in this lot**: never announce the kit as
-able to modify an open session; everything goes through batch mode. Without a GUI session,
-`fluidblend doctor --live` stays `unverified`: this is normal, the batch CLI does not need it.
+Live mode covers **four operations only** (see the section above). `scene.build`, `shot.preview` and
+`game.export` are refused in a live envelope and run in batch instead. Live mode also requires an
+open **GUI** Blender session: the MCP add-on refuses `--background` and publishes its socket on
+`localhost:9876`. Without such a session, `fluidblend doctor --live` stays `unverified` and
+`fluidblend live status` exits 2: this is normal, the batch CLI does not need either.
 
 Sentence to say to the user, without working around it:
 
@@ -160,6 +207,8 @@ Stop, describe the blocker, list the preserved artifacts and the minimal decisio
   Rhubarb, Khronos validator) were installed on explicit approval; any further install or update
   must be asked for again;
 - concurrent modification, unsaved source or uncertain write state (exit 3 or 5);
+- live session that does not match the request: report what is open and what was expected, and let
+  the user save, revert or reopen — never save, revert or reload their Blender on their behalf;
 - unknown license for a planned redistribution;
 - time, frame or disk budget exceeded (exit 6);
 - three correction attempts without demonstrated improvement.
@@ -171,7 +220,7 @@ Stop, describe the blocker, list the preserved artifacts and the minimal decisio
 | 0 | success, dry run or idempotent replay | continue |
 | 1 | known failure, partial effects listed | read `state/tasks/<task_id>/` |
 | 2 | missing permission, dependency or capability | explain, ask for the decision |
-| 3 | revision conflict, lock, reused `operation_id` | `fluidblend revision accept` or a new `operation_id` |
+| 3 | revision conflict, lock, reused `operation_id`, live session mismatch | `fluidblend revision accept`, a new `operation_id`, or fix the open session |
 | 4 | invalid request or arguments, nothing executed | fix the request |
 | 5 | uncertain write state | `fluidblend task reconcile --project . --id <task>` |
 | 6 | budget exceeded, stopped before execution | reduce the request or have the budget widened |
@@ -183,7 +232,7 @@ Domain error codes: `MISSING_DEPENDENCY`, `UNSUPPORTED_CAPABILITY`, `RIG_MAPPING
 ## References
 
 - [references/environment.md](references/environment.md) — diagnostics, capabilities, pinned
-  Blender, MCP, client configuration.
+  Blender, MCP, client configuration, live mode (runtime add-on, identity, limits).
 - [references/project.md](references/project.md) — scaffold, manifests, permissions, budgets, plans,
   publication.
 - [references/characters.md](references/characters.md) — P0 rig profile, demo scene, audit; P1

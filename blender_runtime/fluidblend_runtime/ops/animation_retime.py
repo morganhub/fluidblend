@@ -133,7 +133,8 @@ def run(ctx, request, builder) -> None:
     )
     shot_id = (ctx.shot or {}).get("shot_id") or identity.get("shot_id") or "shot"
     blend_path = ctx.out(f"{shot_id}.blend")
-    blendio.save_as(blend_path)
+    # Live mode: the open file stays untouched, the new version is a copy (the engine reloads it after publishing).
+    (blendio.save_copy if ctx.live else blendio.save_as)(blend_path)
     builder.add_file("blend", blend_path)
     builder.write_report("retime-report.json", report)
     if samples:

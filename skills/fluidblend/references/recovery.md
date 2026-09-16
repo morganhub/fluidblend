@@ -29,6 +29,9 @@ tasks remain to be reconciled, 0 otherwise. As long as the code is 5, run no wri
 | `unknown` | uncertain write state | `task reconcile` is **mandatory** before any new attempt |
 | `cancelled` | confirmed stop, sources and partial outputs identified | re-run if relevant |
 
+Each task record also carries `mode`, `batch` or `live`: read it before concluding where an
+operation ran. A `live` task acted inside the Blender session the user had open.
+
 ## Follow, stop, reconcile
 
 ```powershell
@@ -58,6 +61,34 @@ machine.
 
 After reconciliation, re-run **the same `operation_id` with the same parameters**: the engine will
 produce a single version, with no duplicate (acceptance scenario A06).
+
+## Uncertain state in live mode
+
+A live operation is a single call to the open Blender session. Past `mcp.call_timeout_s`
+(`config/local.json`, 60 s by default) the engine stops waiting and cannot know what the session
+did: the task is left `unknown` (exit 5) and any retry of the same `operation_id` is refused until
+it is reconciled. The **open scene may have been modified** — that is the difference with a batch
+timeout, where only the task folder is in doubt.
+
+Procedure, in this order (acceptance scenario L05):
+
+1. Do not press retry, and do not save the Blender session.
+2. `fluidblend task reconcile --project . --id <task_id>` — it inspects the task folder, settles a
+   terminal state and re-runs nothing. A result written but never committed is reported as `failed`,
+   sources intact.
+3. `fluidblend live status --project .` — read what the session actually holds: open file,
+   revision, dirty flag.
+4. Have the user reopen the shot's latest work version in Blender (`fluidblend inspect --project .`
+   gives it) and save or revert anything in progress. The identity check will refuse otherwise.
+5. Re-run the same request. In live mode, a retry on a clean session publishes a single version.
+
+If the failure happened **after** publication, the result warns that the session could not be
+reloaded on the published file. Tell the user to reopen that file before saving anything: saving the
+old session would overwrite the version that was just published. Nothing in the kit saves or reverts
+their Blender for them.
+
+Two journal events document what happened: `live_identity_checked` (the identity that was accepted)
+and `live_session_reloaded` (the file the session was pointed at, and whether it worked).
 
 ## Idempotency
 
@@ -108,6 +139,10 @@ creates a task, with a 5-second wait; beyond that, the operation fails with `SCE
 `state/locks/project.owner.json`. Do not delete a lock file by hand: first check whether the owning
 process is still running.
 
+A live operation additionally takes `state/locks/blender-instance.lock`, so two of them can never
+drive the same open session at once. A busy `blender-instance` lock produces the same
+`SCENE_CONFLICT` (exit 3), with its own owner file.
+
 ## Journal and state
 
 `state/journal.jsonl` is append-only, written line by line with `fsync`. It is the source of truth.
@@ -117,7 +152,8 @@ before writing. The journal contains neither secrets nor model reasoning.
 
 Events useful for diagnosis: `project_initialized`, `plan_created`, `task_updated`,
 `checkpoint_created`, `artifact_published`, `revision_updated`, `external_change_accepted`,
-`replayed`, `reconciled`, `task_cancelled`, `request_blocked`, `request_rejected`. Unreadable lines
+`replayed`, `reconciled`, `task_cancelled`, `request_blocked`, `request_rejected`, and for live mode
+`live_identity_checked` and `live_session_reloaded`. Unreadable lines
 are counted (`journal_corrupt_lines` in `inspect`) without interrupting the reconstruction.
 
 ## Contents of a task folder
@@ -138,6 +174,10 @@ checkpoint identifier is returned in the result (`checkpoint_id`) and journaled.
 Restoring is done by hand, knowingly: copy the checkpoint file to its destination, then run
 `fluidblend revision accept` to realign the revision. There is no automatic restore command in this
 lot.
+
+In live mode, `scene.checkpoint` snapshots the **open** scene, unsaved changes included
+(`save_as_mainfile(copy=True)`, `was_dirty` metric): it is the right first move when a session holds
+work in progress that a refused operation would otherwise leave unprotected.
 
 ## Budgets exceeded
 

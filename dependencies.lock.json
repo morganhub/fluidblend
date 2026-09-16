@@ -7,7 +7,7 @@
       "path": null,
       "sha256": "f141a3c5754500e6f84361099a4cd53f0bb7662b6a0d2cfaaa8fbb63e92234a0",
       "source": "registry:{4B0BC91B-29A6-4B8C-A60B-6154FD3AE3AD}",
-      "verified_at": "2026-09-16T19:36:20.990Z",
+      "verified_at": "2026-09-16T20:45:10.538Z",
       "status": "unverified"
     },
     "video.ffmpeg": {
@@ -16,7 +16,7 @@
       "path": null,
       "sha256": "74db6c184a03dba2bdfe23e1a1f41cf5a8385bc1de6a7a1b26db1dc541abef93",
       "source": null,
-      "verified_at": "2026-09-16T19:36:21.326Z",
+      "verified_at": "2026-09-16T20:45:10.928Z",
       "status": "available"
     },
     "video.ffprobe": {
@@ -25,7 +25,7 @@
       "path": null,
       "sha256": "55bb6c6289367ae2383efa86b26bf2596f8adb72ac747360eb13df162354161c",
       "source": null,
-      "verified_at": "2026-09-16T19:36:21.955Z",
+      "verified_at": "2026-09-16T20:45:12.138Z",
       "status": "available"
     },
     "gltf.khronos_validator": {
@@ -34,7 +34,7 @@
       "path": null,
       "sha256": "4388a152ff90b68c6430ae03862e05e257a9d50a500ed7d0eb1cd420dc75ff96",
       "source": null,
-      "verified_at": "2026-09-16T19:36:22.584Z",
+      "verified_at": "2026-09-16T20:45:13.519Z",
       "status": "available"
     },
     "game.godot": {
@@ -43,7 +43,7 @@
       "path": null,
       "sha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
       "source": null,
-      "verified_at": "2026-09-16T19:36:25.574Z",
+      "verified_at": "2026-09-16T20:45:15.803Z",
       "status": "available"
     },
     "audio.rhubarb": {
@@ -52,7 +52,7 @@
       "path": null,
       "sha256": "9e289c6b5939ef6b306a61e8105ec721fd8d52b3ce950d08891ea3cc7df5718d",
       "source": null,
-      "verified_at": "2026-09-16T19:36:25.663Z",
+      "verified_at": "2026-09-16T20:45:16.475Z",
       "status": "available"
     },
     "python.uv": {
@@ -61,7 +61,16 @@
       "path": null,
       "sha256": null,
       "source": null,
-      "verified_at": "2026-09-16T19:36:25.719Z",
+      "verified_at": "2026-09-16T20:45:16.619Z",
+      "status": "available"
+    },
+    "blender.runtime_addon": {
+      "name": "fluidblend runtime (Blender add-on)",
+      "version": "0.2.0",
+      "path": null,
+      "sha256": null,
+      "source": null,
+      "verified_at": "2026-09-16T20:45:16.631Z",
       "status": "available"
     },
     "blender.mcp_addon": {
@@ -70,7 +79,7 @@
       "path": null,
       "sha256": null,
       "source": null,
-      "verified_at": "2026-09-16T19:36:25.719Z",
+      "verified_at": "2026-09-16T20:45:16.631Z",
       "status": "available"
     },
     "blender.mcp_live": {
@@ -79,13 +88,13 @@
       "path": null,
       "sha256": null,
       "source": null,
-      "verified_at": "2026-09-16T19:36:25.719Z",
+      "verified_at": "2026-09-16T20:45:16.631Z",
       "status": "unverified"
     }
   },
   "extra": {
-    "generated_at": "2026-09-16T19:36:25.723Z",
-    "fluidblend": "0.1.0",
+    "generated_at": "2026-09-16T20:45:16.640Z",
+    "fluidblend": "0.2.0",
     "blender_locked_series": "5.2",
     "platform": "Windows-11-10.0.26200-SP0",
     "python": "3.13.5"

@@ -6,6 +6,7 @@ Exit codes: see `fluidblend.exit_codes`.
 
 from __future__ import annotations
 
+import contextlib
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,7 +15,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from fluidblend import __version__
-from fluidblend.adapters import blender_batch, blender_discovery
+from fluidblend.adapters import blender_batch, blender_discovery, blender_live
 from fluidblend.adapters import ffmpeg as ff
 from fluidblend.adapters import gltf_validator as gltfv
 from fluidblend.contracts.common import (
@@ -48,6 +49,7 @@ from fluidblend.core.state import StateStore
 from fluidblend.hostops import HOST_HANDLERS
 from fluidblend.hostops.context import HostContext, HostOpError
 
+LIVE_OPERATIONS = {"scene.inspect", "scene.audit", "animation.retime", "scene.checkpoint"}
 PATH_PARAMS = ("audio_path", "request_path")
 BLOCKED_EXIT = {
     ErrorCode.PERMISSION_REQUIRED: exit_codes.BLOCKED,
@@ -92,7 +94,11 @@ class TaskRunner:
         *,
         test_hooks: dict[str, Any] | None = None,
         allow_unlocked_blender: bool = False,
+        mode: str = "batch",
     ):
+        if mode not in ("batch", "live"):
+            raise ValueError(f"unknown mode: {mode}")
+        self.mode = mode
         self.project = project
         self.state = StateStore(project.root)
         self.revisions = RevisionStore(project.root)
@@ -120,7 +126,12 @@ class TaskRunner:
                 return RunOutcome(replay, exit_codes.OK, replayed=True)
             source = self._resolve_source(request, spec)
             self._check_revision(request, spec)
-            with self.locks.hold("project", purpose=f"{spec.name} {request.operation_id}"):
+            instance_lock = (
+                self.locks.hold("blender-instance", purpose=f"live {spec.name} {request.operation_id}")
+                if self.mode == "live" and spec.name in LIVE_OPERATIONS
+                else contextlib.nullcontext()
+            )
+            with self.locks.hold("project", purpose=f"{spec.name} {request.operation_id}"), instance_lock:
                 task = self._create_task(request, spec)
                 if request.dry_run:
                     result = self._dry_run_result(request, spec, task)
@@ -151,6 +162,8 @@ class TaskRunner:
                     return self._finish_failed(task, result)
                 self._verify_artifacts(task, result)
                 result = self._publish(request, spec, task, result)
+                if self.mode == "live" and spec.name in LIVE_OPERATIONS and spec.creates_version:
+                    self._live_reload(request, task, result)
                 task.status = OperationStatus.succeeded
                 task.artifacts = result.artifacts
                 task.new_revision = result.new_revision
@@ -439,6 +452,7 @@ class TaskRunner:
             attempts=attempts,
             created_at=now_iso(),
             updated_at=now_iso(),
+            mode=self.mode if spec.name in LIVE_OPERATIONS else "batch",
         )
         self._task_dir(task.task_id).mkdir(parents=True, exist_ok=False)
         (self._task_dir(task.task_id) / "out").mkdir()
@@ -455,6 +469,8 @@ class TaskRunner:
     ) -> OperationResult:
         task_dir = self._task_dir(task.task_id)
         out_dir = task_dir / "out"
+        if self.mode == "live" and spec.name in LIVE_OPERATIONS:
+            return self._execute_live(request, spec, task, source, task_dir, out_dir)
         if spec.backend == "host":
             handler = HOST_HANDLERS.get(spec.name)
             if handler is None:
@@ -481,27 +497,7 @@ class TaskRunner:
             return ctx.result()
 
         executable = self._blender_executable()
-        shot = None
-        if request.target.shot_id:
-            shot = self.project.shot_manifest(request.target.shot_id).model_dump(mode="json")
-        envelope = {
-            "schema_version": "1.0",
-            "task_id": task.task_id,
-            "request": request.model_dump(mode="json"),
-            "context": {
-                "project_root": str(self.project.root),
-                "task_dir": str(task_dir),
-                "out_dir": str(out_dir),
-                "work_blend": str(source) if source and spec.name != "scene.build" else None,
-                "shot": shot,
-                "fps": self.project.manifest.fps.model_dump(),
-                "preview": self.project.manifest.preview.model_dump(),
-                "budgets": self.project.manifest.budgets.model_dump(),
-                "quality": self.project.quality.model_dump(),
-                "runtime_expected_version": __version__,
-                "test_hooks": self.test_hooks,
-            },
-        }
+        envelope = self._envelope(request, spec, task, source, task_dir, out_dir, live=False)
         timeout = float(
             self.test_hooks.get("timeout_s") or self.project.manifest.budgets.max_task_minutes * 60
         )
@@ -554,6 +550,160 @@ class TaskRunner:
         result.metrics["blender_elapsed_s"] = round(outcome.elapsed_s, 2)
         result.metrics["blender_exit_code"] = outcome.exit_code
         return result
+
+    def _envelope(
+        self,
+        request: OperationRequest,
+        spec: OperationSpec,
+        task: TaskRecord,
+        source: Path | None,
+        task_dir: Path,
+        out_dir: Path,
+        *,
+        live: bool,
+    ) -> dict[str, Any]:
+        shot = None
+        if request.target.shot_id:
+            shot = self.project.shot_manifest(request.target.shot_id).model_dump(mode="json")
+        return {
+            "schema_version": "1.0",
+            "task_id": task.task_id,
+            "request": request.model_dump(mode="json"),
+            "context": {
+                "project_root": str(self.project.root),
+                "task_dir": str(task_dir),
+                "out_dir": str(out_dir),
+                "work_blend": None
+                if live
+                else (str(source) if source and spec.name != "scene.build" else None),
+                "live": live,
+                "shot": shot,
+                "fps": self.project.manifest.fps.model_dump(),
+                "preview": self.project.manifest.preview.model_dump(),
+                "budgets": self.project.manifest.budgets.model_dump(),
+                "quality": self.project.quality.model_dump(),
+                "runtime_expected_version": __version__,
+                "test_hooks": self.test_hooks,
+            },
+        }
+
+    def _execute_live(
+        self,
+        request: OperationRequest,
+        spec: OperationSpec,
+        task: TaskRecord,
+        source: Path | None,
+        task_dir: Path,
+        out_dir: Path,
+    ) -> OperationResult:
+        """Run the operation on the open Blender session (identity checked, approved runtime operators only)."""
+        config = blender_live.server_config_for(self.project)
+        try:
+            ident = blender_live.identity(config)
+        except blender_live.LiveError as exc:
+            code = (
+                ErrorCode.UNSUPPORTED_CAPABILITY
+                if exc.kind == "tool_missing"
+                else ErrorCode.MISSING_DEPENDENCY
+            )
+            raise TaskAbort(
+                code,
+                str(exc),
+                recovery=(
+                    "open Blender 5.2 (GUI) on the shot's latest work version with the MCP add-on server "
+                    "started, and enable the runtime add-on (`fluidblend runtime install --enable`)"
+                ),
+                details={"kind": exc.kind, "server": config.source},
+            ) from exc
+        expected = source if spec.requires_shot else None
+        problems = blender_live.check_identity(
+            ident, project_id=self.project.project_id, expected_blend=expected, runtime_version=__version__
+        )
+        if spec.name == "scene.checkpoint":
+            # A snapshot of an unsaved scene is precisely what a checkpoint is for.
+            problems = [p for p in problems if "unsaved changes" not in p]
+        if problems:
+            raise TaskAbort(
+                ErrorCode.SCENE_CONFLICT,
+                "live session does not match the request: " + "; ".join(problems),
+                recovery="open the latest work version of the shot in Blender, save or revert pending changes, then retry",
+                details={"identity": ident, "expected_blend": str(expected) if expected else None},
+            )
+        self.project.journal().append("live_identity_checked", task_id=task.task_id, identity=ident)
+        envelope = self._envelope(request, spec, task, source, task_dir, out_dir, live=True)
+        request_path = task_dir / "request.json"
+        result_path = task_dir / "result.json"
+        atomic_write_json(request_path, envelope)
+        if result_path.exists():
+            result_path.unlink()
+        timeout = float(self.test_hooks.get("live_call_timeout_s") or config.call_timeout_s)
+        try:
+            data = blender_live.run_request(
+                config,
+                request_path,
+                result_path,
+                what=f"{spec.name} {request.operation_id}",
+                timeout_s=timeout,
+            )
+        except blender_live.LiveError as exc:
+            if exc.kind == "timeout":
+                task.status = OperationStatus.unknown
+                task.errors.append(
+                    ErrorRecord(
+                        code=ErrorCode.TIMEOUT_UNKNOWN_STATE,
+                        message="live call timed out; the open scene may have been modified",
+                        recovery=(
+                            f"fluidblend task reconcile --project . --id {task.task_id}; "
+                            "then reopen the latest work version in Blender before retrying"
+                        ),
+                    )
+                )
+                task.partial_effects = self._partial_effects(task.task_id)
+                self.state.upsert_task(task)
+                raise TaskAbort(
+                    ErrorCode.TIMEOUT_UNKNOWN_STATE,
+                    task.errors[-1].message,
+                    recovery=task.errors[-1].recovery,
+                    status=OperationStatus.unknown,
+                ) from exc
+            code = ErrorCode.INTERNAL_ERROR if exc.kind == "script_error" else ErrorCode.MISSING_DEPENDENCY
+            raise TaskAbort(code, str(exc), status=OperationStatus.failed) from exc
+        try:
+            result = OperationResult.model_validate(data)
+        except ValidationError as exc:
+            raise TaskAbort(
+                ErrorCode.VALIDATION_FAILED,
+                f"result.json is not conformant: {exc}",
+                status=OperationStatus.failed,
+            ) from exc
+        result.metrics["mode"] = "live"
+        result.metrics["live_identity"] = {
+            k: ident.get(k) for k in ("blend_path", "revision", "runtime_version")
+        }
+        return result
+
+    def _live_reload(self, request: OperationRequest, task: TaskRecord, result: OperationResult) -> None:
+        """After publishing a new version from a live write, point the open session at the published file."""
+        blend = next((self.project.root / a.path for a in result.artifacts if a.kind == "blend"), None)
+        if blend is None:
+            return
+        config = blender_live.server_config_for(self.project)
+        try:
+            opened = blender_live.open_file(config, blend)
+        except blender_live.LiveError as exc:
+            opened = {"ok": False, "error": str(exc)}
+        self.project.journal().append(
+            "live_session_reloaded",
+            task_id=task.task_id,
+            path=relpath_posix(self.project.root, blend),
+            **opened,
+        )
+        result.metrics["live_session_reloaded"] = bool(opened.get("ok"))
+        if not opened.get("ok"):
+            result.warnings.append(
+                f"the open Blender session could not be reloaded on {relpath_posix(self.project.root, blend)}; "
+                "reopen it manually before saving, otherwise the previous version would be overwritten"
+            )
 
     def _postprocess(
         self,
@@ -776,6 +926,18 @@ class TaskRunner:
                 task_id=task.task_id,
             )
             result.metrics["work_version"] = f"v{version_no:03d}"
+        if spec.name == "scene.checkpoint" and self.mode == "live":
+            blend = next((self.project.root / a.path for a in published if a.kind == "blend"), None)
+            if blend is not None:
+                manifest = create_file_checkpoint(
+                    self.project.root, blend, label="live", task_id=task.task_id
+                )
+                task.checkpoint_id = manifest["checkpoint_id"]
+                journal.append(
+                    "checkpoint_created",
+                    **{k: manifest[k] for k in ("checkpoint_id", "source", "sha256")},
+                    task_id=task.task_id,
+                )
         result.checkpoint_id = task.checkpoint_id
         result.task_id = task.task_id
         return result

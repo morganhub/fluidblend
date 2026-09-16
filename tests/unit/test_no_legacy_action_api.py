@@ -37,6 +37,7 @@ def test_runtime_has_no_third_party_imports():
         "re",
         "traceback",
         "dataclasses",
+        "contextlib",
         "collections",
         "typing",
         "__future__",
