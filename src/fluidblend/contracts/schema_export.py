@@ -8,6 +8,7 @@ from pathlib import Path
 from fluidblend.contracts.capabilities import CapabilitiesReport
 from fluidblend.contracts.common import OperationResult
 from fluidblend.contracts.operations import OPERATIONS, OperationRequest
+from fluidblend.contracts.production import AssetManifest, ClipIndex, ClipManifest, RigProfile
 from fluidblend.contracts.project import (
     DependencyLock,
     LocalConfig,
@@ -21,6 +22,10 @@ from fluidblend.contracts.project import (
 from fluidblend.contracts.tasks import Plan, TaskRecord
 
 ROOT_SCHEMAS = {
+    "asset": AssetManifest,
+    "rig-profile": RigProfile,
+    "clip": ClipManifest,
+    "clip-index": ClipIndex,
     "project": ProjectManifest,
     "local-config": LocalConfig,
     "permissions": Permissions,
@@ -59,6 +64,7 @@ def build_schemas() -> dict[str, dict]:
             "lot": spec.lot,
             "available": spec.available,
             "requires_shot": spec.requires_shot,
+            **spec.execution_contract(),
         }
         schemas[f"operations/{op_name}"] = schema
     return schemas

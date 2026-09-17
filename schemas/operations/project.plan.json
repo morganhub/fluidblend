@@ -17,8 +17,18 @@
   "x-fluidblend": {
     "available": true,
     "backend": "host",
+    "cli_command": "fluidblend plan --project <p> --request <r>",
+    "input_paths": [
+      "request_path"
+    ],
+    "live_dependencies": [],
     "lot": "P0",
+    "modes": [],
     "op_class": "read",
+    "optional_dependencies": [],
+    "publication": "reports_and_artifacts",
+    "required_dependencies": [],
+    "required_targets": [],
     "requires_shot": false
   }
 }

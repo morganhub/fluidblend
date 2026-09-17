@@ -1,0 +1,33 @@
+{
+  "asset_id": "vitruvian",
+  "version": 1,
+  "license": "CC0-1.0",
+  "source": "https://github.com/Upliner/CharMorph-Vitruvian",
+  "source_revision": "c252d1fc7f00ba59d87b66b3d32fa3471fc6ee44",
+  "inputs": {
+    "char.blend": "7e9581c30b48f1409dfeec4a5ec0736014318fc8825ca6d4728f2b543bb02126",
+    "rigs.blend": "7d4cb80660f2ad1a3319fd7a0783f1069e79094fc466cec15e78f5769cf1ee79",
+    "weights-rigify.npz": "23ffe61513dcefe568b75218d4859a927540e5f34b4175b2f90479c884be8257"
+  },
+  "blender": "5.2.2 LTS",
+  "rigify_version": [
+    0,
+    6,
+    10
+  ],
+  "rig_profile": "rigify/0.6.10",
+  "sha256": "d99283a272aee84c56fdc63281abd5ca33b725bf9463df2c66d0cf0e5fdbae7b",
+  "objects": [
+    "CustomRig_Vitruvian",
+    "cm_vitruvian"
+  ],
+  "armature": "CustomRig_Vitruvian",
+  "vertices": 37436,
+  "bones": 1063,
+  "uninfluenced_vertices": 0,
+  "missing_deformers": [],
+  "limits": [
+    "neutral body fixture; facial shape keys not yet supplied",
+    "no external textures or particle hair"
+  ]
+}

@@ -96,8 +96,10 @@ Steps of a live run, inside the project **and** `blender-instance` locks:
    envelope carries `live: true` and no `work_blend`: the runtime works on the session as it is,
    instead of reopening a file. The result is read back from `result.json`, with
    `metrics.mode = "live"` and the identity that was accepted.
-4. **Publication** — unchanged: artifacts verified, `out/` moved, revision recorded.
-5. **Reload** — for a versioning operation, `bpy.ops.fluidblend.open_file(filepath=…)` points the
+4. **Publication** — artifacts and input hashes verified; the live completion identity is checked
+   again. A changed generation prevents publication. Then `out/` is moved and the revision recorded.
+5. **Reload** — for a versioning operation, `bpy.ops.fluidblend.open_file(filepath=…, expected_identity=…)`
+   checks the generation and identity atomically inside Blender, then points the
    session at the file that was just published (`live_session_reloaded` in the journal). A failure
    is a warning, not an error: the user is told to reopen the file before saving, otherwise the
    previous version would be overwritten.

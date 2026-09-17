@@ -133,18 +133,18 @@ operation fails. Artifacts published in `renders/project/<operation_id>/`: `<out
 FFmpeg and ffprobe are **mandatory** here: their absence gives `MISSING_DEPENDENCY` (exit 2), not a
 silent fallback.
 
-## Status: not implemented (lot P1) — what to do
+## Audio preparation and analysis
 
-`shot.build` (assembling a shot from existing assets) and `audio.prepare` (normalizing a track)
-answer `UNSUPPORTED_CAPABILITY`. In P0 a shot is built only by `scene.build` from the demo preset,
-and audio is neither prepared nor analyzed.
+`audio.prepare` reads project-relative `source_path` (including protected `audio/source/`).
+It writes a new mono PCM16 48 kHz WAV using FFmpeg loudnorm in two passes with mandatory
+resampling. Bounds/defaults for integrated LUFS, true peak and loudness range are in the schema.
+The report records source hash, measured passes, sample count and rational seconds/frame duration.
 
-Decisions already taken, as preparation:
+`lipsync.analyze` accepts `source_path`, invokes Rhubarb 1.14 phonetic analysis and validates
+ordered A–H/X mouth cues. It does not animate the face or approve dialogue. `lipsync.apply`
+and `expression.apply` remain unavailable. Do not promise a dialogued shot from analysis alone.
 
-- audio normalization by FFmpeg with a two-pass `loudnorm`, always with `aresample=48000` to avoid a
-  96 kHz output;
-- audio drift tolerated up to one frame (`audio_drift_max_frames`), to be measured, not assumed;
-- `audio/source/**` stays protected: preparation writes a normalized copy elsewhere.
-
-The `preview_missing_frames_max = 0` threshold in `config/quality.json` is already enforced by
-`shot.preview`: no missing frame is tolerated.
+Local append `shot.build` is available; read the character reference for asset admission.
+Sequence organization, linked assets, facial fixtures, final renders and recorded human approval
+remain future work. `shot.validate` requires audit/preview evidence bound to the current revision
+and scene hash; regenerate stale evidence before claiming technical validity.

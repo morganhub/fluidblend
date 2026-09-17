@@ -18,7 +18,18 @@ from fluidblend_runtime.result import ResultBuilder, write_json_atomic
 RUNTIME_VERSION = "0.2.0"
 SUPPORTED_BLENDER_SERIES = (5, 2)
 LIVE_ONLY_OPERATIONS = {"scene.checkpoint"}
-BATCH_ONLY_OPERATIONS = {"scene.build", "shot.preview", "game.export"}
+BATCH_ONLY_OPERATIONS = {
+    "animation.create",
+    "animation.apply",
+    "animation.loop",
+    "animation.bake",
+    "scene.build",
+    "shot.preview",
+    "game.export",
+    "shot.build",
+    "character.inspect",
+    "rig.validate",
+}
 
 # Blender add-on metadata: the runtime is installed and enabled for live mode (operators in addon.py).
 bl_info = {
@@ -48,12 +59,14 @@ def identity() -> dict:
     """Session identity: project, shot, revision and runtime version (live mode, §7.2)."""
     import bpy
 
-    from fluidblend_runtime import blendio
+    from fluidblend_runtime import blendio, live_state
 
     scene = bpy.context.scene
     return {
+        **live_state.snapshot(),
         "runtime_version": RUNTIME_VERSION,
         "blender_version": bpy.app.version_string,
+        "blender_executable": bpy.app.binary_path,
         "blend_path": bpy.data.filepath,
         "is_dirty": bpy.data.is_dirty,
         "background": bpy.app.background,
@@ -103,7 +116,23 @@ def run_envelope(envelope: dict) -> dict:
             )
         if ctx.work_blend:
             blendio.open_blend(ctx.work_blend)
-        handler(ctx, request, builder)
+        if ctx.live:
+            from fluidblend_runtime import live_state
+
+            expected = envelope["context"].get("expected_live_identity")
+            current = identity()
+            if not live_state.matches(expected) or any(
+                current.get(key) != expected.get(key)
+                for key in ("blend_path", "project_id", "shot_id", "revision", "is_dirty")
+            ):
+                raise OpError(
+                    "SCENE_CONFLICT", "live identity changed before execution; human edits preserved"
+                )
+            with live_state.engine_operation():
+                handler(ctx, request, builder)
+            builder.metrics["live_completion_identity"] = identity()
+        else:
+            handler(ctx, request, builder)
         if ctx.test_hooks.get("sleep_before_result_s"):
             # Simulates a task that runs too long (time budget / unknown state test).
             import time

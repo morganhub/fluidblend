@@ -1,7 +1,10 @@
 {
   "schema_version": "1.0",
   "schemas": [
+    "asset.json",
     "capabilities.json",
+    "clip-index.json",
+    "clip.json",
     "dependencies-lock.json",
     "local-config.json",
     "operation-request.json",
@@ -55,6 +58,7 @@
     "providers.json",
     "quality.json",
     "revisions.json",
+    "rig-profile.json",
     "shot.json",
     "task.json"
   ]

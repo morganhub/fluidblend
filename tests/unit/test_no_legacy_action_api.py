@@ -34,6 +34,7 @@ def test_runtime_has_no_third_party_imports():
         "time",
         "hashlib",
         "secrets",
+        "random",
         "re",
         "traceback",
         "dataclasses",

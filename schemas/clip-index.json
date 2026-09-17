@@ -1,0 +1,308 @@
+{
+  "$defs": {
+    "ClipEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "frame": {
+          "maximum": 1000001,
+          "minimum": -100000,
+          "title": "Frame",
+          "type": "number"
+        },
+        "name": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "frame"
+      ],
+      "title": "ClipEvent",
+      "type": "object"
+    },
+    "ContactWindow": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Anchor",
+          "type": "array"
+        },
+        "effector": {
+          "minLength": 1,
+          "title": "Effector",
+          "type": "string"
+        },
+        "frame_range": {
+          "$ref": "#/$defs/FrameRange"
+        },
+        "support_instance_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Support Instance Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "effector",
+        "support_instance_id",
+        "frame_range",
+        "anchor"
+      ],
+      "title": "ContactWindow",
+      "type": "object"
+    },
+    "FrameRange": {
+      "additionalProperties": false,
+      "description": "Canonical half-open interval `[start, end_exclusive)`.",
+      "properties": {
+        "end_exclusive": {
+          "maximum": 1000001,
+          "minimum": -100000,
+          "title": "End Exclusive",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 1000000,
+          "minimum": -100000,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end_exclusive"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    }
+  },
+  "$id": "https://fluidblend.local/schemas/clip-index.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "minLength": 1,
+      "title": "Action",
+      "type": "string"
+    },
+    "amplitude": {
+      "anyOf": [
+        {
+          "maximum": 0.6,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Amplitude"
+    },
+    "clip_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Clip Id",
+      "type": "string"
+    },
+    "contacts": {
+      "items": {
+        "$ref": "#/$defs/ContactWindow"
+      },
+      "title": "Contacts",
+      "type": "array"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/ClipEvent"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "frame_range": {
+      "$ref": "#/$defs/FrameRange"
+    },
+    "layer": {
+      "minLength": 1,
+      "title": "Layer",
+      "type": "string"
+    },
+    "limits": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limits",
+      "type": "array"
+    },
+    "loop": {
+      "default": false,
+      "title": "Loop",
+      "type": "boolean"
+    },
+    "loop_error": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Loop Error"
+    },
+    "manifest_path": {
+      "title": "Manifest Path",
+      "type": "string"
+    },
+    "manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifest Sha256",
+      "type": "string"
+    },
+    "owned_channels": {
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "minItems": 1,
+      "title": "Owned Channels",
+      "type": "array"
+    },
+    "preset": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Preset"
+    },
+    "repetitions": {
+      "anyOf": [
+        {
+          "maximum": 100,
+          "minimum": 2,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Repetitions"
+    },
+    "rig_profile": {
+      "minLength": 1,
+      "title": "Rig Profile",
+      "type": "string"
+    },
+    "root_motion": {
+      "enum": [
+        "in_place",
+        "root_bone",
+        "object"
+      ],
+      "title": "Root Motion",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seed": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Seed"
+    },
+    "slot": {
+      "minLength": 1,
+      "title": "Slot",
+      "type": "string"
+    },
+    "source_blend": {
+      "title": "Source Blend",
+      "type": "string"
+    },
+    "source_clip": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Clip"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "stage": {
+      "anyOf": [
+        {
+          "enum": [
+            "blocking",
+            "spline",
+            "polish"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stage"
+    }
+  },
+  "required": [
+    "clip_id",
+    "action",
+    "slot",
+    "rig_profile",
+    "frame_range",
+    "root_motion",
+    "contacts",
+    "events",
+    "layer",
+    "owned_channels",
+    "source_blend",
+    "source_sha256",
+    "manifest_path",
+    "manifest_sha256"
+  ],
+  "title": "ClipIndex",
+  "type": "object"
+}

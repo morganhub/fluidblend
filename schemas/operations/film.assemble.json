@@ -39,8 +39,23 @@
   "x-fluidblend": {
     "available": true,
     "backend": "host",
+    "cli_command": null,
+    "input_paths": [
+      "audio_path"
+    ],
+    "live_dependencies": [],
     "lot": "P0",
+    "modes": [
+      "batch"
+    ],
     "op_class": "render",
+    "optional_dependencies": [],
+    "publication": "reports_and_artifacts",
+    "required_dependencies": [
+      "video.ffmpeg",
+      "video.ffprobe"
+    ],
+    "required_targets": [],
     "requires_shot": false
   }
 }

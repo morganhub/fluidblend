@@ -38,7 +38,7 @@ module-root = "src"
 testpaths = ["tests"]
 markers = [
     "blender: requires the real locked Blender (marked not_run when it is missing)",
-    "acceptance: acceptance scenarios A01-A13",
+    "acceptance: real acceptance scenarios A01-A13, L01-L08 and B01-B08",
     "slow: long render or export",
 ]
 addopts = "-ra"

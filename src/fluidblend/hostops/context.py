@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from time import monotonic
 from typing import Any
 
 from fluidblend.contracts.common import (
@@ -48,6 +49,7 @@ class HostContext:
     metrics: dict[str, Any] = field(default_factory=dict)
     next_safe_actions: list[str] = field(default_factory=list)
     checkpoint_id: str | None = None
+    started_monotonic: float = field(default_factory=monotonic)
 
     def add_file(self, kind: str, path: Path, **metrics: Any) -> Artifact:
         artifact = Artifact(

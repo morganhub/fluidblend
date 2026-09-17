@@ -1,0 +1,238 @@
+{
+  "generated_at": "2026-09-17 09:54 UTC",
+  "blender": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+  "scenarios": [
+    {
+      "scenario": "A01",
+      "test": "tests/unit/test_scaffold_and_cli.py::test_A01_init_in_accented_path",
+      "status": "passed",
+      "duration_s": 0.07,
+      "detail": "",
+      "title": "Initialize in a Windows path with spaces and accents",
+      "notes": []
+    },
+    {
+      "scenario": "A02",
+      "test": "tests/unit/test_scaffold_and_cli.py::test_A02_rerun_init_is_idempotent_and_keeps_manual_edits",
+      "status": "passed",
+      "duration_s": 0.11,
+      "detail": "",
+      "title": "Re-run the initialization on the same project",
+      "notes": []
+    },
+    {
+      "scenario": "A03",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A03_live_mcp_inspection",
+      "status": "passed",
+      "duration_s": 7.49,
+      "detail": "",
+      "title": "Inspect the scene through the configured MCP",
+      "notes": [
+        "31 tools advertised by BlenderMCP; get_scene_info read without mutation; GUI session started and stopped by the test (port 9876)"
+      ]
+    },
+    {
+      "scenario": "A04",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A04_build_two_characters_and_prop",
+      "status": "passed",
+      "duration_s": 6.46,
+      "detail": "",
+      "title": "Build two simple articulated characters and one prop (240 frames at 24 fps)",
+      "notes": [
+        "41 objects, 2 armatures of 18 bones, cyclic slotted Actions, file reopened by scene.inspect"
+      ]
+    },
+    {
+      "scenario": "A05",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A05_replay_same_operation_id",
+      "status": "passed",
+      "duration_s": 6.35,
+      "detail": "",
+      "title": "Re-run the same operation after a lost response",
+      "notes": [
+        "idempotent replay (same task_id, a single v001); different parameters -> SCENE_CONFLICT exit 3"
+      ]
+    },
+    {
+      "scenario": "A06",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A06_interrupted_worker_reconciles_without_loss",
+      "status": "passed",
+      "duration_s": 10.14,
+      "detail": "",
+      "title": "Interrupt the worker after an output is created but before commit",
+      "notes": [
+        "worker killed after the outputs were written -> unknown state (exit 5); reconcile -> failed + partial effects; re-run with the same operation_id -> a single v002"
+      ]
+    },
+    {
+      "scenario": "A07",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A07_manual_change_detected_and_preserved",
+      "status": "passed",
+      "duration_s": 3.48,
+      "detail": "",
+      "title": "Manually modify a protected object between two operations",
+      "notes": [
+        "hash mismatch -> SCENE_CONFLICT (exit 3), file preserved; `revision accept` -> revision 2; stale expected_revision=1 -> conflict"
+      ]
+    },
+    {
+      "scenario": "A08",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A08_retime_on_variant_keeps_source",
+      "status": "passed",
+      "duration_s": 8.1,
+      "detail": "",
+      "title": "Slow down an animation on a variant",
+      "notes": [
+        "48 -> 57.6 frames (x1.2), contact markers 1/25 -> 1/30, source v001 untouched (hash), 6 before/after frames"
+      ]
+    },
+    {
+      "scenario": "A09",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A09_preview_frames_and_video_proof",
+      "status": "passed",
+      "duration_s": 18.68,
+      "detail": "",
+      "title": "Render then assemble the preview",
+      "notes": [
+        "240/240 Workbench PNG in 10.798 s, MP4 24/1 yuv420p, ffprobe nb_read_frames=240, 10 s duration, shot.validate technical_pass"
+      ]
+    },
+    {
+      "scenario": "A10",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A10_export_glb_validate_and_reimport",
+      "status": "passed",
+      "duration_s": 7.84,
+      "detail": "",
+      "title": "Export an animation as GLB",
+      "notes": [
+        "Khronos 2.0.0-dev.3.10: 0 error, 0 warning(s); consistent Blender re-import"
+      ]
+    },
+    {
+      "scenario": "A11",
+      "test": "tests/acceptance/test_p0_acceptance.py::test_A11_offline_execution",
+      "status": "passed",
+      "duration_s": 3.16,
+      "detail": "",
+      "title": "Run without network after an approved preparation",
+      "notes": [
+        "worker launched with --offline-mode (Blender network disabled), no provider enabled, scene produced without any download"
+      ]
+    },
+    {
+      "scenario": "A12",
+      "test": "tests/unit/test_runner_guards.py::test_A12_escape_path_and_command_injection_are_refused",
+      "status": "passed",
+      "duration_s": 0.02,
+      "detail": "",
+      "title": "Supply an escaping path or a command as a parameter",
+      "notes": [
+        "../ paths, external absolute path and UNC -> PERMISSION_REQUIRED (exit 2); ';' in an enum -> VALIDATION_FAILED (exit 4); no file created"
+      ]
+    },
+    {
+      "scenario": "A13",
+      "test": "tests/unit/test_runner_guards.py::test_A13_permission_and_budget_stop_controlled",
+      "status": "passed",
+      "duration_s": 0.05,
+      "detail": "",
+      "title": "Exhaust the budget or request an unavailable permission",
+      "notes": [
+        "inspect profile -> PERMISSION_REQUIRED (exit 2); 240 frames > budget 24 -> BUDGET_EXCEEDED (exit 6); journal request_blocked"
+      ]
+    },
+    {
+      "scenario": "B01",
+      "test": "tests/acceptance/test_characters.py::test_B01_character_mapping_and_deformation",
+      "status": "passed",
+      "duration_s": 17.28,
+      "detail": "",
+      "title": "Versioned skinned Rigify character: semantic mapping and five deformation poses",
+      "notes": [
+        "Vitruvian CC0, 37,436 influenced vertices, complete Rigify mapping; five finite deformation responses and PNG views; source hash unchanged; incomplete mapping refused; artistic review pending"
+      ]
+    },
+    {
+      "scenario": "L01",
+      "test": "tests/acceptance/test_live_mcp.py::test_L01_live_inspect_with_identity",
+      "status": "passed",
+      "duration_s": 5.6,
+      "detail": "",
+      "title": "Live: identity check and read-only inspection of the open scene",
+      "notes": [
+        "identity (project, file, revision, runtime, clean) verified through bpy.ops.fluidblend.identity; scene.inspect ran in the GUI session; report published"
+      ]
+    },
+    {
+      "scenario": "L02",
+      "test": "tests/acceptance/test_live_mcp.py::test_L02_live_retime_publishes_version_and_reloads",
+      "status": "passed",
+      "duration_s": 7.74,
+      "detail": "",
+      "title": "Live: isolated write (retime) publishes a new version and reloads the session",
+      "notes": [
+        "retime executed in the open session; v002 saved as a copy, published, revision 2; session reloaded on v002; v001 hash unchanged"
+      ]
+    },
+    {
+      "scenario": "L03",
+      "test": "tests/acceptance/test_live_mcp.py::test_L03_dirty_scene_is_blocked",
+      "status": "passed",
+      "duration_s": 10.65,
+      "detail": "",
+      "title": "Live: unsaved manual changes block the write and are preserved",
+      "notes": [
+        "dirty session → SCENE_CONFLICT (exit 3), nothing published, manual change kept; scene.checkpoint snapshots the unsaved scene (copy=True)"
+      ]
+    },
+    {
+      "scenario": "L04",
+      "test": "tests/acceptance/test_live_mcp.py::test_L04_wrong_open_file_is_refused",
+      "status": "passed",
+      "duration_s": 10.89,
+      "detail": "",
+      "title": "Live: wrong file open in the session is refused",
+      "notes": [
+        "session opened on an unrelated unsaved scene → identity mismatch → SCENE_CONFLICT, no task executed in Blender"
+      ]
+    },
+    {
+      "scenario": "L05",
+      "test": "tests/acceptance/test_live_mcp.py::test_L05_lost_response_reconciles",
+      "status": "passed",
+      "duration_s": 23.08,
+      "detail": "",
+      "title": "Live: lost response leaves an unknown state that reconciliation resolves",
+      "notes": [
+        "call timeout → task unknown (exit 5); retry refused until reconcile; reconcile → failed (result found, not committed); retry succeeds on the clean session"
+      ]
+    },
+    {
+      "scenario": "L06",
+      "test": "tests/acceptance/test_live_mcp.py::test_edit_between_identity_and_execution",
+      "status": "passed",
+      "duration_s": 6.01,
+      "detail": "",
+      "title": "Live: edit between admission and execution is preserved",
+      "notes": []
+    },
+    {
+      "scenario": "L07",
+      "test": "tests/acceptance/test_live_mcp.py::test_edit_before_publication",
+      "status": "passed",
+      "duration_s": 7.14,
+      "detail": "",
+      "title": "Live: edit before publication prevents publishing or reloading",
+      "notes": []
+    },
+    {
+      "scenario": "L08",
+      "test": "tests/acceptance/test_live_mcp.py::test_guarded_reload_and_undo",
+      "status": "passed",
+      "duration_s": 10.03,
+      "detail": "",
+      "title": "Live: guarded reload preserves a later edit; undo generation is monotonic",
+      "notes": []
+    }
+  ]
+}

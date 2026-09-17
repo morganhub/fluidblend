@@ -3,8 +3,8 @@
 Status: **partially implemented**.
 
 - Lot P0: `animation.retime` (a slower or faster variant of a clip).
-- Lot P1, not implemented: `animation.create`, `animation.apply`, `animation.loop`,
-  `animation.retarget`, `animation.bake`.
+- Bounded P1: `animation.create`, `animation.apply`, `animation.loop`, `animation.bake`.
+- Unavailable: `animation.retarget`, Rigify walk and take/give recipes.
 
 ## Slotted Actions: the only allowed API
 
@@ -107,24 +107,24 @@ Properties set on the variant: `fluidblend_clip_id`, `fluidblend_source_clip`,
   is also a key of the Action, it is stretched along with the rest; the ground speed therefore
   changes accordingly. Do not promise a foot that does not slide: slide measurement is a P1 check.
 
-## Status: not implemented (lot P1) — what to do
+## Bounded Rigify library
 
-`animation.create`, `animation.apply`, `animation.loop`, `animation.retarget` and `animation.bake`
-answer `UNSUPPORTED_CAPABILITY` (exit 2). Stop, explain, offer what P0 allows (build the demo scene,
-retime the existing cycle). Do not hand-craft a clip in a script, do not import mocap.
+`animation.create` takes `preset`, `output_clip`, `frame_range`, `amplitude` (0–0.6), `seed`,
+`stage` (blocking/spline/polish) and optional `profile_path`. Presets: `idle_neutral`, `turn`,
+`look_at`, `reach`, `react`. It creates an unassigned Action with a slot and manifest; it does
+not replace active animation. The recorded seed makes the bounded recipe repeatable.
+Blocking affects newly authored keys only. Polish is currently a stage label, not automatic polish.
 
-Decisions already taken for lot 3, as preparation only:
+`animation.apply` takes `clip_id`, `start_frame`. It uses a REPLACE NLA track and rejects any
+channel overlap with existing active/NLA animation. Shared-channel priority blending is not yet
+supported. `animation.loop` takes target `clip_id`, `output_clip`, `repetitions`; it verifies
+endpoint curve values before adding repetition. This is not a physical contact/velocity test.
 
-- **Action library** on the Rigify fixture: `idle_neutral`, `walk`, `turn`, `look_at`, `reach`,
-  `take_prop`, `give_prop`, `react`. Each clip = one Action, one slot, one `clip.json` declaring
-  rig, duration, looping, root motion and contact windows.
-- **NLA layers** named `body`, `upper`, `hands`, `gaze`, `face`, `mouth`, with channels partitioned
-  by bone family and a documented `COMBINE` or `REPLACE` blend, plus a double-transform test.
-- **Bounded retargeting**: name-to-name preset in the Expy-Kit format, constraints, then
-  `nla.bake(visual_keying=True, clear_constraints=True)`. The Retarget (KBS-DEV) and Rokoko add-ons
-  remain external GPL-3 / LGPL-3 components, never integrated into the MIT kit. A rig without a
-  complete mapping must produce `RIG_MAPPING_REQUIRED`.
-- **Curve cleanup**: `graph.decimate` in `ERROR` mode, `graph.clean`, `graph.euler_filter`, with a
-  measured maximum deviation and contacts left untouched.
-- **Mixamo is forbidden in the repository** (license terms); Quaternius and Poly Haven (CC0) are the
-  chosen asset sources.
+`animation.bake` takes `output_clip`, `frame_range`, `step` and creates an export variant.
+It removes constraints and drivers only in that variant, checks mesh deformation within 1 mm
+at first/middle/last frames, and preserves the source. Baked rigs cannot accept control recipes.
+Indexes at `animation/clips/<id>/clip.json` cite versioned blend/report hashes. Contacts and events
+are initially empty; do not claim measured locomotion or hand contact from these clips.
+
+Retargeting, walk, take/give and support-relative contact cleanup remain unavailable. Reject such
+requests without improvised scripts. Optional retarget add-ons remain external, never vendored.

@@ -3,14 +3,57 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Semantic mapping of a rig",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "controls": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": "Controls",
+      "type": "object"
+    },
+    "inspection_path": {
+      "title": "Inspection Path",
+      "type": "string"
+    },
+    "profile_id": {
+      "const": "rigify/0.6.10",
+      "default": "rigify/0.6.10",
+      "title": "Profile Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "inspection_path"
+  ],
+  "title": "RigMapParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "host",
+    "cli_command": null,
+    "input_paths": [
+      "inspection_path"
+    ],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
-    "requires_shot": false
+    "optional_dependencies": [],
+    "publication": "reports_and_artifacts",
+    "required_dependencies": [],
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

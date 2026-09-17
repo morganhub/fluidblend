@@ -43,6 +43,7 @@ def build_command(executable: str, request_path: Path, result_path: Path, task_i
         executable,
         "--background",
         "--factory-startup",
+        "--disable-autoexec",
         "--offline-mode",
         "--python-exit-code",
         str(EXIT_PYTHON_EXCEPTION),

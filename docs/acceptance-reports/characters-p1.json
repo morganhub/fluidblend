@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-09-17 09:55 UTC",
+  "blender": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+  "scenarios": [
+    {
+      "scenario": "B01",
+      "test": "tests/acceptance/test_characters.py::test_B01_character_mapping_and_deformation",
+      "status": "passed",
+      "duration_s": 27.32,
+      "detail": "",
+      "title": "Versioned skinned Rigify character: semantic mapping and five deformation poses",
+      "notes": [
+        "Vitruvian CC0, 37,436 influenced vertices, complete Rigify mapping; five finite deformation responses and PNG views; source hash unchanged; incomplete mapping refused; artistic review pending"
+      ]
+    }
+  ]
+}

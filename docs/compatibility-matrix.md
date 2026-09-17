@@ -85,7 +85,7 @@ No global skill is installed, in any client.
 | FFmpeg / ffprobe | 8.0.1 | **present, proven** | previews assembled, ffprobe proof |
 | glTF-Validator | 2.0.0-dev.3.10 win64 | **present, proven** | Khronos validation executed, acceptance A10 passed |
 | Godot | 4.7.2 stable | **present, detected** | detected by `doctor` (`_console` variant), **not exercised by the kit**: no template and no engine import (lot 4) |
-| Rhubarb Lip Sync | 1.14.0 | **present, detected** | detected by `doctor`, **not exercised by the kit**: `lipsync.*` not implemented (lot 4) |
+| Rhubarb Lip Sync | 1.14.0 | **analysis tested** | real phonetic analysis; face application remains unavailable |
 | MCP for Blender add-on | add-on 1.7, protocol 7 (PyPI package 2.0.0) | **present, proven for reading and for the four live operations** | A03 (read-only probe) and L01–L05 (live mode) passed; safe mode left on, the engine only calls the runtime's operators |
 | Node.js | 22.17.0 | present | not used by the kit in P0 |
 
@@ -130,8 +130,15 @@ never counted as passed. The timestamped report is authoritative. Regenerate it 
 uv run pytest tests --acceptance-report docs/acceptance-reports/latest-p0
 ```
 
-Scenarios B01 to B08 belong to lots 3 and 4: they are not run and must not be presented as partially
-passed.
+B01 is passed on the actual skinned Vitruvian/Rigify fixture. B02–B08 remain unqualified.
+See [P1 evidence](acceptance-reports/production-p1.md) and [scope](production-p1.md).
+
+## Additional live regression
+
+L06 (edit after admission), L07 (edit before publication), L08 (guarded reload and monotonic
+undo generation) pass on the same Windows / Blender 5.2.2 machine. See
+[the combined report](acceptance-reports/implementation.md). No additional live operation is
+qualified by these concurrency checks.
 
 ## Component licenses
 

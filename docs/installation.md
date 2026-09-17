@@ -15,7 +15,7 @@ installation, and none at all without explicit approval.
 | FFmpeg and ffprobe | 8.x | for video previews and `film.assemble` | `fluidblend doctor` |
 | glTF-Validator | 2.0.0-dev.3.10 | recommended; when absent, Khronos validation is `not_run` | `fluidblend doctor` |
 | Godot | 4.7.2 | lot 4 only; detected, not exercised by the kit | not required here |
-| Rhubarb | 1.14.0 | lot 4 only; detected, not exercised by the kit | not required here |
+| Rhubarb | 1.14.0 | phonetic mouth-cue analysis, tested | required for `lipsync.analyze` only |
 | MCP for Blender add-on | add-on 1.7 (package 2.0.0) | live mode only; requires a GUI Blender session | not required here |
 | fluidblend runtime add-on | shipped with the kit | live mode only; installed on request from the kit | `fluidblend runtime status` |
 

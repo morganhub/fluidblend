@@ -29,8 +29,22 @@
   "x-fluidblend": {
     "available": true,
     "backend": "blender",
+    "cli_command": null,
+    "input_paths": [],
+    "live_dependencies": [],
     "lot": "P0",
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
+    "optional_dependencies": [],
+    "publication": "shot_revision_and_reports",
+    "required_dependencies": [
+      "blender.batch"
+    ],
+    "required_targets": [
+      "shot_id"
+    ],
     "requires_shot": true
   }
 }

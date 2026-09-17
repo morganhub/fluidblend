@@ -3,14 +3,57 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Normalize an audio track",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "integrated_lufs": {
+      "default": -16,
+      "maximum": -5,
+      "minimum": -30,
+      "title": "Integrated Lufs",
+      "type": "number"
+    },
+    "loudness_range_lu": {
+      "default": 11,
+      "maximum": 20,
+      "minimum": 1,
+      "title": "Loudness Range Lu",
+      "type": "number"
+    },
+    "source_path": {
+      "title": "Source Path",
+      "type": "string"
+    },
+    "true_peak_db": {
+      "default": -1.5,
+      "maximum": 0,
+      "minimum": -9,
+      "title": "True Peak Db",
+      "type": "number"
+    }
+  },
+  "required": [
+    "source_path"
+  ],
+  "title": "AudioPrepareParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "host",
+    "cli_command": null,
+    "input_paths": [
+      "source_path"
+    ],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
+    "optional_dependencies": [],
+    "publication": "reports_and_artifacts",
+    "required_dependencies": [
+      "video.ffmpeg"
+    ],
+    "required_targets": [],
     "requires_shot": false
   }
 }

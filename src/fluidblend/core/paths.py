@@ -55,14 +55,42 @@ def resolve_inside(root: Path, candidate: str | os.PathLike[str], *, allow_missi
 
     root_real = normalize_root(root)
     raw = Path(text)
+    # A colon is allowed only in an absolute drive prefix, never as an NTFS stream.
+    tail = text[len(raw.drive) :] if raw.drive else text
+    if ":" in tail or (raw.drive and not raw.is_absolute()):
+        raise PathRejected(text, "alternate stream or drive-relative path")
+    for part in raw.parts:
+        if part in (raw.anchor, raw.drive, raw.root):
+            continue
+        if part.endswith((".", " ")):
+            raise PathRejected(text, "ambiguous Windows path component")
+        if part.split(".")[0].upper() in {
+            "CON",
+            "PRN",
+            "AUX",
+            "NUL",
+            *(f"COM{i}" for i in range(1, 10)),
+            *(f"LPT{i}" for i in range(1, 10)),
+        }:
+            raise PathRejected(text, "Windows device name")
     joined = raw if raw.is_absolute() else root_real / raw
+    # Inspect the lexical path before realpath erases links pointing back inside the root.
+    try:
+        lexical_parts = joined.relative_to(root_real).parts
+    except ValueError as exc:
+        raise PathRejected(text, "outside the allowed root") from exc
+    current = root_real
+    for part in lexical_parts:
+        current = current / part
+        if is_reparse_point(current):
+            raise PathRejected(text, "symlink or junction along the path")
     # realpath resolves existing links; missing segments are kept as-is.
     resolved = Path(os.path.realpath(joined))
     try:
         resolved.relative_to(root_real)
     except ValueError as exc:
         raise PathRejected(text, "outside the allowed root") from exc
-    if _normcase(resolved) != _normcase(resolved) or not _normcase(resolved).startswith(_normcase(root_real)):
+    if not _normcase(resolved).startswith(_normcase(root_real)):
         raise PathRejected(text, "outside the allowed root")
 
     # No reparse point (symlink / junction) between the root and the target.

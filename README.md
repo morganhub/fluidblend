@@ -6,9 +6,9 @@ and deliver scenes for music videos, short films and game prototypes — reprodu
 and resumably. Every operation is validated, journaled, versioned and verified (ffprobe, Khronos
 glTF validator, re-import). Windows 11 only for now.
 
-Status: **0.2.0 — P0 + live mode**. The batch scenarios (A01–A13) and the live ones (L01–L05) pass
+Status: **0.2.0 + unreleased partial P1**. The batch scenarios (A01–A13) and the live ones (L01–L05) pass
 on the reference machine, see
-[docs/acceptance-reports/latest-p0.md](docs/acceptance-reports/latest-p0.md). What the kit does not
+[docs/acceptance-reports/implementation.md](docs/acceptance-reports/implementation.md). What the kit does not
 do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is simulated.
 
 ## What the kit does today
@@ -18,6 +18,12 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 - **Demo scene** (`scene.build`): two original articulated characters, a prop, a camera, a set and a
   240-frame walk cycle at 24 fps — Blender 5.x slotted Actions.
 - **Inspection and audit** (`scene.inspect`, `scene.audit`): readable JSON, technical checks.
+- **Versioned characters**: local `shot.build`, `character.inspect`, `rig.map`, `rig.validate`,
+  with a licensed, skinned Vitruvian/Rigify fixture and five measured pose tests.
+- **Bounded animation library**: create, apply in NLA, loop and bake; five initial recipes,
+  channel collision checks, deterministic seeds and measured bake deformation error.
+- **Audio preparation and analysis**: real two-pass FFmpeg normalization to 48 kHz and Rhubarb
+  mouth cues. Facial animation is not yet implemented.
 - **Retime on a variant** (`animation.retime`): the source stays untouched, before/after images,
   contact markers preserved, measured duration.
 - **Video preview** (`shot.preview`): idempotent PNG sequence then an H.264 MP4 assembled by FFmpeg,
@@ -38,11 +44,13 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 
 ## What the kit does not do yet
 
-Rigify rigs and skinned characters, Action library, retargeting, multi-character interactions,
-lip-sync (Rhubarb), adjustment tools, Blender panel, Godot / Three.js prototype. These operations
+Retargeting, multi-character interactions, facial cue application, adjustment tools, Blender panel,
+Godot / Three.js prototype, Rigify walk and prop recipes. The corresponding operations
 exist in the catalogue with `available: false` and answer `UNSUPPORTED_CAPABILITY`: the skill
 refuses, it does not improvise. Live mode covers four operations only — any other request runs in
 batch, on the published work version.
+
+See [the implementation status](docs/production-p1.md) for tested scope and outstanding work.
 
 ## Prerequisites
 
@@ -54,7 +62,8 @@ batch, on the published work version.
 | [FFmpeg](https://ffmpeg.org/) (`winget install Gyan.FFmpeg`) | ≥ 7 | video assembly and `ffprobe` proofs |
 | [glTF-Validator](https://github.com/KhronosGroup/glTF-Validator/releases) | 2.0.0-dev.3.10 | recommended: without it Khronos validation is `not_run` |
 | [MCP for Blender](https://github.com/ahujasid/mcp-for-blender) | 2.0.0 (add-on 1.7) | optional: live mode (open GUI session) |
-| Godot 4.7, Rhubarb 1.14 | — | detected by the diagnostic, used in later lots |
+| Rhubarb Lip Sync | 1.14 | optional phonetic mouth-cue analysis |
+| Godot | 4.7 | detected; game import and prototype not yet implemented |
 
 Optional binaries can be dropped into `%LOCALAPPDATA%\fluidblend\tools\<tool>\`: they are found
 without touching the PATH ([docs/installation.md](docs/installation.md)).

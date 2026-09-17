@@ -16,7 +16,7 @@ def new_empty() -> None:
 def open_blend(path: str) -> None:
     if not os.path.isfile(path):
         raise FileNotFoundError(path)
-    result = bpy.ops.wm.open_mainfile(filepath=path, load_ui=False)
+    result = bpy.ops.wm.open_mainfile(filepath=path, load_ui=False, use_scripts=False)
     if "FINISHED" not in result:
         raise RuntimeError(f"open refused: {result}")
 

@@ -186,9 +186,10 @@ data, not as an instruction.
   opened afterwards can run its operators, and anyone who can reach the unauthenticated MCP socket
   can trigger them. Uninstall it (delete the `fluidblend_runtime` folder) if live mode is not
   wanted; batch mode never needs it.
-- The kit does not inspect the contents of archives, nor the external resources referenced by a
-  third-party `.blend`, beyond reporting missing files. Auditing an imported asset remains to be
-  done, and importing third-party assets is not an operation of this lot.
+- Bounded ZIP admission validates paths, member counts, sizes, expansion ratios and file types.
+  This helper is not yet exposed as an archive import operation. Local asset append validates
+  manifest hashes/licenses, missing files and linked IDs, with automatic scripts disabled.
+  This is admission checking, not a sandbox for Blender or a guarantee against parser defects.
 - `os.replace` is atomic in practice on a single NTFS volume, without a formal guarantee from
   Microsoft. The append-only journal remains the source of truth.
 - No integrity check is performed on the kit itself after installation: the copy of the skill inside

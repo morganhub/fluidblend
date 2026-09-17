@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from fluidblend.hostops import film_assemble, providers_check, scene_checkpoint, shot_validate
+from fluidblend.hostops import audio, film_assemble, providers_check, rig_map, scene_checkpoint, shot_validate
 
 HOST_HANDLERS = {
+    "audio.prepare": audio.prepare,
+    "lipsync.analyze": audio.analyze,
+    "rig.map": rig_map.run,
     "scene.checkpoint": scene_checkpoint.run,
     "shot.validate": shot_validate.run,
     "film.assemble": film_assemble.run,

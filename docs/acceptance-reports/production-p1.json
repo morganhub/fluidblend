@@ -1,0 +1,57 @@
+{
+  "generated_at": "2026-09-17 09:32 UTC",
+  "blender": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+  "scenarios": [
+    {
+      "scenario": "A01",
+      "test": "tests/unit/test_scaffold_and_cli.py::test_A01_init_in_accented_path",
+      "status": "passed",
+      "duration_s": 0.08,
+      "detail": "",
+      "title": "Initialize in a Windows path with spaces and accents",
+      "notes": []
+    },
+    {
+      "scenario": "A02",
+      "test": "tests/unit/test_scaffold_and_cli.py::test_A02_rerun_init_is_idempotent_and_keeps_manual_edits",
+      "status": "passed",
+      "duration_s": 0.1,
+      "detail": "",
+      "title": "Re-run the initialization on the same project",
+      "notes": []
+    },
+    {
+      "scenario": "A12",
+      "test": "tests/unit/test_runner_guards.py::test_A12_escape_path_and_command_injection_are_refused",
+      "status": "passed",
+      "duration_s": 0.02,
+      "detail": "",
+      "title": "Supply an escaping path or a command as a parameter",
+      "notes": [
+        "../ paths, external absolute path and UNC -> PERMISSION_REQUIRED (exit 2); ';' in an enum -> VALIDATION_FAILED (exit 4); no file created"
+      ]
+    },
+    {
+      "scenario": "A13",
+      "test": "tests/unit/test_runner_guards.py::test_A13_permission_and_budget_stop_controlled",
+      "status": "passed",
+      "duration_s": 0.05,
+      "detail": "",
+      "title": "Exhaust the budget or request an unavailable permission",
+      "notes": [
+        "inspect profile -> PERMISSION_REQUIRED (exit 2); 240 frames > budget 24 -> BUDGET_EXCEEDED (exit 6); journal request_blocked"
+      ]
+    },
+    {
+      "scenario": "B01",
+      "test": "tests/acceptance/test_characters.py::test_B01_character_mapping_and_deformation",
+      "status": "passed",
+      "duration_s": 15.17,
+      "detail": "",
+      "title": "Versioned skinned Rigify character: semantic mapping and five deformation poses",
+      "notes": [
+        "Vitruvian CC0, 37,436 influenced vertices, complete Rigify mapping; five finite deformation responses and PNG views; source hash unchanged; incomplete mapping refused; artistic review pending"
+      ]
+    }
+  ]
+}

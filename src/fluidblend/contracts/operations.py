@@ -13,11 +13,24 @@ from typing import Any, Literal
 from pydantic import Field, ValidationError, field_validator
 
 from fluidblend.contracts.common import SCHEMA_VERSION, StrictModel
+from fluidblend.contracts.production import (
+    AnimationApplyParams,
+    AnimationBakeParams,
+    AnimationCreateParams,
+    AnimationLoopParams,
+    AudioPrepareParams,
+    CharacterInspectParams,
+    LipsyncAnalyzeParams,
+    RigMapParams,
+    RigValidateParams,
+    ShotBuildParams,
+)
 from fluidblend.contracts.project import IDENT_PATTERN
 
 Backend = Literal["host", "blender"]
 OpClass = Literal["read", "write", "render", "export"]
 Lot = Literal["P0", "P1", "P2"]
+LIVE_OPERATIONS = frozenset({"scene.inspect", "scene.audit", "animation.retime", "scene.checkpoint"})
 
 
 class Target(StrictModel):
@@ -129,6 +142,52 @@ class OperationSpec:
     creates_version: bool = False
     cli_command: str | None = None
     """Dedicated CLI subcommand when the operation does not go through `fluidblend run`."""
+
+    def execution_contract(self) -> dict[str, Any]:
+        """Machine-readable execution scope shared by CLI help and generated schemas."""
+        required = ["blender.batch"] if self.backend == "blender" else []
+        optional = []
+        if self.name in ("audio.prepare", "film.assemble"):
+            required.append("video.ffmpeg")
+        if self.name == "film.assemble":
+            required.append("video.ffprobe")
+        if self.name == "shot.preview":
+            optional.extend(["video.ffmpeg", "video.ffprobe"])
+        if self.name == "lipsync.analyze":
+            required.append("audio.rhubarb")
+        if self.name == "game.export":
+            optional.append("gltf.khronos_validator")
+        targets = ["shot_id"] if self.requires_shot else []
+        if self.name in {
+            "character.inspect",
+            "rig.map",
+            "rig.validate",
+            "animation.create",
+            "animation.apply",
+            "animation.loop",
+            "animation.bake",
+            "animation.retime",
+        }:
+            targets.append("instance_id")
+        if self.name in {"animation.loop", "animation.retime"}:
+            targets.append("clip_id")
+        paths = [name for name in self.params_model.model_fields if name.endswith("_path")]
+        if self.name == "shot.build":
+            paths.append("assets[].manifest_path")
+        return {
+            "modes": (["batch", "live"] if self.name in LIVE_OPERATIONS else ["batch"])
+            if self.available and not self.cli_command
+            else [],
+            "required_dependencies": required,
+            "optional_dependencies": optional,
+            "live_dependencies": ["blender.mcp_live", "blender.runtime_addon"]
+            if self.name in LIVE_OPERATIONS
+            else [],
+            "required_targets": targets,
+            "input_paths": paths,
+            "publication": "shot_revision_and_reports" if self.creates_version else "reports_and_artifacts",
+            "cli_command": self.cli_command,
+        }
 
 
 def _spec(
@@ -255,35 +314,47 @@ OPERATIONS: dict[str, OperationSpec] = {
             requires_shot=True,
         ),
         # Character (P1)
-        _spec("character.inspect", NoParams, "blender", "read", "P1", "Audit a character", available=False),
+        _spec(
+            "character.inspect",
+            CharacterInspectParams,
+            "blender",
+            "read",
+            "P1",
+            "Audit a character",
+            requires_shot=True,
+        ),
         _spec(
             "rig.validate",
-            NoParams,
+            RigValidateParams,
             "blender",
             "read",
             "P1",
             "Test poses and rig checks",
-            available=False,
+            requires_shot=True,
         ),
-        _spec("rig.map", NoParams, "host", "write", "P1", "Semantic mapping of a rig", available=False),
+        _spec(
+            "rig.map", RigMapParams, "host", "write", "P1", "Semantic mapping of a rig", requires_shot=True
+        ),
         # Animation
         _spec(
             "animation.create",
-            NoParams,
+            AnimationCreateParams,
             "blender",
             "write",
             "P1",
             "Create a clip from the library",
-            available=False,
+            requires_shot=True,
+            creates_version=True,
         ),
         _spec(
             "animation.apply",
-            NoParams,
+            AnimationApplyParams,
             "blender",
             "write",
             "P1",
             "Apply a clip to an instance",
-            available=False,
+            requires_shot=True,
+            creates_version=True,
         ),
         _spec(
             "animation.retime",
@@ -295,11 +366,29 @@ OPERATIONS: dict[str, OperationSpec] = {
             requires_shot=True,
             creates_version=True,
         ),
-        _spec("animation.loop", NoParams, "blender", "write", "P1", "Loop a clip", available=False),
+        _spec(
+            "animation.loop",
+            AnimationLoopParams,
+            "blender",
+            "write",
+            "P1",
+            "Loop a clip",
+            requires_shot=True,
+            creates_version=True,
+        ),
         _spec(
             "animation.retarget", NoParams, "blender", "write", "P1", "Bounded retargeting", available=False
         ),
-        _spec("animation.bake", NoParams, "blender", "write", "P1", "Bake constraints/NLA", available=False),
+        _spec(
+            "animation.bake",
+            AnimationBakeParams,
+            "blender",
+            "write",
+            "P1",
+            "Bake constraints/NLA",
+            requires_shot=True,
+            creates_version=True,
+        ),
         # Interactions (P1)
         _spec(
             "interaction.plan",
@@ -329,8 +418,8 @@ OPERATIONS: dict[str, OperationSpec] = {
             available=False,
         ),
         # Audio / face (P1)
-        _spec("audio.prepare", NoParams, "host", "write", "P1", "Normalize an audio track", available=False),
-        _spec("lipsync.analyze", NoParams, "host", "read", "P1", "Rhubarb -> mouth cues", available=False),
+        _spec("audio.prepare", AudioPrepareParams, "host", "write", "P1", "Normalize an audio track"),
+        _spec("lipsync.analyze", LipsyncAnalyzeParams, "host", "read", "P1", "Rhubarb -> mouth cues"),
         _spec("lipsync.apply", NoParams, "blender", "write", "P1", "Mouth cues -> face", available=False),
         _spec("expression.apply", NoParams, "blender", "write", "P1", "Facial expressions", available=False),
         # Adjustment (P1)
@@ -348,12 +437,13 @@ OPERATIONS: dict[str, OperationSpec] = {
         # Film
         _spec(
             "shot.build",
-            NoParams,
+            ShotBuildParams,
             "blender",
             "write",
             "P1",
             "Assemble a shot from the assets",
-            available=False,
+            requires_shot=True,
+            creates_version=True,
         ),
         _spec(
             "shot.preview",

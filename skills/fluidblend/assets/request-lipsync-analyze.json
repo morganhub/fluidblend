@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "operation": "lipsync.analyze",
+  "operation_id": "lipsync-analyze-001",
+  "project_id": "demo-studio",
+  "target": {},
+  "parameters": {
+    "source_path": "reviews/project/audio-prepare-001/prepared.wav"
+  },
+  "dry_run": false
+}

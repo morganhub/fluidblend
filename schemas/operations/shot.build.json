@@ -1,16 +1,81 @@
 {
+  "$defs": {
+    "AssetPlacement": {
+      "additionalProperties": false,
+      "properties": {
+        "instance_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Instance Id",
+          "type": "string"
+        },
+        "location": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Location",
+          "type": "array"
+        },
+        "manifest_path": {
+          "title": "Manifest Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifest_path",
+        "instance_id"
+      ],
+      "title": "AssetPlacement",
+      "type": "object"
+    }
+  },
   "$id": "https://fluidblend.local/schemas/operations/shot.build.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Assemble a shot from the assets",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/AssetPlacement"
+      },
+      "minItems": 1,
+      "title": "Assets",
+      "type": "array"
+    },
+    "import_mode": {
+      "const": "append",
+      "default": "append",
+      "title": "Import Mode",
+      "type": "string"
+    }
+  },
+  "required": [
+    "assets"
+  ],
+  "title": "ShotBuildParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
+    "cli_command": null,
+    "input_paths": [
+      "assets[].manifest_path"
+    ],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
-    "requires_shot": false
+    "optional_dependencies": [],
+    "publication": "shot_revision_and_reports",
+    "required_dependencies": [
+      "blender.batch"
+    ],
+    "required_targets": [
+      "shot_id"
+    ],
+    "requires_shot": true
   }
 }

@@ -1,0 +1,50 @@
+{
+  "meshes": [
+    {
+      "name": "cm_vitruvian",
+      "vertices": 37436,
+      "uninfluenced_vertices": 0,
+      "sample_indices": []
+    }
+  ],
+  "skinned": true,
+  "problematic_scales": false,
+  "uninfluenced_vertices": 0,
+  "poses": [
+    {
+      "pose": "arms_up",
+      "finite": true,
+      "max_displacement_m": 1.2663790329977243,
+      "passed": true
+    },
+    {
+      "pose": "bent_elbow",
+      "finite": true,
+      "max_displacement_m": 0.5308854521240514,
+      "passed": true
+    },
+    {
+      "pose": "bent_knee",
+      "finite": true,
+      "max_displacement_m": 0.4265726254944988,
+      "passed": true
+    },
+    {
+      "pose": "squat",
+      "finite": true,
+      "max_displacement_m": 0.28098703092637595,
+      "passed": true
+    },
+    {
+      "pose": "torso_twist",
+      "finite": true,
+      "max_displacement_m": 0.24068178406368565,
+      "passed": true
+    }
+  ],
+  "technical_pass": true,
+  "visual_review": "pending",
+  "limits": [
+    "finite deformation and response, not anatomical or artistic approval"
+  ]
+}

@@ -3,14 +3,45 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Apply a clip to an instance",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "clip_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Clip Id",
+      "type": "string"
+    },
+    "start_frame": {
+      "default": 1,
+      "maximum": 1000000,
+      "minimum": -100000,
+      "title": "Start Frame",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "clip_id"
+  ],
+  "title": "AnimationApplyParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
+    "cli_command": null,
+    "input_paths": [],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
-    "requires_shot": false
+    "optional_dependencies": [],
+    "publication": "shot_revision_and_reports",
+    "required_dependencies": [
+      "blender.batch"
+    ],
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

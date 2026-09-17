@@ -42,6 +42,21 @@ def estimate_for(
     if spec.name == "shot.preview":
         engine = data.get("engine") or project.manifest.preview.engine
         return budgets.estimate_render(root, engine, _frames_for(project, request, params))
+    if spec.name == "rig.validate":
+        return budgets.estimate_render(root, "WORKBENCH", 5 if data.get("preview", True) else 0)
+    if spec.name == "shot.build":
+        from fluidblend.core.production import inputs_for
+
+        try:
+            assets = inputs_for(project, request)["assets"]
+            size = sum(Path(asset["blend_path"]).stat().st_size for asset in assets) / (1024 * 1024)
+        except (OSError, ValueError):
+            size = 0
+        return {
+            "frames": 0,
+            "seconds": budgets.BLENDER_STARTUP_SECONDS + 3 * len(data["assets"]),
+            "disk_mib": size * 2 + 1,
+        }
     if spec.name == "animation.retime":
         samples = int(data.get("preview_samples", 0)) * 2
         est = budgets.estimate_render(root, "WORKBENCH", samples)
@@ -49,6 +64,13 @@ def estimate_for(
         est["seconds"] += budgets.BLENDER_STARTUP_SECONDS
         est["disk_mib"] += 8.0
         return est
+    if spec.name == "animation.bake":
+        count = params.frame_range.count
+        return {
+            "frames": 0,
+            "seconds": budgets.BLENDER_STARTUP_SECONDS + count / params.step,
+            "disk_mib": 16 + count * 0.25 / params.step,
+        }
     if spec.name == "scene.build":
         return {"frames": 0, "seconds": budgets.BLENDER_STARTUP_SECONDS + 3.0, "disk_mib": 6.0}
     if spec.name == "game.export":

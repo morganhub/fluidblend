@@ -30,6 +30,13 @@ def run(ctx: HostContext) -> None:
             recovery="install FFmpeg (winget Gyan.FFmpeg) or set the paths in config/local.json",
         )
     inputs: list[Path] = []
+    from fluidblend.core.dependencies import verify_executable
+
+    try:
+        verify_executable(project, "video.ffmpeg", ffmpeg)
+        verify_executable(project, "video.ffprobe", ffprobe)
+    except (OSError, ValueError) as exc:
+        raise HostOpError(ErrorCode.MISSING_DEPENDENCY, str(exc)) from exc
     for shot_id in params.shot_ids:  # type: ignore[attr-defined]
         preview = _latest_preview(project.root, shot_id)
         if preview is None:

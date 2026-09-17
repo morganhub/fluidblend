@@ -1,7 +1,8 @@
 # Roadmap
 
-Every item below, apart from "Lot 1" and "Lot 2", is **not implemented**. The technical decisions
-already taken are recorded to prepare the work, not to suggest that it is done.
+Lots 1 and 2 are released. Lots 3 and 4 are partially implemented in the working tree;
+[production-p1.md](production-p1.md) records exact scope and evidence. Planned features are not
+claims of completion.
 
 No unimplemented operation is simulated: it answers `UNSUPPORTED_CAPABILITY` (exit 2) and points
 here. Check what is actually available at any time:
@@ -45,18 +46,18 @@ Remaining live items, **not implemented**:
 | Item | Status | Note |
 | --- | --- | --- |
 | Writes through the client's own MCP connection | not implemented | the AI client's direct connection stays read-only guidance (`get_scene_info`, `get_viewport_screenshot`, `get_object_info`); every write goes through `fluidblend run --mode live`, never an improvised `execute_blender_code` |
-| Undo / edit signal from the session | not implemented | the engine only sees the session at the moment it calls: identity is a snapshot, not a subscription. A programmatic property assignment does not flag the file dirty, whereas interactive edits (operators, undo steps) do; a human edit made *during* a live call cannot be detected |
+| Undo / edit signal from the session | implemented | process-local monotonic generation, depsgraph/undo/redo/load signals; guarded admission, publication and reload |
 | Live mode for the other operations | not implemented | `scene.build`, `shot.preview` and `game.export` need a dedicated process and are refused in a live envelope with `UNSUPPORTED_CAPABILITY` |
 | Progress feedback during a live call | not implemented | the call is synchronous on Blender's main thread: nothing is reported until the operator returns, and only `mcp.call_timeout_s` bounds the wait |
 
-## Lot 3 — P1 characters and adjustments — **not implemented**
+## Lot 3 — P1 characters and adjustments — **partial**
 
 | Item | Status | Preparatory decision |
 | --- | --- | --- |
-| Rigify rig profile | not implemented | Rigify 0.6.10 (core add-on of Blender 5.2); semantic mapping to `root`, `torso`, `hips`, `chest`, `head`, `hand_ik.L/R`, `foot_ik.L/R`, `DEF-*` deformers; IK/FK switches on `upper_arm_parent.L` and `thigh_parent.L` |
-| Vitruvian fixture | not implemented | reference skinned character (CC0 asset) for test poses and counting uninfluenced vertices |
-| Action library | not implemented | `idle_neutral`, `walk`, `turn`, `look_at`, `reach`, `take_prop`, `give_prop`, `react`; one `clip.json` per clip (rig, duration, loop, root motion, contacts) |
-| NLA layers | not implemented | `body`, `upper`, `hands`, `gaze`, `face`, `mouth` tracks; documented `COMBINE` or `REPLACE` blending; double-transform test |
+| Rigify rig profile | implemented | Rigify 0.6.10 (core add-on of Blender 5.2); semantic mapping to `root`, `torso`, `hips`, `chest`, `head`, `hand_ik.L/R`, `foot_ik.L/R`, `DEF-*` deformers; IK/FK switches on `upper_arm_parent.L` and `thigh_parent.L` |
+| Vitruvian fixture | implemented | reference skinned character (CC0 asset) for test poses and counting uninfluenced vertices |
+| Action library | partial: five recipes | `idle_neutral`, `walk`, `turn`, `look_at`, `reach`, `take_prop`, `give_prop`, `react`; one `clip.json` per clip (rig, duration, loop, root motion, contacts) |
+| NLA layers | partial: disjoint REPLACE | `body`, `upper`, `hands`, `gaze`, `face`, `mouth` tracks; documented `COMBINE` or `REPLACE` blending; double-transform test |
 | Interactions | not implemented | `interaction.plan/apply/validate`; ownership transfer through `CHILD_OF` preserving the world transform; measurement of the jump and of the contact distance |
 | Adjustment tools | not implemented | `retime_segment`, `look_at_target`, `contact_lock` at the very least, each with bounded parameters, a preview, an undo path and tests |
 | `Director` Blender panel | not implemented | operators calling the same operations as the CLI; bounded sliders, debounce through `bpy.app.timers` (hence GUI only) |
@@ -64,12 +65,12 @@ Remaining live items, **not implemented**:
 
 Target acceptance scenarios: B01, B03, B05, B06, B08.
 
-## Lot 4 — P1 voice and game target — **not implemented**
+## Lot 4 — P1 voice and game target — **partial**
 
 | Item | Status | Preparatory decision |
 | --- | --- | --- |
-| Rhubarb lip-sync | not implemented | Rhubarb 1.14.0 (MIT), `-f json -r phonetic`; mapping of cues A–H and X to Actions then to NLA strips |
-| Audio preparation | not implemented | FFmpeg, 48 kHz mono WAV, two-pass `loudnorm`, `aresample=48000` systematically; drift tolerated up to one frame at most |
+| Rhubarb lip-sync | analysis only | Rhubarb 1.14.0 (MIT), `-f json -r phonetic`; mapping of cues A–H and X to Actions then to NLA strips |
+| Audio preparation | implemented | FFmpeg, 48 kHz mono WAV, two-pass `loudnorm`, `aresample=48000` systematically; drift tolerated up to one frame at most |
 | Godot template | not implemented | Godot 4.7.2 (MIT), `CharacterBody3D`, `AnimationTree` with an `idle` ↔ `walk` state machine, based on the Jeh3no controller (MIT) |
 | GUT tests | not implemented | GUT 9.7.1 in headless mode; check that the `.import` files exist, not only the return code |
 | `game.import_test`, `game.smoke_test` | not implemented | a real import then a prototype actually launched, not merely file generation |
@@ -91,12 +92,10 @@ on an individual project.
 
 | Domain | Operations | Lot |
 | --- | --- | --- |
-| Character | `character.inspect`, `rig.validate`, `rig.map` | P1 |
-| Animation | `animation.create`, `animation.apply`, `animation.loop`, `animation.retarget`, `animation.bake` | P1 |
+| Animation | `animation.retarget` | P1 |
 | Interactions | `interaction.plan`, `interaction.apply`, `interaction.validate` | P1 |
-| Audio and face | `audio.prepare`, `lipsync.analyze`, `lipsync.apply`, `expression.apply` | P1 |
+| Audio and face | `lipsync.apply`, `expression.apply` | P1 |
 | Adjustment | `adjustment.preview`, `adjustment.apply`, `adjustment.revert` | P1 |
-| Film | `shot.build` | P1 |
 | Game | `game.import_test`, `game.smoke_test` | P1 |
 | Tools | `tool.inspect`, `tool.test`, `tool.register` | P1 |
 
@@ -113,8 +112,7 @@ offer the closest P0 operation if one exists, and simulate nothing.
   after a live write fails (a warning says so explicitly).
 - `game` profile not tested: Godot 4.7.2 is detected by `doctor`, but the kit provides neither a
   template nor an engine import (lot 4).
-- Lip-sync not implemented: Rhubarb 1.14.0 is detected, `lipsync.*` answers
-  `UNSUPPORTED_CAPABILITY`.
+- Rhubarb analysis is exercised; face application remains unavailable.
 - Acceptance A03 and L01 to L05 depend on a GUI Blender session: if port 9876 is already in use,
   they declare themselves `not_run` instead of running.
 - No automatic restore from a checkpoint: resumption is manual and documented.

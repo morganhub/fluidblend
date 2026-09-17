@@ -34,7 +34,7 @@ Diagnostic of the machine and its capabilities. Read-only with respect to the so
 
 | Option | Effect |
 | --- | --- |
-| `--project PATH` | optional; writes `<project>/state/diagnostics/capabilities.json` and updates the project's `dependencies.lock.json` |
+| `--project PATH` | optional; writes `<project>/state/diagnostics/capabilities.json` and compares observations with `dependencies.lock.json` without replacing it |
 | `--no-probe` | does not launch Blender; capabilities become `unverified` |
 | `--live` | probes the configured MCP server (`list_tools` then `get_scene_info`); without `--project`, the `.mcp.json` of the current folder is read |
 | `--write-lock PATH` | writes a `dependencies.lock.json` from the observed capabilities |

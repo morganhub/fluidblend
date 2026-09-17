@@ -27,6 +27,7 @@ from fluidblend.contracts.common import (
     OperationStatus,
 )
 from fluidblend.contracts.operations import (
+    LIVE_OPERATIONS,
     OperationRequest,
     OperationSpec,
     RequestValidationError,
@@ -49,8 +50,7 @@ from fluidblend.core.state import StateStore
 from fluidblend.hostops import HOST_HANDLERS
 from fluidblend.hostops.context import HostContext, HostOpError
 
-LIVE_OPERATIONS = {"scene.inspect", "scene.audit", "animation.retime", "scene.checkpoint"}
-PATH_PARAMS = ("audio_path", "request_path")
+PATH_PARAMS = ("audio_path", "request_path", "inspection_path", "profile_path")
 BLOCKED_EXIT = {
     ErrorCode.PERMISSION_REQUIRED: exit_codes.BLOCKED,
     ErrorCode.UNSUPPORTED_CAPABILITY: exit_codes.BLOCKED,
@@ -132,6 +132,14 @@ class TaskRunner:
                 else contextlib.nullcontext()
             )
             with self.locks.hold("project", purpose=f"{spec.name} {request.operation_id}"), instance_lock:
+                # Another writer may have committed while we waited for the lock.
+                replay = self._idempotency(request, spec)
+                if replay is not None:
+                    return RunOutcome(replay, exit_codes.OK, replayed=True)
+                self._check_clip_destination(request)
+                source = self._resolve_source(request, spec)
+                self._check_revision(request, spec)
+                source_hash = sha256_file(source) if source else None
                 task = self._create_task(request, spec)
                 if request.dry_run:
                     result = self._dry_run_result(request, spec, task)
@@ -152,6 +160,9 @@ class TaskRunner:
                 task.status = OperationStatus.running
                 task.attempts += 1
                 self.state.upsert_task(task)
+                from fluidblend.core.production import input_fingerprints
+
+                input_hashes = input_fingerprints(self.project, request)
                 result = self._execute(request, params, spec, task, source)
                 if result.status != OperationStatus.succeeded:
                     return self._finish_failed(task, result)
@@ -160,8 +171,20 @@ class TaskRunner:
                 result = self._postprocess(request, params, spec, task, result)
                 if result.status != OperationStatus.succeeded:
                     return self._finish_failed(task, result)
+                if source and (not source.exists() or sha256_file(source) != source_hash):
+                    raise TaskAbort(
+                        ErrorCode.SCENE_CONFLICT, "source changed during execution; outputs not published"
+                    )
+                for path, digest in input_hashes.items():
+                    current = resolve_inside(self.project.root, path, allow_missing=False)
+                    if sha256_file(current) != digest:
+                        raise TaskAbort(ErrorCode.SCENE_CONFLICT, "input changed during execution: " + path)
+                self._record_evidence(request, spec, task, result, source, source_hash, input_hashes)
                 self._verify_artifacts(task, result)
+                if self.mode == "live" and spec.name in LIVE_OPERATIONS:
+                    self._live_before_publication(result)
                 result = self._publish(request, spec, task, result)
+                self._index_clip(request, task, result)
                 if self.mode == "live" and spec.name in LIVE_OPERATIONS and spec.creates_version:
                     self._live_reload(request, task, result)
                 task.status = OperationStatus.succeeded
@@ -179,6 +202,15 @@ class TaskRunner:
             return self._aborted(request, spec, task, abort)
         except TaskAbort as abort:
             return self._aborted(request, spec, task, abort)
+        except PathRejected as exc:
+            return self._aborted(request, spec, task, TaskAbort(ErrorCode.PERMISSION_REQUIRED, str(exc)))
+        except (OSError, ValueError) as exc:
+            return self._aborted(
+                request,
+                spec,
+                task,
+                TaskAbort(ErrorCode.VALIDATION_FAILED, str(exc), status=OperationStatus.failed),
+            )
 
     def status(self, task_id: str) -> dict[str, Any]:
         task = self.state.task(task_id)
@@ -211,8 +243,33 @@ class TaskRunner:
                 "reason": "task already finished",
             }
         killed, message = (False, "no worker recorded")
+        if task.mode == "live":
+            # No live cancellation protocol exists yet. Never kill the user's GUI or
+            # pretend its synchronous operator stopped. A late result can still arrive.
+            task.status = OperationStatus.unknown
+            task.partial_effects = self._partial_effects(task_id)
+            self.state.upsert_task(task)
+            self.project.journal().append("live_cancel_unconfirmed", task_id=task_id)
+            return {
+                "task_id": task_id,
+                "status": task.status,
+                "cancelled": False,
+                "worker_killed": False,
+                "message": "live stop not confirmed; wait for the call to finish, then reconcile",
+                "partial_effects": task.partial_effects,
+            }
         if task.worker:
             killed, message = blender_batch.kill_worker(task.worker.pid, task.task_id)
+            if not killed:
+                task.status = OperationStatus.unknown
+                self.state.upsert_task(task)
+                return {
+                    "task_id": task_id,
+                    "status": task.status,
+                    "cancelled": False,
+                    "worker_killed": False,
+                    "message": message,
+                }
         task.status = OperationStatus.cancelled
         task.partial_effects = self._partial_effects(task_id)
         self.state.upsert_task(task)
@@ -229,6 +286,22 @@ class TaskRunner:
         }
 
     def reconcile(self, task_id: str) -> dict[str, Any]:
+        # A running engine may still be producing or publishing the result.
+        try:
+            with self.locks.hold("project", timeout=0, purpose=f"reconcile {task_id}"):
+                return self._reconcile_locked(task_id)
+        except LockBusy:
+            task = self.state.task(task_id)
+            if task is None:
+                raise ProjectError(f"unknown task: {task_id}") from None
+            return {
+                "task_id": task_id,
+                "status": task.status,
+                "action": "wait",
+                "reason": "an engine operation is still active",
+            }
+
+    def _reconcile_locked(self, task_id: str) -> dict[str, Any]:
         """Task in an uncertain state: inspect the task folder before any new attempt."""
         task = self.state.task(task_id)
         if task is None:
@@ -250,6 +323,18 @@ class TaskRunner:
                 return report
         task_dir = self._task_dir(task_id)
         result_path = task_dir / "result.json"
+        if task.mode == "live" and not result_path.exists():
+            try:
+                # Operators run on Blender's main thread. An identity response proves
+                # the preceding call yielded control; transport loss proves nothing.
+                blender_live.identity(blender_live.server_config_for(self.project))
+            except blender_live.LiveError:
+                return {
+                    "task_id": task_id,
+                    "status": "unknown",
+                    "action": "wait",
+                    "reason": "live completion cannot be confirmed",
+                }
         published = [p for p in self.state.rebuild(save=False)["published"] if p.get("task_id") == task_id]
         if task.status == OperationStatus.validating and published:
             # Publication started: all or nothing depending on the files actually present.
@@ -300,6 +385,19 @@ class TaskRunner:
                 status=OperationStatus.failed,
             )
         data = params.model_dump()
+        self._check_clip_destination(request)
+        if data.get("source_path"):
+            try:
+                resolve_inside(self.project.root, data["source_path"], allow_missing=False)
+            except (OSError, ValueError) as exc:
+                raise TaskAbort(ErrorCode.PERMISSION_REQUIRED, str(exc)) from exc
+        if spec.name in ("shot.build", "rig.validate"):
+            from fluidblend.core.production import inputs_for
+
+            try:
+                inputs_for(self.project, request)
+            except (OSError, ValueError) as exc:
+                raise TaskAbort(ErrorCode.VALIDATION_FAILED, str(exc), status=OperationStatus.failed) from exc
         for key in PATH_PARAMS:
             value = data.get(key)
             if value:
@@ -317,18 +415,18 @@ class TaskRunner:
                         details={"parameter": key, "reason": exc.reason},
                         status=OperationStatus.blocked,
                     ) from exc
+        if not spec.available:
+            raise TaskAbort(
+                ErrorCode.UNSUPPORTED_CAPABILITY,
+                f"{spec.name} is not available in this batch ({spec.lot})",
+                recovery="see docs/roadmap.md",
+            )
         if spec.backend == "host" and spec.name not in HOST_HANDLERS:
             raise TaskAbort(
                 ErrorCode.VALIDATION_FAILED,
                 f"{spec.name} does not run through `fluidblend run`",
                 recovery=f"use the dedicated subcommand: {spec.cli_command or 'see fluidblend --help'}",
                 status=OperationStatus.failed,
-            )
-        if not spec.available:
-            raise TaskAbort(
-                ErrorCode.UNSUPPORTED_CAPABILITY,
-                f"{spec.name} is not available in this batch ({spec.lot})",
-                recovery="see docs/roadmap.md",
             )
         allowed, reason = operation_allowed(self.project.permissions, spec)
         if not allowed:
@@ -398,7 +496,7 @@ class TaskRunner:
         shot_id = request.target.shot_id or ""
         latest = self.project.latest_work_blend(shot_id)
         if latest is None:
-            if spec.name == "scene.build":
+            if spec.name in ("scene.build", "shot.build"):
                 return None
             raise TaskAbort(
                 ErrorCode.VALIDATION_FAILED,
@@ -565,12 +663,15 @@ class TaskRunner:
         shot = None
         if request.target.shot_id:
             shot = self.project.shot_manifest(request.target.shot_id).model_dump(mode="json")
+        from fluidblend.core.production import inputs_for
+
         return {
             "schema_version": "1.0",
             "task_id": task.task_id,
             "request": request.model_dump(mode="json"),
             "context": {
                 "project_root": str(self.project.root),
+                "inputs": inputs_for(self.project, request),
                 "task_dir": str(task_dir),
                 "out_dir": str(out_dir),
                 "work_blend": None
@@ -616,6 +717,13 @@ class TaskRunner:
                 details={"kind": exc.kind, "server": config.source},
             ) from exc
         expected = source if spec.requires_shot else None
+        from fluidblend.core.dependencies import verify_executable
+
+        if ident.get("blender_executable"):
+            try:
+                verify_executable(self.project, "blender.batch", ident["blender_executable"])
+            except (OSError, ValueError) as exc:
+                raise TaskAbort(ErrorCode.MISSING_DEPENDENCY, str(exc)) from exc
         problems = blender_live.check_identity(
             ident, project_id=self.project.project_id, expected_blend=expected, runtime_version=__version__
         )
@@ -631,6 +739,11 @@ class TaskRunner:
             )
         self.project.journal().append("live_identity_checked", task_id=task.task_id, identity=ident)
         envelope = self._envelope(request, spec, task, source, task_dir, out_dir, live=True)
+        if "session_id" not in ident or "edit_generation" not in ident:
+            raise TaskAbort(
+                ErrorCode.UNSUPPORTED_CAPABILITY, "reinstall runtime: edit generation unavailable"
+            )
+        envelope["context"]["expected_live_identity"] = ident
         request_path = task_dir / "request.json"
         result_path = task_dir / "result.json"
         atomic_write_json(request_path, envelope)
@@ -682,6 +795,28 @@ class TaskRunner:
         }
         return result
 
+    def _live_before_publication(self, result: OperationResult) -> None:
+        expected = result.metrics.get("live_completion_identity")
+        try:
+            current = blender_live.identity(blender_live.server_config_for(self.project))
+        except blender_live.LiveError as exc:
+            raise TaskAbort(
+                ErrorCode.TIMEOUT_UNKNOWN_STATE,
+                "cannot confirm live identity before publication; reconcile the task",
+                status=OperationStatus.unknown,
+            ) from exc
+        keys = (
+            "session_id",
+            "edit_generation",
+            "blend_path",
+            "project_id",
+            "shot_id",
+            "revision",
+            "is_dirty",
+        )
+        if not expected or any(current.get(key) != expected.get(key) for key in keys):
+            raise TaskAbort(ErrorCode.SCENE_CONFLICT, "live edit before publication; human changes preserved")
+
     def _live_reload(self, request: OperationRequest, task: TaskRecord, result: OperationResult) -> None:
         """After publishing a new version from a live write, point the open session at the published file."""
         blend = next((self.project.root / a.path for a in result.artifacts if a.kind == "blend"), None)
@@ -689,7 +824,9 @@ class TaskRunner:
             return
         config = blender_live.server_config_for(self.project)
         try:
-            opened = blender_live.open_file(config, blend)
+            opened = blender_live.open_file(
+                config, blend, expected_identity=result.metrics.get("live_completion_identity")
+            )
         except blender_live.LiveError as exc:
             opened = {"ok": False, "error": str(exc)}
         self.project.journal().append(
@@ -714,6 +851,10 @@ class TaskRunner:
         result: OperationResult,
     ) -> OperationResult:
         out_dir = self._task_dir(task.task_id) / "out"
+        if spec.name in ("animation.create", "animation.loop", "animation.bake"):
+            from fluidblend.contracts.production import ClipManifest
+
+            ClipManifest.model_validate(read_json(out_dir / "clip.json"))
         if spec.name == "shot.preview":
             return self._assemble_preview(out_dir, result)
         if spec.name == "game.export":
@@ -738,6 +879,8 @@ class TaskRunner:
             result.metrics["video"] = "not_run"
             return result
         frames_dir = out_dir / "frames"
+        self._verify_dependency("video.ffmpeg", ffmpeg)
+        self._verify_dependency("video.ffprobe", ffprobe)
         video = out_dir / "preview.mp4"
         fps = self.project.manifest.fps
         step = int(report.get("step", 1))
@@ -810,6 +953,8 @@ class TaskRunner:
         if glb is None:
             return result
         validator = gltfv.find_validator(self.project.local.gltf_validator_executable)
+        if validator:
+            self._verify_dependency("gltf.khronos_validator", validator)
         if not validator:
             result.warnings.append(
                 "gltf_validator missing: Khronos validation not_run (capability not_installed)"
@@ -862,6 +1007,93 @@ class TaskRunner:
                     f"hash mismatch for {artifact.path}",
                     status=OperationStatus.failed,
                 )
+
+    def _record_evidence(self, request, spec, task, result, source, source_hash, input_hashes=None) -> None:
+        if not request.target.shot_id or spec.name == "scene.checkpoint":
+            return
+        out_dir = self._task_dir(task.task_id) / "out"
+        revision = self.revisions.get(f"shot:{request.target.shot_id}")
+        scene_hash = source_hash
+        revision_no = revision.revision if revision else 0
+        if spec.creates_version:
+            blend = next((out_dir / a.path for a in result.artifacts if a.kind == "blend"), None)
+            if blend is None:
+                raise TaskAbort(ErrorCode.VALIDATION_FAILED, "versioning operation did not produce a blend")
+            scene_hash = sha256_file(blend)
+            revision_no += 1
+        path = out_dir / "evidence.json"
+        files = {
+            p.relative_to(out_dir).as_posix(): sha256_file(p)
+            for p in sorted(out_dir.rglob("*"))
+            if p.is_file() and p.suffix != ".blend"
+        }
+        atomic_write_json(
+            path,
+            {
+                "schema_version": "1.0",
+                "project_id": request.project_id,
+                "shot_id": request.target.shot_id,
+                "revision": revision_no,
+                "scene_sha256": scene_hash,
+                "operation_id": request.operation_id,
+                "source_sha256": source_hash,
+                "source_path": relpath_posix(self.project.root, source) if source else None,
+                "input_sha256": input_hashes or {},
+                "files": files,
+            },
+        )
+        result.artifacts.append(
+            Artifact(kind="report", path="evidence.json", sha256=sha256_file(path), bytes=path.stat().st_size)
+        )
+
+    def _check_clip_destination(self, request):
+        if request.operation not in ("animation.create", "animation.loop", "animation.bake"):
+            return
+        # A succeeded request is handled by idempotent replay, never by an overwrite.
+        previous = self.state.ledger_entry(request.operation_id)
+        if previous and previous.get("status") == "succeeded":
+            return
+        clip_id = request.parameters["output_clip"]
+        path = resolve_inside(self.project.root, f"animation/clips/{clip_id}/clip.json")
+        assert_not_protected(relpath_posix(self.project.root, path), self.project.permissions.protected_paths)
+        if path.exists():
+            raise TaskAbort(ErrorCode.SCENE_CONFLICT, "clip index already exists")
+
+    def _index_clip(self, request, task, result):
+        if request.operation not in ("animation.create", "animation.loop", "animation.bake"):
+            return
+        clip_id = request.parameters["output_clip"]
+        manifest = next(a for a in result.artifacts if a.path.endswith("/clip.json"))
+        blend = next(a for a in result.artifacts if a.kind == "blend")
+        index_path = resolve_inside(self.project.root, f"animation/clips/{clip_id}/clip.json")
+        if index_path.exists():
+            raise TaskAbort(ErrorCode.SCENE_CONFLICT, "clip index already exists")
+        data = read_json(self.project.root / manifest.path)
+        data.update(
+            source_blend=blend.path,
+            source_sha256=blend.sha256,
+            manifest_path=manifest.path,
+            manifest_sha256=manifest.sha256,
+        )
+        from fluidblend.contracts.production import ClipIndex
+
+        ClipIndex.model_validate(data)
+        atomic_write_json(index_path, data)
+        artifact = Artifact(
+            kind="json",
+            path=relpath_posix(self.project.root, index_path),
+            sha256=sha256_file(index_path),
+            bytes=index_path.stat().st_size,
+        )
+        result.artifacts.append(artifact)
+        self.project.journal().append(
+            "artifact_published",
+            task_id=task.task_id,
+            operation_id=request.operation_id,
+            kind=artifact.kind,
+            path=artifact.path,
+            sha256=artifact.sha256,
+        )
 
     def _publish(
         self, request: OperationRequest, spec: OperationSpec, task: TaskRecord, result: OperationResult
@@ -947,6 +1179,7 @@ class TaskRunner:
     def _blender_executable(self) -> str:
         local = self.project.local
         if local.blender_executable and Path(local.blender_executable).exists():
+            self._verify_dependency("blender.batch", local.blender_executable)
             return local.blender_executable
         candidate, _probe, notes = blender_discovery.select_blender(
             local, allow_unlocked=self.allow_unlocked_blender, probe=False
@@ -958,7 +1191,16 @@ class TaskRunner:
                 recovery="run `fluidblend doctor --project .` then set blender_executable in config/local.json",
                 details={"notes": notes},
             )
+        self._verify_dependency("blender.batch", candidate.path)
         return candidate.path
+
+    def _verify_dependency(self, capability_id, executable):
+        from fluidblend.core.dependencies import verify_executable
+
+        try:
+            verify_executable(self.project, capability_id, executable)
+        except (OSError, ValueError) as exc:
+            raise TaskAbort(ErrorCode.MISSING_DEPENDENCY, str(exc)) from exc
 
     def _fingerprint(self, request: OperationRequest) -> str:
         return fingerprint(

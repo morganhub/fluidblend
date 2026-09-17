@@ -183,8 +183,11 @@ def run_request(
     raise LiveError(f"result file missing after live call ({marker})", kind="script_error")
 
 
-def open_file(config: LiveConfig, blend_path: Path) -> dict[str, Any]:
-    code = f"import bpy\nbpy.ops.fluidblend.open_file(filepath={_py_string(blend_path)})\n"
+def open_file(
+    config: LiveConfig, blend_path: Path, *, expected_identity: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    guard = _py_string(json.dumps(expected_identity)) if expected_identity else '""'
+    code = f"import bpy\nbpy.ops.fluidblend.open_file(filepath={_py_string(blend_path)}, expected_identity={guard})\n"
     ok, payload = execute(config, code, what=f"reload {blend_path.name}")
     if not ok:
         raise LiveError(f"reload failed: {payload[:400]}", kind="script_error")

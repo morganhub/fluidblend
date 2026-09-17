@@ -61,9 +61,21 @@ class FLUIDBLEND_OT_open_file(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     filepath: StringProperty(name="File", subtype="FILE_PATH")  # type: ignore[valid-type]
+    expected_identity: StringProperty(name="Expected identity", default="")  # type: ignore[valid-type]
 
     def execute(self, context):  # noqa: ANN001
-        result = bpy.ops.wm.open_mainfile(filepath=self.filepath, load_ui=False)
+        from fluidblend_runtime import identity, live_state
+
+        if self.expected_identity:
+            expected = json.loads(self.expected_identity)
+            current = identity()
+            if not live_state.matches(expected) or any(
+                current.get(key) != expected.get(key)
+                for key in ("blend_path", "project_id", "shot_id", "revision", "is_dirty")
+            ):
+                print('FLUIDBLEND_OPENED={"ok": false, "error": "concurrent edit preserved"}', flush=True)
+                return {"CANCELLED"}
+        result = bpy.ops.wm.open_mainfile(filepath=self.filepath, load_ui=False, use_scripts=False)
         print(
             "FLUIDBLEND_OPENED=" + json.dumps({"ok": "FINISHED" in result, "filepath": bpy.data.filepath}),
             flush=True,
@@ -75,10 +87,16 @@ CLASSES = (FLUIDBLEND_OT_identity, FLUIDBLEND_OT_run_request, FLUIDBLEND_OT_open
 
 
 def register() -> None:
+    from fluidblend_runtime import live_state
+
     for cls in CLASSES:
         bpy.utils.register_class(cls)
+    live_state.register()
 
 
 def unregister() -> None:
+    from fluidblend_runtime import live_state
+
+    live_state.unregister()
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)

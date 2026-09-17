@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "operation": "shot.build",
+  "operation_id": "shot-build-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010"
+  },
+  "parameters": {
+    "assets": [
+      {
+        "manifest_path": "assets/characters/vitruvian/v001/asset.json",
+        "instance_id": "hero-01"
+      }
+    ]
+  },
+  "dry_run": false
+}

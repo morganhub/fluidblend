@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "date": "2026-09-17",
+  "reviewer": "assistant",
+  "review_type": "visual_inspection",
+  "fixture_sha256": "d99283a272aee84c56fdc63281abd5ca33b725bf9463df2c66d0cf0e5fdbae7b",
+  "scene_sha256": "1b0a467768d162d157804e035c9af1168fe698381bb31a97065c4c24ef9a0768",
+  "revision": 1,
+  "files": {
+    "arms_up.png": "d8cc6850be7b1f093980b65c5cfa399e7b92c5111ea0bbf4db78b2553f3ca60a",
+    "bent_elbow.png": "96b6e51daf33b2e6325ad1820bde4527b31bb9b01fe932bf0e5ffbc8d6febe83",
+    "bent_knee.png": "35cde27b82e00b675e62dd9f14324898dcbfd584e6de5973b56d1c506a3af715",
+    "squat.png": "0902b089142bda77f4fc4a0d0a2b05da1b974a8cda91a2472bf22bde00cd5755",
+    "torso_twist.png": "d55e196e8f2c509f1d923ed8e1d886c43d15e50373e54462edd17154f471f044"
+  },
+  "observations": [
+    "Five complete, unclipped views inspected after adaptive camera framing.",
+    "Arms raised and elbow/knee flexion visibly deform the skinned fixture.",
+    "Squat tests deformation only: feet float; planted support is not implemented."
+  ],
+  "technical_status": "passed",
+  "human_artistic_approval": "pending",
+  "limits": [
+    "No anatomical approval or physical contact claim."
+  ]
+}

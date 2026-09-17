@@ -3,14 +3,46 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Loop a clip",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "output_clip": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Output Clip",
+      "type": "string"
+    },
+    "repetitions": {
+      "default": 2,
+      "maximum": 100,
+      "minimum": 2,
+      "title": "Repetitions",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "output_clip"
+  ],
+  "title": "AnimationLoopParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
+    "cli_command": null,
+    "input_paths": [],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
-    "requires_shot": false
+    "optional_dependencies": [],
+    "publication": "shot_revision_and_reports",
+    "required_dependencies": [
+      "blender.batch"
+    ],
+    "required_targets": [
+      "shot_id",
+      "instance_id",
+      "clip_id"
+    ],
+    "requires_shot": true
   }
 }

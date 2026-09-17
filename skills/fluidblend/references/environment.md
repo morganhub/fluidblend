@@ -21,8 +21,8 @@ fluidblend doctor --write-lock dependencies.lock.json
 
 `doctor` is read-only on sources. It writes two reports and says so:
 `<project>/state/diagnostics/capabilities.json` when `--project` is given, and the file passed to
-`--write-lock` (versions, paths, sha256 of the executables observed). Exit code is always 0: the
-diagnostic states facts, it does not judge. The caller decides whether to stop given the statuses.
+`--write-lock` (versions, paths, sha256 of the executables observed). A project dependency-lock mismatch returns exit 2. `--project` never replaces the lock;
+only explicit `--write-lock` writes it. Read the comparison before executing dependent work.
 
 Read the last report back without re-running the probes:
 
@@ -54,7 +54,7 @@ A status other than `available` never authorizes simulating the tool or bypassin
 | `video.ffprobe` | ffprobe | evidence for frames, frame rate, `pix_fmt` |
 | `gltf.khronos_validator` | KhronosGroup/glTF-Validator | present on this workstation (2.0.0-dev.3.10); absent → Khronos validation is `not_run` |
 | `game.godot` | Godot | detected (4.7.2 stable) but **not exercised**: no template, no engine import (lot 4) |
-| `audio.rhubarb` | Rhubarb Lip Sync | detected (1.14.0) but **not exercised**: `lipsync.*` not implemented (lot 4) |
+| `audio.rhubarb` | Rhubarb Lip Sync | 1.14.0 exercised by `lipsync.analyze`; facial application remains unavailable |
 | `python.uv` | astral-sh/uv | reports a `uv` shipped by Langflow Desktop rather than a standalone one |
 | `blender.mcp_addon` | mcp-for-blender (add-on) | presence of the add-on in the Blender profile (add-on 1.7 installed here) |
 | `blender.mcp_live` | mcp-for-blender (server) | client configuration detected (the project's `.mcp.json`, or the current folder's without `--project`), connection probed with `--live` |
@@ -155,6 +155,12 @@ published file before saving anything.
 A live task holds the `blender-instance` lock on top of the project lock, its task record carries
 `mode: live`, and the journal gains `live_identity_checked` and `live_session_reloaded`.
 
+Live identity includes a process-local session id and monotonic edit generation. Depsgraph,
+undo, redo and load handlers invalidate the generation. The runtime checks admission again;
+the engine checks before publication; reload checks atomically inside Blender. On a concurrent
+edit, preserve the session and report the conflict. Unconfirmed cancellation stays `unknown`
+until reconciliation; never kill the user’s Blender.
+
 ### Transport and known limits
 
 - Transport: engine → `uvx --python 3.11 mcp-for-blender` (stdio, one server process per phase) ->
@@ -167,7 +173,8 @@ A live task holds the `blender-instance` lock on top of the project lock, its ta
 - Beyond `mcp.call_timeout_s` (`config/local.json`, 60 s by default) the engine cannot know what the
   session did: the task is left `unknown` (exit 5). See `references/recovery.md`.
 - Nothing is reported while an operation runs: the call is synchronous on Blender's main thread.
-- The engine sees the session only when it calls it: identity is a snapshot, not a subscription.
+- Edit handlers maintain generation between calls. Long operations still block Blender’s main thread;
+  cooperative progress/cancellation and the Director panel remain unimplemented.
 - **Client-owned MCP connection**: if your client has its own Blender MCP server, use its tools for
   read-only exploration only (`get_scene_info`, `get_viewport_screenshot`, `get_object_info`). Every
   write goes through `fluidblend run --mode live`; never `execute_blender_code` with an improvised
@@ -211,7 +218,7 @@ All `available` as of 2026-09-16: Blender 5.2.2, FFmpeg and ffprobe 8.0.1, glTF-
 2.0.0-dev.3.10, Godot 4.7.2 stable, Rhubarb 1.14.0, MCP for Blender add-on 1.7, fluidblend runtime
 add-on 0.2.0. What this does
 **not** mean: Godot and Rhubarb are only detected, no kit operation calls them (the `game` profile is
-untested, `lipsync.*` is not implemented).
+analysis tested, facial application is not implemented).
 
 On a workstation where a tool is missing, say so instead of working around it: without
 `gltf_validator` the `khronos_validation` metric is `not_run` and A10 becomes partial again; without

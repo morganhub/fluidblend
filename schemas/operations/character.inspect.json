@@ -3,14 +3,35 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Audit a character",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "include_bones": {
+      "default": true,
+      "title": "Include Bones",
+      "type": "boolean"
+    }
+  },
+  "title": "CharacterInspectParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
+    "cli_command": null,
+    "input_paths": [],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
-    "requires_shot": false
+    "optional_dependencies": [],
+    "publication": "reports_and_artifacts",
+    "required_dependencies": [
+      "blender.batch"
+    ],
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

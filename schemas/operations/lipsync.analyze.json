@@ -3,14 +3,36 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Rhubarb -> mouth cues",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "source_path": {
+      "title": "Source Path",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_path"
+  ],
+  "title": "LipsyncAnalyzeParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "host",
+    "cli_command": null,
+    "input_paths": [
+      "source_path"
+    ],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
+    "optional_dependencies": [],
+    "publication": "reports_and_artifacts",
+    "required_dependencies": [
+      "audio.rhubarb"
+    ],
+    "required_targets": [],
     "requires_shot": false
   }
 }

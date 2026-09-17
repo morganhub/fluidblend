@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "operation": "character.inspect",
+  "operation_id": "character-inspect-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010",
+    "instance_id": "hero-01"
+  },
+  "parameters": {},
+  "dry_run": false
+}

@@ -3,14 +3,49 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Test poses and rig checks",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "preview": {
+      "default": true,
+      "title": "Preview",
+      "type": "boolean"
+    },
+    "profile_path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Profile Path"
+    }
+  },
+  "title": "RigValidateParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
+    "cli_command": null,
+    "input_paths": [
+      "profile_path"
+    ],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
-    "requires_shot": false
+    "optional_dependencies": [],
+    "publication": "reports_and_artifacts",
+    "required_dependencies": [
+      "blender.batch"
+    ],
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

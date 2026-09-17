@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "operation": "animation.bake",
+  "operation_id": "animation-bake-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010",
+    "instance_id": "hero-01"
+  },
+  "parameters": {
+    "output_clip": "idle-export",
+    "frame_range": {
+      "start": 1,
+      "end_exclusive": 49
+    }
+  },
+  "dry_run": false
+}

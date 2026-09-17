@@ -6,12 +6,11 @@ description: >-
   render a preview and assemble it into video, export a verified GLB, diagnose the capabilities of
   the workstation and resume an interrupted task. Use for Blender production tasks driven by the
   `fluidblend` CLI, not for 2D video generation alone. Four of these operations can also run in the
-  Blender session the user has open (live mode, `--mode live`). Lot P0: the character, retargeting,
-  interaction, lip-sync, adjustment-tool and game-prototype domains are not implemented and are
-  explicitly refused, never simulated.
+  Blender session the user has open (live mode, `--mode live`). Also supports versioned Rigify
+  characters, bounded animation clips, audio preparation and mouth-cue analysis. Check the
+  operation catalogue for unsupported production features; never simulate success.
 license: MIT
-compatibility: Windows 11, Blender 5.2.x LTS, uv, PowerShell 7
-metadata: {version: "0.2.0", lot: "P0+live"}
+metadata: {version: "0.2.0", lot: "P0+live+partial-P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
 ---
 
 # fluidblend — driven Blender production
@@ -42,7 +41,8 @@ written next to the skill by the installer, then walking up to a `pyproject.toml
 ## Decision rules
 
 1. **Identify the request**: create, inspect, animate, adjust, render, export, diagnose or develop a
-   tool. A request outside the 19 P0 operations is handled by a reasoned refusal.
+   tool. Check `fluidblend ops --json`: only available operations may execute. State the limits
+   of a partially supported domain before promising its full workflow.
 2. **Read before writing**: `project.json`, `config/permissions.json`, `state/state.json` and
    `fluidblend inspect --project . --json`. Never assume the state of a project.
 3. **Load only the reference that is useful** for the task (table below), not all of them.
@@ -51,6 +51,8 @@ written next to the skill by the installer, then walking up to a `pyproject.toml
    this kit's production operations.
 5. **Diagnostics are read-only.** `doctor`, `inspect`, `capabilities`, `task status`, `ops` and
    `revision list` modify no source. `doctor` and `resume` write reports under `state/` and say so.
+   `doctor --project` compares dependency observations to the lock; only explicit `--write-lock`
+   replaces a lock. Updates require a migration branch and regression evidence.
 6. **Plan before writing**: `fluidblend plan --project . --request <file>` produces resources, a
    time/disk estimate, stop conditions and blocking errors, without mutating the scene.
    `fluidblend run --dry-run` does the same while recording a `planned` task.
@@ -83,10 +85,10 @@ the dialogue.
 | --- | --- | --- | --- |
 | "does it work on my machine?", missing tool, Blender not found | diagnostics | `references/environment.md` | `fluidblend doctor --project . --json` |
 | Create or resume a project, read state, plan | project | `references/project.md` | `fluidblend init`, `inspect`, `plan`, `resume` |
-| Build or audit a scene, characters, rigs | scene | `references/characters.md` | `run` on `scene.build`, `scene.inspect`, `scene.audit` |
-| Slow down, speed up, vary a clip | animation | `references/animation.md` | `run` on `animation.retime` |
+| Build or audit a scene, characters, rigs | scene | `references/characters.md` | `scene.build`, `shot.build`, `character.inspect`, `rig.map`, `rig.validate`, scene inspection/audit |
+| Slow down, speed up, vary a clip | animation | `references/animation.md` | `animation.retime/create/apply/loop/bake` |
 | Pass a prop from one hand to another, contacts | interactions | `references/interactions.md` | not implemented (P1) |
-| Shot preview, video, film assembly | film | `references/film.md` | `run` on `shot.preview` and `film.assemble`; `fluidblend validate` |
+| Shot preview, video, film assembly, audio | film | `references/film.md` | `shot.preview`, `film.assemble`, `audio.prepare`, `lipsync.analyze`; `fluidblend validate` |
 | Export to a game engine, broken export | game | `references/game.md` | `run` on `game.export` |
 | "add a slider", custom adjustment tool | tools | `references/tool-development.md` | not implemented (P1) |
 | "look at the scene I have open", retime while the user watches | live | `references/environment.md` | `fluidblend live status --project .`, `fluidblend run --mode live` |

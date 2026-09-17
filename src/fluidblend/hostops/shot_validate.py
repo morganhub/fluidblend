@@ -7,6 +7,7 @@ from typing import Any
 
 from fluidblend.contracts.common import ErrorCode
 from fluidblend.core.atomic import read_json
+from fluidblend.core.evidence import verify_evidence
 from fluidblend.core.hashing import sha256_file
 from fluidblend.core.revisions import RevisionStore
 from fluidblend.hostops.context import HostContext, HostOpError
@@ -35,6 +36,20 @@ def run(ctx: HostContext) -> None:
         latest=str(latest[1].relative_to(project.root)) if latest else None,
     )
     revision = RevisionStore(project.root).get(f"shot:{shot_id}")
+
+    def evidence_check(path: Path, name: str) -> None:
+        if revision is None:
+            check(name, False, note="no source revision")
+            return
+        valid, reason = verify_evidence(
+            path,
+            project_id=project.project_id,
+            shot_id=shot_id,
+            revision=revision.revision,
+            scene_sha256=revision.sha256,
+        )
+        check(name, valid, note=reason)
+
     if latest and revision:
         observed = sha256_file(latest[1])
         check(
@@ -53,6 +68,7 @@ def run(ctx: HostContext) -> None:
     if probe_path is None:
         check("preview_exists", not require_preview, note="no published preview")
     else:
+        evidence_check(probe_path, "preview_evidence_current")
         probe = read_json(probe_path)
         video = probe.get("video") or {}
         render_report_path = probe_path.with_name("render-report.json")
@@ -77,6 +93,7 @@ def run(ctx: HostContext) -> None:
     reviews = project.root / "reviews" / shot_id
     audit_path = _latest(list(reviews.glob("*/audit.json"))) if reviews.exists() else None
     if audit_path is not None:
+        evidence_check(audit_path, "audit_evidence_current")
         audit = read_json(audit_path)
         check(
             "latest_audit_passed",

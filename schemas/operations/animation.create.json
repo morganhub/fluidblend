@@ -1,16 +1,118 @@
 {
+  "$defs": {
+    "FrameRange": {
+      "additionalProperties": false,
+      "description": "Canonical half-open interval `[start, end_exclusive)`.",
+      "properties": {
+        "end_exclusive": {
+          "maximum": 1000001,
+          "minimum": -100000,
+          "title": "End Exclusive",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 1000000,
+          "minimum": -100000,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end_exclusive"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    }
+  },
   "$id": "https://fluidblend.local/schemas/operations/animation.create.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Create a clip from the library",
-  "properties": {},
-  "title": "NoParams",
+  "properties": {
+    "amplitude": {
+      "default": 0.3,
+      "maximum": 0.6,
+      "minimum": 0,
+      "title": "Amplitude",
+      "type": "number"
+    },
+    "frame_range": {
+      "$ref": "#/$defs/FrameRange"
+    },
+    "output_clip": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Output Clip",
+      "type": "string"
+    },
+    "preset": {
+      "enum": [
+        "idle_neutral",
+        "turn",
+        "look_at",
+        "reach",
+        "react"
+      ],
+      "title": "Preset",
+      "type": "string"
+    },
+    "profile_path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Profile Path"
+    },
+    "seed": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "stage": {
+      "default": "spline",
+      "enum": [
+        "blocking",
+        "spline",
+        "polish"
+      ],
+      "title": "Stage",
+      "type": "string"
+    }
+  },
+  "required": [
+    "preset",
+    "output_clip"
+  ],
+  "title": "AnimationCreateParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
+    "cli_command": null,
+    "input_paths": [
+      "profile_path"
+    ],
+    "live_dependencies": [],
     "lot": "P1",
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
-    "requires_shot": false
+    "optional_dependencies": [],
+    "publication": "shot_revision_and_reports",
+    "required_dependencies": [
+      "blender.batch"
+    ],
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

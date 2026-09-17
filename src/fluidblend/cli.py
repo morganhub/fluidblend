@@ -59,8 +59,16 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     lock_targets = []
     if project is not None:
-        # The project references `dependency_lock`: the diagnostic keeps it current (observed versions/hashes).
-        lock_targets.append(project.root / project.manifest.dependency_lock)
+        from fluidblend.core.dependencies import compare_lock
+        from fluidblend.core.paths import resolve_inside
+
+        try:
+            data["dependency_lock_comparison"] = compare_lock(
+                resolve_inside(project.root, project.manifest.dependency_lock), report
+            )
+        except (OSError, ValueError) as exc:
+            _emit({"error": f"invalid dependency lock: {exc}"}, as_json=args.json)
+            return exit_codes.INVALID
     if args.write_lock:
         lock_targets.append(Path(args.write_lock))
     for target in lock_targets:
@@ -75,7 +83,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             lines.append(f"{'':18}↳ {cap.error}")
     if root:
         lines.append(f"report: {root / 'state' / 'diagnostics' / 'capabilities.json'}")
+        lines.append(
+            f"dependency lock: {data['dependency_lock_comparison']['status']} (not modified by diagnostic)"
+        )
     _emit(data, as_json=args.json, human="\n".join(lines))
+    if data.get("dependency_lock_comparison", {}).get("status") == "mismatch":
+        return exit_codes.BLOCKED
     return exit_codes.OK
 
 
@@ -207,6 +220,8 @@ def cmd_task(args: argparse.Namespace) -> int:
         _emit({"error": str(exc)}, as_json=args.json, human=f"error: {exc}")
         return exit_codes.INVALID
     _emit(data, as_json=args.json)
+    if args.task_command in ("cancel", "reconcile") and data.get("status") == "unknown":
+        return exit_codes.UNKNOWN_STATE
     return exit_codes.OK
 
 
@@ -304,6 +319,7 @@ def cmd_ops(args: argparse.Namespace) -> int:
             "lot": s.lot,
             "available": s.available,
             "description": s.description,
+            **s.execution_contract(),
         }
         for s in OPERATIONS.values()
         if args.all or s.available

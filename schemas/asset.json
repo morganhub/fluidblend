@@ -1,0 +1,70 @@
+{
+  "$id": "https://fluidblend.local/schemas/asset.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "armature": {
+      "title": "Armature",
+      "type": "string"
+    },
+    "asset_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Asset Id",
+      "type": "string"
+    },
+    "blend_path": {
+      "title": "Blend Path",
+      "type": "string"
+    },
+    "license": {
+      "minLength": 1,
+      "title": "License",
+      "type": "string"
+    },
+    "license_path": {
+      "title": "License Path",
+      "type": "string"
+    },
+    "objects": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Objects",
+      "type": "array"
+    },
+    "rig_profile": {
+      "title": "Rig Profile",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Sha256",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "asset_id",
+    "version",
+    "blend_path",
+    "sha256",
+    "license",
+    "license_path",
+    "objects",
+    "armature",
+    "rig_profile"
+  ],
+  "title": "AssetManifest",
+  "type": "object"
+}

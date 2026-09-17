@@ -68,6 +68,87 @@ def _identity(project: Project) -> dict:
     return blender_live.identity(blender_live.server_config_for(project))
 
 
+@pytest.mark.acceptance("L06", title="Live: edit between admission and execution is preserved")
+def test_edit_between_identity_and_execution(live_project, monkeypatch):
+    runner, blend, _session = live_project
+    config = blender_live.server_config_for(runner.project)
+    original = blender_live.run_request
+
+    def concurrent_edit(*args, **kwargs):
+        ok, _ = blender_live.mutate_for_test(
+            config,
+            'import bpy\nbpy.ops.mesh.primitive_cube_add()\nbpy.context.object.name = "human-between-checks"\n',
+        )
+        assert ok
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(blender_live, "run_request", concurrent_edit)
+    outcome = runner.run(
+        make_request("scene.inspect", "live-concurrent-admission", target={"shot_id": "shot010"})
+    )
+    assert outcome.result.errors[0].code == "SCENE_CONFLICT", outcome.result.model_dump()
+    ok, payload = blender_live.mutate_for_test(
+        config, 'import bpy\nprint("PRESERVED", "human-between-checks" in bpy.data.objects)\n'
+    )
+    assert ok and "PRESERVED True" in payload
+    assert runner.project.latest_work_blend("shot010")[1] == blend
+
+
+@pytest.mark.acceptance("L07", title="Live: edit before publication prevents publishing or reloading")
+def test_edit_before_publication(live_project, monkeypatch):
+    runner, blend, _session = live_project
+    config = blender_live.server_config_for(runner.project)
+    original = runner._live_before_publication
+
+    def concurrent_edit(result):
+        ok, _ = blender_live.mutate_for_test(
+            config,
+            'import bpy\nbpy.ops.mesh.primitive_cube_add()\nbpy.context.object.name = "human-before-publish"\n',
+        )
+        assert ok
+        return original(result)
+
+    monkeypatch.setattr(runner, "_live_before_publication", concurrent_edit)
+    outcome = runner.run(
+        make_request(
+            "animation.retime",
+            "live-concurrent-publication",
+            target={"shot_id": "shot010", "instance_id": "hero-01", "clip_id": "walk"},
+            parameters={"duration_scale": 1.2, "output_variant": "slower", "preview_samples": 0},
+        )
+    )
+    assert outcome.result.errors[0].code == "SCENE_CONFLICT", outcome.result.model_dump()
+    assert runner.project.latest_work_blend("shot010")[1] == blend
+    ok, payload = blender_live.mutate_for_test(
+        config, 'import bpy\nprint("PRESERVED", "human-before-publish" in bpy.data.objects)\n'
+    )
+    assert ok and "PRESERVED True" in payload
+
+
+@pytest.mark.acceptance(
+    "L08", title="Live: guarded reload preserves a later edit; undo generation is monotonic"
+)
+def test_guarded_reload_and_undo(live_project):
+    runner, blend, _session = live_project
+    config = blender_live.server_config_for(runner.project)
+    before = _identity(runner.project)
+    ok, _ = blender_live.mutate_for_test(
+        config,
+        'import bpy\nbpy.ops.ed.undo_push(message="before human edit")\nbpy.ops.mesh.primitive_cube_add()\n'
+        'bpy.ops.ed.undo_push(message="human edit")\n',
+    )
+    assert ok
+    edited = _identity(runner.project)
+    assert edited["edit_generation"] > before["edit_generation"]
+    assert not blender_live.open_file(config, blend, expected_identity=before)["ok"]
+    assert _identity(runner.project)["is_dirty"]
+    ok, _ = blender_live.mutate_for_test(config, "import bpy\nbpy.ops.ed.undo()\n")
+    assert ok
+    undone = _identity(runner.project)
+    assert undone["edit_generation"] > edited["edit_generation"]
+    assert undone["session_id"] == before["session_id"]
+
+
 @pytest.mark.acceptance("L01", title="Live: identity check and read-only inspection of the open scene")
 def test_L01_live_inspect_with_identity(live_project):
     runner, blend, _session = live_project

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "operation": "rig.map",
+  "operation_id": "rig-map-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010",
+    "instance_id": "hero-01"
+  },
+  "parameters": {
+    "inspection_path": "reviews/shot010/character-inspect-001/character-inspection.json"
+  },
+  "dry_run": false
+}

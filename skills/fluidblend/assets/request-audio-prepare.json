@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "operation": "audio.prepare",
+  "operation_id": "audio-prepare-001",
+  "project_id": "demo-studio",
+  "target": {},
+  "parameters": {
+    "source_path": "audio/source/dialogue.wav"
+  },
+  "dry_run": false
+}

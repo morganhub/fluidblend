@@ -131,7 +131,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     lines = [
-        "# P0 acceptance report - generated automatically",
+        "# fluidblend acceptance report - generated automatically",
         "",
         f"Generated on {generated} by `pytest --acceptance-report`. Blender: `{BLENDER_EXE or 'missing'}`.",
         "",

@@ -3,6 +3,17 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## Unreleased — partial P1
+
+- Correct unavailable preflight, uncertain cancellation, dependency-lock comparisons and
+  source/revision-bound audit/preview evidence; disable automatic Blender scripts.
+- Add bounded ZIP extraction, NTFS path checks, binary hash checks and fresh-clone LFS test.
+- Add CC0 Vitruvian/Rigify fixture and tested local shot assembly, character inspection,
+  semantic mapping and five-pose validation.
+- Add bounded slotted Action library, NLA application, loop and measured deformation bake.
+- Add actual two-pass FFmpeg audio preparation and Rhubarb mouth-cue analysis.
+- See `docs/production-p1.md` for exact scope, evidence and outstanding deliveries.
+
 ## 0.2.0 — 2026-09-16 — live mode
 
 Writing into the Blender session the user has open, through the MCP add-on and an approved runtime
