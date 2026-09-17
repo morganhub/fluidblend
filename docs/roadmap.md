@@ -1,6 +1,6 @@
 # Roadmap
 
-Lots 1 to 4 are released (0.4.0). Lots 3 and 4 pass their acceptance scenarios inside narrow scopes;
+Lots 1 to 4 are released (0.4.0, refined in 0.4.1). Lots 3 and 4 pass their acceptance scenarios inside narrow scopes;
 [production-p1.md](production-p1.md) records exact scope and evidence. Planned features are not
 claims of completion.
 

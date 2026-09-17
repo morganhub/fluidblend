@@ -122,6 +122,9 @@ def test_B06_director_panel(director_session):
     assert overlay["max_gap_m"] == pytest.approx(0.10, abs=0.01), "red and green paths really differ"
     counts = "import bpy\nprint('FB_COUNTS=' + str([len(bpy.data.objects), len(bpy.data.actions)]))\n"
     assert blender_live.extract_marker(call(project, counts), "FB_COUNTS=") == before_counts
+    # Found by a human: a 10 cm slide is a few pixels on a whole-shot view. Zooming moves the view only.
+    call(project, "import bpy\nbpy.ops.fluidblend.director_focus_overlay()\n")
+    assert _identity(project)["is_dirty"] is False
     call(project, "import bpy\nbpy.ops.fluidblend.director_hide_overlay()\n")
     assert status(project)["overlay"] is None and _identity(project)["is_dirty"] is False
 

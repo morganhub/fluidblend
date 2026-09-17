@@ -51,6 +51,7 @@ def summary() -> dict | None:
         "first_frame": _data["frames"][0],
         "last_frame": _data["frames"][-1],
         "max_gap_m": max(gaps),
+        "center": _data["after"][len(_data["after"]) // 2],
         "drawing": _handle is not None,
     }
 

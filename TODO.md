@@ -1,7 +1,7 @@
 # TODO — what remains to complete the specification
 
 Reference: the "Blender Director" specification v1.0 (16 September 2026, kept outside this public
-repository) and [docs/roadmap.md](docs/roadmap.md). Status on 17 September 2026: version 0.4.0 (P0, live, lots 3 and 4: every P1 scenario passes).
+repository) and [docs/roadmap.md](docs/roadmap.md). Status on 17 September 2026: version 0.4.1 (P0, live, lots 3 and 4: every P1 scenario passes; P1 refinement).
 Implementation scope and proof: [docs/production-p1.md](docs/production-p1.md).
 
 ## Amorce de reprise technique — version 0.4.0 du 17 septembre 2026

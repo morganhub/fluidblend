@@ -6,7 +6,7 @@ and deliver scenes for music videos, short films and game prototypes — reprodu
 and resumably. Every operation is validated, journaled, versioned and verified (ffprobe, Khronos
 glTF validator, re-import). Windows 11 only for now.
 
-Status: **0.4.0** — P0, live mode and the whole P1 plan (lots 3 and 4). 30 acceptance scenarios pass
+Status: **0.4.1** — P0, live mode and the whole P1 plan (lots 3 and 4), plus the P1 refinement. 30 acceptance scenarios pass
 on the reference machine — batch A01–A13, production B01–B08, live L01–L09 — see
 [docs/acceptance-reports/implementation.md](docs/acceptance-reports/implementation.md). What the kit does not
 do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is simulated.

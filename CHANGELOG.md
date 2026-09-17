@@ -3,7 +3,12 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
-## Unreleased — P1 refinement
+## 0.4.1 — 2026-09-17 — P1 refinement
+
+Refinement of the P1 scope, no new domain. 154 tests pass on the reference machine. Technical
+measurements only: no human artistic validation is recorded.
+
+Upgrade note: run `fluidblend runtime install --enable` again and restart Blender.
 
 - A skinned Rigify character now reaches Godot. `animation.bake` gains `rigid_limbs`: IK stretch is
   disabled in the export variant, because a compressed limb carries a non-uniform scale that neither

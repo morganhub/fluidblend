@@ -22,7 +22,7 @@ GeForce GTX 1080 Ti.
 | pydantic | 2.12+ | contracts and schema export |
 | filelock | 3.20+ | project lock |
 | mcp (Python SDK) | 1.30 | probe client: fake server in unit tests, real `mcp-for-blender` server in A03; live client (stdio) in L01–L09 |
-| fluidblend runtime add-on | 0.4.0 (`bl_info` 0, 4, 0) | installed in the Blender 5.2 user add-ons directory and enabled headlessly; operators `fluidblend.identity`, `start_request`, `open_file` exercised by L01–L09, Director operators by B06 |
+| fluidblend runtime add-on | 0.4.1 (`bl_info` 0, 4, 1) | installed in the Blender 5.2 user add-ons directory and enabled headlessly; operators `fluidblend.identity`, `start_request`, `open_file` exercised by L01–L09, Director operators by B06 |
 
 ## Blender
 

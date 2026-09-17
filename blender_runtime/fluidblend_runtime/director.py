@@ -493,12 +493,14 @@ class FLUIDBLEND_PT_director(bpy.types.Panel):
                 # Drawn over the scene, stored nowhere in it: the character itself does not move.
                 wrapped(
                     box,
-                    f"In the viewport, frames {shown['first_frame']}-{shown['last_frame']}: red = the {limb} "
+                    f"In the viewport, frames {shown['first_frame']} to {shown['last_frame']}: red = the {limb} "
                     "today, green = with the fix, white cross = where it should stay. Scrub the timeline: "
                     "the two dots follow.",
                     icon="HIDE_OFF",
                 )
-                box.operator("fluidblend.director_hide_overlay", icon="HIDE_ON")
+                row = box.row(align=True)
+                row.operator("fluidblend.director_focus_overlay", icon="VIEWZOOM")
+                row.operator("fluidblend.director_hide_overlay", icon="HIDE_ON")
             wrapped(
                 box,
                 "Nothing changed in this scene yet. Apply publishes a new version with the fix and opens it.",
@@ -550,6 +552,28 @@ class FLUIDBLEND_OT_director_reload(bpy.types.Operator):
         return bpy.ops.fluidblend.open_file(filepath=bpy.data.filepath)
 
 
+class FLUIDBLEND_OT_director_focus_overlay(bpy.types.Operator):
+    """Centre the 3D views on the previewed contact and zoom in. Only the view moves, not the scene"""
+
+    bl_idname = "fluidblend.director_focus_overlay"
+    bl_label = "Zoom on the fix"
+
+    def execute(self, context):  # noqa: ANN001
+        shown = director_overlay.summary()
+        if shown is None:
+            return {"CANCELLED"}
+        # A 10 cm slide is a few pixels on a whole-shot view: found by a human looking at it.
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "VIEW_3D":
+                    view = area.spaces.active.region_3d
+                    if view.view_perspective == "CAMERA":
+                        view.view_perspective = "PERSP"
+                    view.view_location, view.view_distance = shown["center"], 1.2
+                    area.tag_redraw()
+        return {"FINISHED"}
+
+
 class FLUIDBLEND_OT_director_hide_overlay(bpy.types.Operator):
     """Hide the red and green preview paths of the viewport. They never changed the scene"""
 
@@ -585,6 +609,7 @@ CLASSES = (
     FLUIDBLEND_OT_director_status,
     FLUIDBLEND_OT_director_open_latest,
     FLUIDBLEND_OT_director_reload,
+    FLUIDBLEND_OT_director_focus_overlay,
     FLUIDBLEND_OT_director_hide_overlay,
     FLUIDBLEND_OT_director_open_review,
     FLUIDBLEND_PT_director,
