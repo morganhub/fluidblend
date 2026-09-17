@@ -3,6 +3,17 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## 0.5.1 — 2026-09-17 — game project scaffold
+
+Found by installing the kit in a real game project: the assistant was handed a film shot with a
+demonstration cast, and a `game_engine` field nothing read.
+
+- `init --profile game` creates an empty work scene (`shot010` without the demonstration bipeds and
+  lantern); `film` and `hybrid` are unchanged.
+- `game.import_test` without `template` follows the project's `targets.game_engine` (`web` → Three.js,
+  otherwise Godot) and reports where the choice came from. An explicit `template` still wins.
+- The skill explains why a new project has a `shot010`, and to pass `--game-engine` at the first `init`.
+
 ## 0.5.0 — 2026-09-17 — web game target
 
 The exported character in a browser: acceptance B09. 31 acceptance scenarios. Technical measurements

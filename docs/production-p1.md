@@ -1,4 +1,4 @@
-# P1 implementation status — 0.5.0
+# P1 implementation status — 0.5.1
 
 Version 0.3.0 delivered lot 3 and 0.4.0 delivers lot 4 (B02, B04, B07): every P1 acceptance scenario
 passes. It is not completion of the whole TODO — each operation works in a narrow scope, and the

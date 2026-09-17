@@ -137,6 +137,9 @@ def _structure_for(profile: str) -> dict[str, Any]:
     structure = read_json(templates_dir() / "film" / "folder_structure.json")
     if profile in ("game", "hybrid"):
         structure["directories"] = sorted(set(structure["directories"]) | {"game", "exports/game"})
+    if profile == "game":
+        # A game project starts from an empty work scene, not from the film demonstration cast.
+        structure["files"]["shots/shot010/shot.json"] = "shot010-game.json.tmpl"
     return structure
 
 

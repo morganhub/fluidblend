@@ -109,7 +109,12 @@ def import_test(ctx):
     glb = admitted(ctx, ctx.params.export_path, directory=False)
     if glb.suffix.lower() != ".glb":
         raise HostOpError(ErrorCode.VALIDATION_FAILED, "export_path must be a published .glb")
-    if ctx.params.template == "web":
+    # An omitted template follows what the project declares it is made for.
+    declared = ctx.project.manifest.targets.game_engine
+    template = ctx.params.template or ("web" if declared == "web" else "godot")
+    ctx.metrics["template"] = template
+    ctx.metrics["template_from"] = "request" if ctx.params.template else "project targets.game_engine"
+    if template == "web":
         return game_web.import_test(ctx, glb)
     godot = godot_for(ctx)
     game = ctx.out_dir / "game"

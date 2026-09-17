@@ -158,7 +158,8 @@ saw next to the Godot checks. It shows what the GLB contains (skin, pose, orient
 how Godot shades it: say so.
 
 1. `game.export` as above (Rigify: `animation.bake` with `rigid_limbs`, then `export_def_bones`).
-2. `game.import_test` with `template: "web"`: copies `templates/game-web/` and the GLB, serves the
+2. `game.import_test` with `template: "web"` (or no `template` in a project whose
+   `targets.game_engine` is `web`): copies `templates/game-web/` and the GLB, serves the
    folder on `127.0.0.1` (ephemeral port, for the run only — a browser refuses a GLB over `file://`),
    opens it in a **headless, offline** browser and reads what Three.js loaded: `engine`, `clips`,
    `walk_clip`, `skinned_meshes`. Publishes the `game/` folder and `game-import.json`.

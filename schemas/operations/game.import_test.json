@@ -10,14 +10,21 @@
       "type": "string"
     },
     "template": {
-      "default": "godot",
-      "description": "godot = Godot 4.7 template; web = Three.js page in a headless Chrome/Edge",
-      "enum": [
-        "godot",
-        "web"
+      "anyOf": [
+        {
+          "enum": [
+            "godot",
+            "web"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ],
-      "title": "Template",
-      "type": "string"
+      "default": null,
+      "description": "godot = Godot 4.7 template; web = Three.js page in a headless Chrome/Edge; omitted = the project's targets.game_engine (godot when that is none)",
+      "title": "Template"
     }
   },
   "required": [

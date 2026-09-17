@@ -5,7 +5,8 @@ from tests.acceptance.test_interactions import artifact
 from tests.conftest import make_request, note
 
 from fluidblend.adapters.tool_paths import find_browser
-from fluidblend.core.atomic import read_json
+from fluidblend.core.atomic import atomic_write_json, read_json
+from fluidblend.core.project import load_project
 from fluidblend.core.tasks import TaskRunner
 
 pytestmark = pytest.mark.blender
@@ -37,6 +38,17 @@ def test_B09_web_import_and_smoke(project, monkeypatch):
     assert report["engine"] == "three.js r186" and report["walk_clip"] and report["clips"]
     game_dir = artifact(imported.result, "game-import.json").rsplit("/", 1)[0] + "/game"
     assert (project.root / game_dir / "vendor/three/three.module.js").is_file(), "the page works offline"
+
+    # A project that declares the web as its engine gets the web template without being asked twice.
+    manifest = read_json(project.root / "project.json")
+    manifest["targets"]["game_engine"] = "web"
+    atomic_write_json(project.root / "project.json", manifest)
+    declared = TaskRunner(load_project(project.root)).run(
+        make_request("game.import_test", "web-import-declared", target=shot, parameters={"export_path": glb})
+    )
+    assert declared.exit_code == 0, declared.result.model_dump()
+    assert declared.result.metrics["template"] == "web"
+    assert declared.result.metrics["template_from"] == "project targets.game_engine"
 
     def smoke(operation_id):
         return runner.run(

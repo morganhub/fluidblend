@@ -15,6 +15,14 @@ fluidblend init --path "D:\Projects\My Film" --profile film --project-id my-film
 
 - `--profile`: `film` (default), `game`, `hybrid`. `game` and `hybrid` add `game/` and
   `exports/game`. `--game-engine`: `godot`, `web`, `none` (forced to `none` in the `film` profile).
+  **Pass `--game-engine` at the first `init`**: a later `init` never overwrites `project.json`, so a
+  forgotten engine has to be edited by hand in `targets.game_engine`. It is not decorative:
+  `game.import_test` without `template` uses the template of that engine (`web` → Three.js,
+  anything else → Godot) and says so in `metrics.template_from`.
+
+```powershell
+fluidblend init --path "D:\Projects\My Game" --profile game --game-engine web --project-id my-game
+```
 - `--project-id`: lowercase letters, digits, `.`, `_`, `-`, 64 characters maximum. Derived from the
   folder name if omitted.
 - `--dry-run`: writes nothing, lists what would be created.
@@ -50,7 +58,15 @@ licenses/                        licenses of the components used
 AGENTS.md, CLAUDE.md             project instructions for AI clients
 ```
 
-The scaffold creates a demo shot, `shots/shot010/shot.json`: `hero-01` (stylized biped,
+**Why there is a `shot010` in a project you just created.** Every operation targets a `shot_id`:
+work versions, revisions, evidence and reports are filed per shot, so a project without a shot can
+run nothing. `init` therefore creates the first one. It is a work scene with a history, not a
+commitment to make a film; tell the user that in one sentence instead of asking them about "shots".
+In the `game` profile it is **empty** (no instance, no prop): bring a versioned character with
+`shot.build`, animate, bake, export. In `film` and `hybrid` it is the demonstration shot below,
+which `scene.build` turns into a scene. Add other shots by creating `shots/<shot_id>/shot.json`.
+
+The `film` / `hybrid` scaffold creates a demo shot, `shots/shot010/shot.json`: `hero-01` (stylized biped,
 `[-0.7, 2.0, 0]`), `sidekick-01` (scale 0.85, phase offset of 12 frames), prop `lantern-01`, a 35 mm
 camera at `[5.5, 0, 1.4]` aiming at `[0, 0, 1]`, range `[1, 241)`, i.e. 240 frames.
 

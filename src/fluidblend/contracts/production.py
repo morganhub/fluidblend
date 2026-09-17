@@ -187,9 +187,12 @@ class AnimationRetargetParams(StrictModel):
 
 class GameImportTestParams(StrictModel):
     export_path: str = Field(description="Published .glb from game.export, project-relative")
-    template: Literal["godot", "web"] = Field(
-        default="godot",
-        description="godot = Godot 4.7 template; web = Three.js page in a headless Chrome/Edge",
+    template: Literal["godot", "web"] | None = Field(
+        default=None,
+        description=(
+            "godot = Godot 4.7 template; web = Three.js page in a headless Chrome/Edge; "
+            "omitted = the project's targets.game_engine (godot when that is none)"
+        ),
     )
 
 
