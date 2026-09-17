@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "tool_id": "gentle-foot-lock",
+  "version": 1,
+  "purpose": "plant a sliding foot, small corrections only",
+  "base_tool": "contact_lock",
+  "supported_rigs": [
+    "rigify/0.6.10"
+  ],
+  "bounds": {
+    "effectors": [
+      "left_foot",
+      "right_foot"
+    ],
+    "max_correction_m": 0.12,
+    "blend_frames_max": 6
+  },
+  "preconditions": [
+    "the window is a stance, not a step"
+  ],
+  "known_limits": [
+    "feet only",
+    "refuses windows that contain a step"
+  ],
+  "tests": [
+    {
+      "name": "fix-left",
+      "instance_id": "hero-01",
+      "effector": "left_foot",
+      "frame_range": {
+        "start": 1,
+        "end_exclusive": 26
+      },
+      "expect": "pass"
+    },
+    {
+      "name": "decline-step",
+      "instance_id": "hero-01",
+      "effector": "left_foot",
+      "frame_range": {
+        "start": 1,
+        "end_exclusive": 49
+      },
+      "expect": "refuse"
+    }
+  ]
+}

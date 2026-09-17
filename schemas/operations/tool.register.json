@@ -2,18 +2,36 @@
   "$id": "https://fluidblend.local/schemas/operations/tool.register.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Register a validated tool",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Register a custom tool that passed",
+  "properties": {
+    "test_report_path": {
+      "title": "Test Report Path",
+      "type": "string"
+    },
+    "tool_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Tool Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "tool_id",
+    "test_report_path"
+  ],
+  "title": "ToolRegisterParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "host",
     "cli_command": null,
-    "input_paths": [],
+    "input_paths": [
+      "test_report_path"
+    ],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
     "optional_dependencies": [],
     "publication": "reports_and_artifacts",

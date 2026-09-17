@@ -48,7 +48,7 @@ Remaining live items, **not implemented**:
 | Writes through the client's own MCP connection | not implemented | the AI client's direct connection stays read-only guidance (`get_scene_info`, `get_viewport_screenshot`, `get_object_info`); every write goes through `fluidblend run --mode live`, never an improvised `execute_blender_code` |
 | Undo / edit signal from the session | implemented | process-local monotonic generation, depsgraph/undo/redo/load signals; guarded admission, publication and reload |
 | Live mode for the other operations | not implemented | `scene.build`, `shot.preview` and `game.export` need a dedicated process and are refused in a live envelope with `UNSUPPORTED_CAPABILITY` |
-| Progress feedback during a live call | not implemented | the call is synchronous on Blender's main thread: nothing is reported until the operator returns, and only `mcp.call_timeout_s` bounds the wait |
+| Progress feedback and cancellation during a live call | implemented (L09) | cooperative timer steps, `progress.json`, `task cancel` believed only on `cancel.ack.json`; the four live operations are single-step today, so a stop lands before or after them, not inside |
 
 ## Lot 3 — P1 characters and adjustments — **partial**
 
@@ -56,14 +56,16 @@ Remaining live items, **not implemented**:
 | --- | --- | --- |
 | Rigify rig profile | implemented | Rigify 0.6.10 (core add-on of Blender 5.2); semantic mapping to `root`, `torso`, `hips`, `chest`, `head`, `hand_ik.L/R`, `foot_ik.L/R`, `DEF-*` deformers; IK/FK switches on `upper_arm_parent.L` and `thigh_parent.L` |
 | Vitruvian fixture | implemented | reference skinned character (CC0 asset) for test poses and counting uninfluenced vertices |
-| Action library | partial: five recipes | `idle_neutral`, `walk`, `turn`, `look_at`, `reach`, `take_prop`, `give_prop`, `react`; one `clip.json` per clip (rig, duration, loop, root motion, contacts) |
+| Action library | implemented: eight bounded recipes | `idle_neutral`, `walk`, `turn`, `look_at`, `reach`, `take_prop`, `give_prop`, `react`; one `clip.json` per clip (rig, duration, loop, root motion, contacts); `walk` and `take_prop` carry measured contacts |
+| Contact and loop measurements | implemented | shared module; each figure states space, window, sampling, control point and tolerance; world-space feet, loop seams, palm/grip contact in the prop's space, hand-off jump |
 | NLA layers | partial: disjoint REPLACE | `body`, `upper`, `hands`, `gaze`, `face`, `mouth` tracks; documented `COMBINE` or `REPLACE` blending; double-transform test |
-| Interactions | not implemented | `interaction.plan/apply/validate`; ownership transfer through `CHILD_OF` preserving the world transform; measurement of the jump and of the contact distance |
-| Adjustment tools | not implemented | `retime_segment`, `look_at_target`, `contact_lock` at the very least, each with bounded parameters, a preview, an undo path and tests |
-| `Director` Blender panel | not implemented | operators calling the same operations as the CLI; bounded sliders, debounce through `bpy.app.timers` (hence GUI only) |
+| Interactions | bounded prop hand-off implemented (B03); other kinds not implemented | `interaction.plan/apply/validate`; ownership transfer through `CHILD_OF` preserving the world transform; measurement of the jump and of the contact distance |
+| Adjustment tools | `contact_lock` implemented with preview/apply/revert (B05); the others not implemented | `retime_segment`, `look_at_target`, `contact_lock` at the very least, each with bounded parameters, a preview, an undo path and tests |
+| Custom tools | declarative registry implemented (B08) | `tools/custom/<id>/tool.json` narrows a built-in tool and carries its tests; `tool.inspect/test/register`; no code is loaded |
+| `Director` Blender panel | implemented for `contact_lock` (B06); clicked by a human on 17 September 2026, which exposed and fixed an empty character field, truncated messages, a sidebar that did not refresh, a stale-version trap and an unsaved-scene trap; the preview shows figures and frames, not motion in the viewport | operators calling the same operations as the CLI; bounded sliders, debounce through `bpy.app.timers` (hence GUI only) |
 | Bounded retargeting | not implemented | name-to-name preset in the Expy-Kit format, constraints then `nla.bake(visual_keying=True, clear_constraints=True)`; Retarget and Rokoko stay external (GPL-3 / LGPL-3) |
 
-Target acceptance scenarios: B01, B03, B05, B06, B08.
+Target acceptance scenarios: B01, B03, B05, B06 and B08 — all passed.
 
 ## Lot 4 — P1 voice and game target — **partial**
 
@@ -93,11 +95,8 @@ on an individual project.
 | Domain | Operations | Lot |
 | --- | --- | --- |
 | Animation | `animation.retarget` | P1 |
-| Interactions | `interaction.plan`, `interaction.apply`, `interaction.validate` | P1 |
 | Audio and face | `lipsync.apply`, `expression.apply` | P1 |
-| Adjustment | `adjustment.preview`, `adjustment.apply`, `adjustment.revert` | P1 |
 | Game | `game.import_test`, `game.smoke_test` | P1 |
-| Tools | `tool.inspect`, `tool.test`, `tool.register` | P1 |
 
 What to do when faced with one of these requests: stop, explain that the lot does not implement it,
 offer the closest P0 operation if one exists, and simulate nothing.

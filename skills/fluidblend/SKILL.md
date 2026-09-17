@@ -7,10 +7,11 @@ description: >-
   the workstation and resume an interrupted task. Use for Blender production tasks driven by the
   `fluidblend` CLI, not for 2D video generation alone. Four of these operations can also run in the
   Blender session the user has open (live mode, `--mode live`). Also supports versioned Rigify
-  characters, bounded animation clips, audio preparation and mouth-cue analysis. Check the
+  characters and props, bounded animation clips with measured contacts, a bounded prop hand-off
+  between two characters, audio preparation and mouth-cue analysis. Check the
   operation catalogue for unsupported production features; never simulate success.
 license: MIT
-metadata: {version: "0.2.0", lot: "P0+live+partial-P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
+metadata: {version: "0.3.0", lot: "P0+live+P1-lot3", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
 ---
 
 # fluidblend — driven Blender production
@@ -87,10 +88,12 @@ the dialogue.
 | Create or resume a project, read state, plan | project | `references/project.md` | `fluidblend init`, `inspect`, `plan`, `resume` |
 | Build or audit a scene, characters, rigs | scene | `references/characters.md` | `scene.build`, `shot.build`, `character.inspect`, `rig.map`, `rig.validate`, scene inspection/audit |
 | Slow down, speed up, vary a clip | animation | `references/animation.md` | `animation.retime/create/apply/loop/bake` |
-| Pass a prop from one hand to another, contacts | interactions | `references/interactions.md` | not implemented (P1) |
+| Pass a prop from one character to another, contacts | interactions | `references/interactions.md` | `interaction.plan` → review → `interaction.apply` → `interaction.validate` (bounded prop hand-off only) |
 | Shot preview, video, film assembly, audio | film | `references/film.md` | `shot.preview`, `film.assemble`, `audio.prepare`, `lipsync.analyze`; `fluidblend validate` |
 | Export to a game engine, broken export | game | `references/game.md` | `run` on `game.export` |
-| "add a slider", custom adjustment tool | tools | `references/tool-development.md` | not implemented (P1) |
+| "fix the sliding foot", "keep the hand on the handle" | tools | `references/tool-development.md` | `adjustment.preview` → look at the frames → `adjustment.apply`; `adjustment.revert` (tool `contact_lock` only) |
+| "make me a tool that…" | tools | `references/tool-development.md` | declarative `tools/custom/<id>/tool.json` narrowing `contact_lock` → `tool.inspect` → `tool.test` → `tool.register`; `unsupported` = state the limitation, stop |
+| "add a slider", gesture amplitude, gaze, partial retime | tools | `references/tool-development.md` | not implemented (P1) |
 | "look at the scene I have open", retime while the user watches | live | `references/environment.md` | `fluidblend live status --project .`, `fluidblend run --mode live` |
 | Stuck task, interrupted run, conflict, budget | recovery | `references/recovery.md` | `fluidblend task status/cancel/reconcile`, `resume`, `revision accept` |
 
@@ -145,6 +148,21 @@ overwrite:
 | scene of another project, or runtime version different from the kit | `SCENE_CONFLICT`, exit 3 | wrong session, or `fluidblend runtime install --enable` after a kit update |
 | runtime add-on not enabled, MCP server unreachable | exit 2 | install and enable it, or fall back to batch |
 | call timed out | `unknown`, exit 5 | `fluidblend task reconcile`, then have the latest work version reopened before retrying |
+| the user wants a running live operation stopped | — | `fluidblend task cancel --project . --id <task>`: `cancelled: true` only with the session's written acknowledgement (`nothing_saved`); otherwise the state is `unknown` → reconcile. Never close or kill their Blender |
+
+Live operations run cooperatively: Blender stays responsive and `fluidblend task status` shows the
+last step reported. A human edit made while a live operation runs stops it with `SCENE_CONFLICT`
+and is kept.
+
+**Director panel.** The runtime add-on also adds a `Director` panel (3D View sidebar, `fluidblend`
+tab) with Preview / Apply / Revert for `contact_lock`. It runs the same `adjustment.*` operations
+through the engine, in batch, on the published version; it never keys the open session. Point the
+user to it when they want to try values themselves; for anything you do, keep using the CLI. It
+refuses Apply and Revert while the session has unsaved changes — in Blender a mere selection counts.
+Tell the user **not to save** over the open published version (that creates a revision conflict) and
+to use the panel's `Reload file` button instead. A preview moves nothing in the viewport: only Apply
+shows the fix, by opening the new version. If they report "already applied", they are looking at an
+older version than the one the engine works on: the panel offers `Open latest version`.
 
 A live write is never saved over the open file: the operation saves a copy, the engine publishes the
 next work version and reloads the session on it. If the result warns that the reload failed, tell
@@ -178,11 +196,13 @@ path has no identity check, no lock, no checkpoint, no version and no journal.
 19 operations are available in P0, of which only 10 run through `fluidblend run` (`scene.build`,
 `scene.inspect`, `scene.audit`, `animation.retime`, `shot.preview`, `game.export`,
 `scene.checkpoint`, `shot.validate`, `film.assemble`, `providers.check`); the others go through a
-dedicated subcommand (see `docs/cli.md`). Every other catalogue entry is declared `available=false`
-and answers `UNSUPPORTED_CAPABILITY` (exit 2): `character.*`, `rig.*`,
-`animation.create/apply/loop/retarget/bake`, `interaction.*`, `audio.*`, `lipsync.*`,
-`expression.*`, `adjustment.*`, `shot.build`, `game.import_test`, `game.smoke_test`, `tool.*`.
-Check with `fluidblend ops --all`.
+dedicated subcommand (see `docs/cli.md`). 19 bounded P1 operations are available: `shot.build`,
+`character.inspect`, `rig.map`, `rig.validate`, `animation.create/apply/loop/bake`,
+`interaction.plan/apply/validate`, `adjustment.preview/apply/revert` (one tool, `contact_lock`),
+`tool.inspect/test/register` (declarative custom tools, no code), `audio.prepare`,
+`lipsync.analyze`. The remaining catalogue entries are declared `available=false` and answer
+`UNSUPPORTED_CAPABILITY` (exit 2): `animation.retarget`, `lipsync.apply`, `expression.apply`,
+`game.import_test`, `game.smoke_test`. The catalogue is the authority: check with `fluidblend ops --all`.
 
 Live mode covers **four operations only** (see the section above). `scene.build`, `shot.preview` and
 `game.export` are refused in a live envelope and run in batch instead. Live mode also requires an
@@ -241,12 +261,13 @@ Domain error codes: `MISSING_DEPENDENCY`, `UNSUPPORTED_CAPABILITY`, `RIG_MAPPING
   characters.
 - [references/animation.md](references/animation.md) — slotted Actions, retime, contact markers; P1
   clip library.
-- [references/interactions.md](references/interactions.md) — P1 status and preparatory decisions.
+- [references/interactions.md](references/interactions.md) — bounded prop hand-off: plan, apply,
+  validate, prerequisites, measurements, limits.
 - [references/film.md](references/film.md) — previews, FFmpeg, ffprobe, technical validation,
   assembly.
 - [references/game.md](references/game.md) — GLB export, axes, reimport, Khronos validator; P1
   Godot.
-- [references/tool-development.md](references/tool-development.md) — P1 status, tool contract,
-  planned adjustments.
+- [references/tool-development.md](references/tool-development.md) — `contact_lock` preview / apply /
+  revert, tool contract, adjustments that do not exist yet.
 - [references/recovery.md](references/recovery.md) — task states, idempotency, revisions,
   reconciliation, locks.

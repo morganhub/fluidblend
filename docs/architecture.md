@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | Skill | `skills/fluidblend/` | understand the request, choose the mode, read the right reference, drive the validations | no business logic, no computation |
 | Engine | `src/fluidblend/` | contracts, planning, execution, journal, versions, budgets, resumption, CLI | never depends on `bpy` nor on a model name |
-| Blender runtime | `blender_runtime/fluidblend_runtime/` | scenes, rigs, Actions, cameras, renders, exports through the Blender API; in live mode, the same package installed as an add-on exposes `bpy.ops.fluidblend.*` | stdlib + `bpy` only, no third-party dependency, no UI |
+| Blender runtime | `blender_runtime/fluidblend_runtime/` | scenes, rigs, Actions, cameras, renders, exports through the Blender API; in live mode, the same package installed as an add-on exposes `bpy.ops.fluidblend.*` and the Director panel | stdlib + `bpy` only, no third-party dependency; the panel holds no production logic |
 | Adapters | `src/fluidblend/adapters/` | Blender batch, Blender live (`blender_live`), discovery of Blender and of external tools (`tool_paths`), FFmpeg, glTF-Validator, MCP client, client configuration | hide no error, invent no feature |
 | Project | the user's project | assets, manifests, shot plans, variants, proofs, durable state | does not depend on the memory of a conversation |
 
@@ -92,10 +92,20 @@ Steps of a live run, inside the project **and** `blender-instance` locks:
    exception on the dirty flag: snapshotting unsaved work is its purpose. The check is journaled as
    `live_identity_checked`.
 3. **Execution** — the envelope is written to the task folder, then
-   `bpy.ops.fluidblend.run_request(request_path=…, result_path=…)` runs it on the main thread. The
-   envelope carries `live: true` and no `work_blend`: the runtime works on the session as it is,
-   instead of reopening a file. The result is read back from `result.json`, with
+   `bpy.ops.fluidblend.start_request(request_path=…, result_path=…)` queues it and returns at once.
+   A `bpy.app.timers` callback of the add-on (`live_jobs.py`) advances the operation one cooperative
+   step per tick on the main thread, so Blender stays responsive. It publishes `progress.json` in
+   the task folder; the engine polls files, not the socket, and mirrors the progress in the task
+   record. The engine scope that hides the kit's own edits from the edit generation is held only
+   during a step, never across ticks: a human edit between two steps stops the operation with
+   `SCENE_CONFLICT` and is kept. The envelope carries `live: true` and no `work_blend`: the runtime
+   works on the session as it is. The result is read back from `result.json`, with
    `metrics.mode = "live"` and the identity that was accepted.
+   **Cancellation**: `task cancel` writes `cancel.request`; the timer stops between two steps,
+   writes `cancel.ack.json` (step reached, `session_modified`, `nothing_saved`) and a `cancelled`
+   result. Only that acknowledgement makes the task `cancelled` (journal
+   `live_cancel_acknowledged`); without it the state stays `unknown`, and the GUI is never killed.
+   A step that does not yield cannot be interrupted: the stop lands after it.
 4. **Publication** — artifacts and input hashes verified; the live completion identity is checked
    again. A changed generation prevents publication. Then `out/` is moved and the revision recorded.
 5. **Reload** — for a versioning operation, `bpy.ops.fluidblend.open_file(filepath=…, expected_identity=…)`
@@ -107,6 +117,30 @@ Steps of a live run, inside the project **and** `blender-instance` locks:
 Write isolation: in live mode `animation.retime` saves with `save_as_mainfile(copy=True)`, so the
 open file and the version already on disk are left exactly as they were; the copy becomes the new
 version through the normal publication path.
+
+### Director panel
+
+`fluidblend_runtime/director.py` adds a `Director` panel to the 3D View sidebar. It holds no
+production logic: Preview, Apply and Revert write a typed `adjustment.*` request under
+`requests/director/` and start the kit's CLI (`RUNTIME_MANIFEST.json` → `cli`, argument list, no
+shell, `PYTHON*` variables removed) in **batch** mode, on the published work version. A timer reads
+the JSON outcome. The open session is therefore never keyed or dirtied by a preview; its state lives
+on the window manager, which is not saved in the `.blend`. Bounded sliders are debounced (0.6 s):
+many drag events give one preview. Apply and Revert are refused while the session has unsaved
+changes, publish a new revision through the normal journal, then reopen it with the identity-guarded
+`open_file`; an edit made meanwhile cancels the reopen and is kept.
+
+The panel states its own preconditions instead of showing controls that cannot work: outside a
+project, without a character of a supported rig profile (the P0 bipeds have no IK and are named as
+unusable), on a file that is **not the latest work version** (the engine always works on the latest
+one; an `Open latest version` button replaces the controls), and on an unsaved scene. In Blender a
+mere selection flags the scene as unsaved; the panel never advises saving, which would overwrite a
+published version, and offers `Reload file (discard my changes)` behind a confirmation. Preview and
+Apply are disabled when the fix name already exists in the scene, Revert when it does not. A preview
+moves nothing in the viewport by design; the panel says so, reports the slide before and after in
+plain words and opens the before/after frames. Timers tag the sidebar for redraw, otherwise the
+status would stay stale until the mouse passes over it. `director.py` is the only
+runtime module allowed to import `subprocess` (guard test).
 
 Lost response: past `mcp.call_timeout_s` the engine cannot know what the session did, so the task is
 left `unknown` (exit 5), any retry is refused until `fluidblend task reconcile`, and the user must

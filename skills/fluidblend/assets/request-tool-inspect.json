@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "operation": "tool.inspect",
+  "operation_id": "tool-inspect-001",
+  "project_id": "demo-studio",
+  "target": {},
+  "parameters": {
+    "tool_id": "gentle-foot-lock"
+  },
+  "dry_run": false
+}

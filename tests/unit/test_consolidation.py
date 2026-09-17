@@ -25,8 +25,33 @@ def test_all_unavailable_operations_stop_before_routing(project_root, operation)
     assert runner.state.tasks() == []
 
 
+def test_live_cancel_is_believed_only_on_the_session_acknowledgement(project_root):
+    import threading
+
+    from fluidblend.core.atomic import atomic_write_json
+
+    runner = TaskRunner(load_project(project_root), test_hooks={"live_cancel_wait_s": 5})
+    task = _task("live-002", "live-operation-002", OperationStatus.running)
+    task.mode = "live"
+    runner.state.upsert_task(task)
+    task_dir = project_root / "state/tasks/live-002"
+    task_dir.mkdir(parents=True)
+
+    def session():
+        # Stand-in for the Blender timer: acknowledge only once the request file exists.
+        while not (task_dir / "cancel.request").exists():
+            threading.Event().wait(0.05)
+        atomic_write_json(task_dir / "cancel.ack.json", {"task_id": "live-002", "nothing_saved": True})
+
+    worker = threading.Thread(target=session)
+    worker.start()
+    result = runner.cancel(task.task_id)
+    worker.join()
+    assert result["cancelled"] is True and result["acknowledgement"]["nothing_saved"] is True
+
+
 def test_live_cancel_never_kills_gui_or_claims_confirmation(project_root, monkeypatch):
-    runner = TaskRunner(load_project(project_root))
+    runner = TaskRunner(load_project(project_root), test_hooks={"live_cancel_wait_s": 0.4})
     task = _task("live-001", "live-operation-001", OperationStatus.running)
     task.mode = "live"
     runner.state.upsert_task(task)

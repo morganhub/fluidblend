@@ -32,6 +32,7 @@
   "properties": {
     "amplitude": {
       "default": 0.3,
+      "description": "Recipe scale; for walk the stride per cycle is 2 x amplitude metres",
       "maximum": 0.6,
       "minimum": 0,
       "title": "Amplitude",
@@ -39,6 +40,16 @@
     },
     "frame_range": {
       "$ref": "#/$defs/FrameRange"
+    },
+    "hand": {
+      "default": "right",
+      "description": "take_prop / give_prop only",
+      "enum": [
+        "left",
+        "right"
+      ],
+      "title": "Hand",
+      "type": "string"
     },
     "output_clip": {
       "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
@@ -48,9 +59,12 @@
     "preset": {
       "enum": [
         "idle_neutral",
+        "walk",
         "turn",
         "look_at",
         "reach",
+        "take_prop",
+        "give_prop",
         "react"
       ],
       "title": "Preset",
@@ -68,6 +82,20 @@
       "default": null,
       "title": "Profile Path"
     },
+    "prop_instance_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "take_prop: static prop whose primary grip is reached",
+      "title": "Prop Instance Id"
+    },
     "seed": {
       "default": 0,
       "minimum": 0,
@@ -83,6 +111,24 @@
       ],
       "title": "Stage",
       "type": "string"
+    },
+    "target_point": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "give_prop: world point the hand extends to, metres",
+      "title": "Target Point"
     }
   },
   "required": [

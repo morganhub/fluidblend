@@ -14,16 +14,24 @@ from pydantic import Field, ValidationError, field_validator
 
 from fluidblend.contracts.common import SCHEMA_VERSION, StrictModel
 from fluidblend.contracts.production import (
+    AdjustmentRevertParams,
     AnimationApplyParams,
     AnimationBakeParams,
     AnimationCreateParams,
     AnimationLoopParams,
     AudioPrepareParams,
     CharacterInspectParams,
+    ContactLockParams,
+    InteractionApplyParams,
+    InteractionPlanParams,
+    InteractionValidateParams,
     LipsyncAnalyzeParams,
     RigMapParams,
     RigValidateParams,
     ShotBuildParams,
+    ToolInspectParams,
+    ToolRegisterParams,
+    ToolTestParams,
 )
 from fluidblend.contracts.project import IDENT_PATTERN
 
@@ -167,6 +175,9 @@ class OperationSpec:
             "animation.loop",
             "animation.bake",
             "animation.retime",
+            "adjustment.preview",
+            "adjustment.apply",
+            "adjustment.revert",
         }:
             targets.append("instance_id")
         if self.name in {"animation.loop", "animation.retime"}:
@@ -392,30 +403,31 @@ OPERATIONS: dict[str, OperationSpec] = {
         # Interactions (P1)
         _spec(
             "interaction.plan",
-            NoParams,
+            InteractionPlanParams,
             "host",
             "read",
             "P1",
-            "Multi-character choreography",
-            available=False,
+            "Plan a bounded prop hand-off between two characters",
+            requires_shot=True,
         ),
         _spec(
             "interaction.apply",
-            NoParams,
+            InteractionApplyParams,
             "blender",
             "write",
             "P1",
-            "Apply an interaction",
-            available=False,
+            "Apply a planned prop hand-off on a new version",
+            requires_shot=True,
+            creates_version=True,
         ),
         _spec(
             "interaction.validate",
-            NoParams,
+            InteractionValidateParams,
             "blender",
             "read",
             "P1",
-            "Validate contacts and ownership",
-            available=False,
+            "Measure contacts, hand-off jump and prop ownership",
+            requires_shot=True,
         ),
         # Audio / face (P1)
         _spec("audio.prepare", AudioPrepareParams, "host", "write", "P1", "Normalize an audio track"),
@@ -425,15 +437,33 @@ OPERATIONS: dict[str, OperationSpec] = {
         # Adjustment (P1)
         _spec(
             "adjustment.preview",
-            NoParams,
+            ContactLockParams,
             "blender",
             "read",
             "P1",
-            "Preview an adjustment",
-            available=False,
+            "Measure and render an adjustment before/after without saving it",
+            requires_shot=True,
         ),
-        _spec("adjustment.apply", NoParams, "blender", "write", "P1", "Apply an adjustment", available=False),
-        _spec("adjustment.revert", NoParams, "blender", "write", "P1", "Roll back", available=False),
+        _spec(
+            "adjustment.apply",
+            ContactLockParams,
+            "blender",
+            "write",
+            "P1",
+            "Apply an adjustment as an additive layer on a new version",
+            requires_shot=True,
+            creates_version=True,
+        ),
+        _spec(
+            "adjustment.revert",
+            AdjustmentRevertParams,
+            "blender",
+            "write",
+            "P1",
+            "Remove an applied adjustment on a new version",
+            requires_shot=True,
+            creates_version=True,
+        ),
         # Film
         _spec(
             "shot.build",
@@ -513,9 +543,19 @@ OPERATIONS: dict[str, OperationSpec] = {
             cli="fluidblend task reconcile --project <p> --id <t>",
         ),
         # Tools (P1)
-        _spec("tool.inspect", NoParams, "host", "read", "P1", "Inspect a custom tool", available=False),
-        _spec("tool.test", NoParams, "host", "read", "P1", "Test a custom tool", available=False),
-        _spec("tool.register", NoParams, "host", "write", "P1", "Register a validated tool", available=False),
+        _spec("tool.inspect", ToolInspectParams, "host", "read", "P1", "Inspect a declarative custom tool"),
+        _spec(
+            "tool.test",
+            ToolTestParams,
+            "blender",
+            "read",
+            "P1",
+            "Run the declared tests of a custom tool on a shot",
+            requires_shot=True,
+        ),
+        _spec(
+            "tool.register", ToolRegisterParams, "host", "write", "P1", "Register a custom tool that passed"
+        ),
     ]
 }
 

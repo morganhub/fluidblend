@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "operation": "interaction.plan",
+  "operation_id": "interaction-plan-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010"
+  },
+  "parameters": {
+    "interaction_id": "baton-handoff",
+    "kind": "prop_handoff",
+    "giver": {
+      "instance_id": "hero-01",
+      "hand": "right"
+    },
+    "receiver": {
+      "instance_id": "sidekick-01",
+      "hand": "left"
+    },
+    "prop_instance_id": "baton-01",
+    "frame_range": {
+      "start": 1,
+      "end_exclusive": 81
+    },
+    "handoff_frame": 40,
+    "overlap_frames": 6
+  },
+  "dry_run": false
+}

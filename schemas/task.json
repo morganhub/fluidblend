@@ -242,6 +242,12 @@
       "title": "Partial Effects",
       "type": "array"
     },
+    "progress": {
+      "additionalProperties": true,
+      "description": "Last cooperative step reported by a live operation",
+      "title": "Progress",
+      "type": "object"
+    },
     "project_id": {
       "title": "Project Id",
       "type": "string"

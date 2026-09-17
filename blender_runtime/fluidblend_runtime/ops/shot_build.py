@@ -1,4 +1,5 @@
 import hashlib
+import json
 
 import bpy
 from mathutils import Vector
@@ -28,17 +29,26 @@ def run(ctx, request, builder):
                 raise OpError("VALIDATION_FAILED", "manifest names missing objects")
             dst.objects = list(asset["objects"])
         imported = dict(zip(asset["objects"], dst.objects, strict=True))
-        rig = imported.get(asset["armature"])
-        if rig is None or rig.type != "ARMATURE":
+        kind = asset.get("kind", "character")
+        root = imported.get(asset["armature"] if kind == "character" else asset["root_object"])
+        if kind == "character" and (root is None or root.type != "ARMATURE"):
             raise OpError("VALIDATION_FAILED", "manifest armature is invalid")
+        if kind == "prop" and (root is None or root.type == "ARMATURE" or root.parent is not None):
+            raise OpError("VALIDATION_FAILED", "manifest prop root must be an unparented non-armature object")
         for obj in imported.values():
             scene.collection.objects.link(obj)
-            if obj != rig:
+            if obj != root:
                 obj["fluidblend_part_of"] = asset["instance_id"]
-        rig["fluidblend_instance_id"] = asset["instance_id"]
-        rig["fluidblend_asset_id"] = asset["asset_id"]
-        rig["fluidblend_rig_profile"] = asset["rig_profile"]
-        rig.location += Vector(asset.get("location", [0, 0, 0]))
+        root["fluidblend_instance_id"] = asset["instance_id"]
+        root["fluidblend_asset_id"] = asset["asset_id"]
+        root["fluidblend_kind"] = kind
+        if kind == "character":
+            root["fluidblend_rig_profile"] = asset["rig_profile"]
+        else:
+            root["fluidblend_grips"] = json.dumps(asset["grips"])
+        # Placement of the instance root at import, not a transform applied to skinned data.
+        root.location += Vector(asset.get("location", [0, 0, 0]))
+        root.rotation_euler.z += asset.get("rotation_z", 0.0)
         instances.append(
             {
                 "instance_id": asset["instance_id"],

@@ -20,6 +20,14 @@
         "manifest_path": {
           "title": "Manifest Path",
           "type": "string"
+        },
+        "rotation_z": {
+          "default": 0.0,
+          "description": "Placement yaw in radians",
+          "maximum": 6.283185307179586,
+          "minimum": -6.283185307179586,
+          "title": "Rotation Z",
+          "type": "number"
         }
       },
       "required": [

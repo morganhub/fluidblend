@@ -53,6 +53,27 @@ class FLUIDBLEND_OT_run_request(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class FLUIDBLEND_OT_start_request(bpy.types.Operator):
+    """Queue one typed operation request; a timer runs it cooperatively and writes its result file."""
+
+    bl_idname = "fluidblend.start_request"
+    bl_label = "fluidblend: start request"
+    bl_options = {"INTERNAL"}
+
+    request_path: StringProperty(name="Request", subtype="FILE_PATH")  # type: ignore[valid-type]
+    result_path: StringProperty(name="Result", subtype="FILE_PATH")  # type: ignore[valid-type]
+
+    def execute(self, context):  # noqa: ANN001
+        from fluidblend_runtime import live_jobs
+
+        try:
+            started = live_jobs.start(self.request_path, self.result_path)
+        except Exception as exc:  # noqa: BLE001 - reported to the engine, never swallowed
+            started = {"started": False, "error": repr(exc)}
+        print("FLUIDBLEND_STARTED=" + json.dumps(started), flush=True)
+        return {"FINISHED"} if started.get("started") else {"CANCELLED"}
+
+
 class FLUIDBLEND_OT_open_file(bpy.types.Operator):
     """Open a .blend in the live session (used after a version is published)."""
 
@@ -83,20 +104,27 @@ class FLUIDBLEND_OT_open_file(bpy.types.Operator):
         return {"FINISHED"} if "FINISHED" in result else {"CANCELLED"}
 
 
-CLASSES = (FLUIDBLEND_OT_identity, FLUIDBLEND_OT_run_request, FLUIDBLEND_OT_open_file)
+CLASSES = (
+    FLUIDBLEND_OT_identity,
+    FLUIDBLEND_OT_run_request,
+    FLUIDBLEND_OT_start_request,
+    FLUIDBLEND_OT_open_file,
+)
 
 
 def register() -> None:
-    from fluidblend_runtime import live_state
+    from fluidblend_runtime import director, live_state
 
     for cls in CLASSES:
         bpy.utils.register_class(cls)
     live_state.register()
+    director.register()
 
 
 def unregister() -> None:
-    from fluidblend_runtime import live_state
+    from fluidblend_runtime import director, live_state
 
+    director.unregister()
     live_state.unregister()
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)

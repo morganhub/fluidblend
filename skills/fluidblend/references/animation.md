@@ -4,7 +4,7 @@ Status: **partially implemented**.
 
 - Lot P0: `animation.retime` (a slower or faster variant of a clip).
 - Bounded P1: `animation.create`, `animation.apply`, `animation.loop`, `animation.bake`.
-- Unavailable: `animation.retarget`, Rigify walk and take/give recipes.
+- Unavailable: `animation.retarget`.
 
 ## Slotted Actions: the only allowed API
 
@@ -110,8 +110,8 @@ Properties set on the variant: `fluidblend_clip_id`, `fluidblend_source_clip`,
 ## Bounded Rigify library
 
 `animation.create` takes `preset`, `output_clip`, `frame_range`, `amplitude` (0–0.6), `seed`,
-`stage` (blocking/spline/polish) and optional `profile_path`. Presets: `idle_neutral`, `turn`,
-`look_at`, `reach`, `react`. It creates an unassigned Action with a slot and manifest; it does
+`stage` (blocking/spline/polish) and optional `profile_path`. Presets: `idle_neutral`, `walk`,
+`turn`, `look_at`, `reach`, `take_prop`, `give_prop`, `react`. It creates an unassigned Action with a slot and manifest; it does
 not replace active animation. The recorded seed makes the bounded recipe repeatable.
 Blocking affects newly authored keys only. Polish is currently a stage label, not automatic polish.
 
@@ -123,8 +123,51 @@ endpoint curve values before adding repetition. This is not a physical contact/v
 `animation.bake` takes `output_clip`, `frame_range`, `step` and creates an export variant.
 It removes constraints and drivers only in that variant, checks mesh deformation within 1 mm
 at first/middle/last frames, and preserves the source. Baked rigs cannot accept control recipes.
-Indexes at `animation/clips/<id>/clip.json` cite versioned blend/report hashes. Contacts and events
-are initially empty; do not claim measured locomotion or hand contact from these clips.
+Indexes at `animation/clips/<id>/clip.json` cite versioned blend/report hashes. Only `walk` and
+`take_prop` declare contacts; do not claim measured locomotion or hand contact from the other clips.
 
-Retargeting, walk, take/give and support-relative contact cleanup remain unavailable. Reject such
+### `take_prop` and `give_prop`
+
+Both move one palm (`hand`: `left` | `right`, default `right`) with the arm IK: reach over the first
+3/8 of `frame_range` (at least 16 frames), hold still until 5/8, return. `amplitude` and `seed` are
+ignored; `stage: blocking` is refused.
+
+- `take_prop` needs `prop_instance_id`: a **static** prop of kind `prop` in the scene. The target is
+  its `primary` grip. The clip declares a contact window whose support is that prop and records
+  `contact_error` / `contact_slide` in the prop's space (gate `contact_error_max_m`).
+- `give_prop` needs `target_point` (world, metres). It records a world-space `contact_error` against
+  that point and declares no contact.
+
+The control point is the palm (`DEF-hand.R@0.5`), not the IK control. A target beyond 95 % of the arm
+length is refused with `needed_m` / `arm_m`. The hand moves, the prop does not: passing a prop from
+one character to another is `interaction.apply` ([interactions.md](interactions.md)).
+Examples: [request-animation-create-walk.json](../assets/request-animation-create-walk.json),
+[request-animation-create-take-prop.json](../assets/request-animation-create-take-prop.json).
+
+### `walk` and the shared measurements
+
+`walk` authors one root-motion cycle on the IK feet: stride per cycle = `2 x amplitude` metres
+(amplitude >= 0.05), even `frame_range` of at least 16 frames, `stage: blocking` refused (constant
+interpolation cannot hold a contact). The manifest records `root_motion: root_bone`,
+`root_motion_channels`, `stride_m`, two contact windows (`left_foot`, `right_foot`) and `measurements`.
+
+Every measurement states `kind`, `effector`, `control_point` (the **deform** bone, not the control),
+`space`, `frame_range`, `sampling_step`, `value`, `unit`, `tolerance` and `passed`:
+
+| Kind | Definition | Gate |
+| --- | --- | --- |
+| `foot_slide` | largest 3D distance from the first sample of the support window, world space, every frame | `quality.foot_slide_max_m` (0.02 m) |
+| `loop_pose` | largest control-point distance between first and last frame, root motion removed | `quality.loop_pose_error_max` |
+| `loop_velocity` | seam velocity mismatch in m/frame | none: `passed` is `null`, never quote it as a pass |
+
+`animation.loop` repeats root-motion channels with an accumulating offset and re-measures the seam
+on the evaluated rig. `animation.apply` re-measures **every contact window of every repetition in
+the assembled scene** and checks the root travel against `stride_m x repetitions`; a failed
+measurement refuses the operation and publishes nothing. A root-motion strip holds forward after its
+end so the character does not snap back.
+
+Limits to state: straight walk on flat static ground, ankle control point, no heel roll, no arm
+swing, linear stance/swing keys. It is a technical contact measurement, not an approved gait.
+
+Retargeting and contact cleanup tools (`contact_lock`) remain unavailable. Reject such
 requests without improvised scripts. Optional retarget add-ons remain external, never vendored.

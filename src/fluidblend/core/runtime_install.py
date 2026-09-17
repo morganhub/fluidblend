@@ -12,6 +12,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -104,6 +105,8 @@ def install_runtime(addons_dir: Path | None = None, *, force: bool = False) -> d
         "version": __version__,
         "hash": runtime_tree_hash(source),
         "source": str(source),
+        # The Director panel runs the very same engine the user installed from, never a copy.
+        "cli": [sys.executable, "-m", "fluidblend.cli"],
         "installed_at": now_iso(),
     }
     atomic_write_json(staging / MANIFEST_NAME, manifest)

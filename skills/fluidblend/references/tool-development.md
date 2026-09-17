@@ -1,30 +1,102 @@
 # Adjustment tools generated on demand
 
-## Status: not implemented (lot P1) — what to do
+## Status: one built-in tool, declarative custom tools
 
-`tool.inspect`, `tool.test` and `tool.register` are declared with `available=false` and answer
-`UNSUPPORTED_CAPABILITY` (exit 2). So do `adjustment.preview`, `adjustment.apply` and
-`adjustment.revert`. The `tools/custom/` folder is created by the scaffold but stays **empty**: there
-is no tool registry, no loading mechanism and no Blender panel in this lot.
+`adjustment.preview`, `adjustment.apply` and `adjustment.revert` are available with **one** built-in
+tool, `contact_lock` (acceptance B05). `tool.inspect`, `tool.test` and `tool.register` manage
+**declarative** custom tools (acceptance B08): a custom tool narrows a built-in tool and proves it
+with tests. It never brings code: the kit loads no script from `tools/custom/`, and you write none
+there. There is no Blender panel.
 
-Typical requests concerned: "make this gesture wider", "slow down the anticipation only", "fix the
-sliding foot", "keep the hand on this handle", "add a slider to tune the gaze".
+### `contact_lock`
 
-What to do:
+"Fix the sliding foot", "keep the hand on this handle" — over a **marked stance window**, for one IK
+effector (`left_foot`, `right_foot`, `left_hand`, `right_hand`) of a `rigify/0.6.10` character.
+
+```powershell
+fluidblend run --project . --operation requests/adjustment-preview.json   # saves nothing
+fluidblend run --project . --operation requests/adjustment-apply.json     # same parameters, new version
+fluidblend run --project . --operation requests/adjustment-revert.json    # parameters.adjustment_id
+```
+
+Parameters: `adjustment_id`, `effector`, `frame_range`, optional `support_instance_id` (hold the
+contact in that instance's space instead of the world), `blend_frames` (1–24, default 3),
+`max_correction_m` (≤ 0.5, default 0.15), `preview_samples` (0–16, preview only). Target: shot and
+`instance_id`. Examples: [preview](../assets/request-adjustment-preview.json),
+[apply](../assets/request-adjustment-apply.json), [revert](../assets/request-adjustment-revert.json).
+
+How it works: the anchor is the control point (deform bone, palm for a hand) at the first frame of
+the window. The tool adds **one Action on one additive NLA track** keying the IK control's location;
+it edits no source Action or strip. `revert` removes exactly that track and Action, in a new version,
+and reports the restored drift. If someone changed the layer by hand, `revert` answers
+`SCENE_CONFLICT` and leaves it as found.
+
+It refuses instead of guessing:
+
+| Situation | Answer |
+| --- | --- |
+| drift already within tolerance | `VALIDATION_FAILED` "nothing to lock" |
+| drift above `max_correction_m` (the window contains a step) | `VALIDATION_FAILED` "travel, not a sliding stance": narrow the window, never raise the bound to force it |
+| limb in FK inside the window | `VALIDATION_FAILED` |
+| result still above tolerance after three passes (`apply`) | `VALIDATION_FAILED`, nothing published |
+| `adjustment_id` already applied | `SCENE_CONFLICT` |
+
+Reports (`adjustment-preview.json`, `adjustment-apply.json`) carry `before` and `after` measurement
+records (space, window, control point, tolerance — same format as the clip library), and the
+preview adds `review/before` and `review/after` frames rendered through the shot camera as it is
+framed. `technical_pass` is a contact measurement; look at the frames and say which ones you looked
+at before calling the fix good. Limits: translation only (no foot roll, no wrist orientation), the
+other contacts of the character are not re-planted, one effector per adjustment.
+
+### Custom tools: bounded, tested, or refused
+
+When the user asks for "a tool that…", first ask whether a **narrowed `contact_lock`** answers it
+(fewer effectors, smaller `max_correction_m`, shorter blend). If yes:
+
+1. Write `tools/custom/<tool_id>/tool.json` (start from
+   [custom-tool-example.json](../assets/custom-tool-example.json)): `tool_id`, `version`, `purpose`,
+   `base_tool`, `supported_rigs`, `bounds` (`effectors`, `max_correction_m` ≤ 0.5,
+   `blend_frames_max`), `known_limits` (at least one), `tests` (distinct names, at least one
+   `expect: "pass"`; add `expect: "refuse"` cases the tool must decline). Unknown fields — a
+   `script`, for instance — are rejected.
+2. `tool.inspect` ([request](../assets/request-tool-inspect.json)): status `declared`, `registered`,
+   `registration_stale`, or `unsupported` with the limitation in words. **`unsupported` is the
+   answer to give the user**: an unimplemented `base_tool` ("make the gesture wider" →
+   `scale_gesture`) or a rig without IK and semantic profile (`fluidblend.simple_biped/1`) cannot be
+   tested or registered. Do not look for a workaround.
+3. `tool.test` ([request](../assets/request-tool-test.json), target `shot_id`): runs every declared
+   test in memory on the shot's current revision, each on a freshly opened scene, and saves nothing.
+   It exits 0 even when tests fail — read `metrics.all_passed` and `tool-test.json`. A `refuse` test
+   passes only on a `VALIDATION_FAILED` refusal by the tool, not on a missing rig mapping.
+4. `tool.register` ([request](../assets/request-tool-register.json), `test_report_path`): refuses a
+   report with a failed or missing test, a report whose evidence no longer matches the shot's
+   revision, a `tool.json` changed since the test, and a version already registered (bump
+   `version`). On success it writes `tools/custom/<tool_id>/registration.json`.
+5. Use it: `adjustment.preview` / `adjustment.apply` with `custom_tool_id`. The engine enforces the
+   registered bounds before any task exists — another effector or a larger `max_correction_m` is
+   `VALIDATION_FAILED`; an omitted `max_correction_m` means the tool's bound, not the wider default.
+   Editing `tool.json` after registration disables the tool until it is tested and registered again.
+
+The tests need a shot that **shows the problem** (a sliding stance to fix, a step to decline). Never
+relax a test, a bound in `config/quality.json` or an `expect` to obtain a registration.
+
+### Everything else: stop
+
+Typical requests **not** covered: "make this gesture wider", "slow down the anticipation only",
+"add a slider to tune the gaze", any tool that needs a new algorithm.
 
 1. **Stop.** Do not write a `bpy` script in `tools/custom/`, do not run it through a workaround, do
    not present it as a delivered tool.
-2. **Explain** that generating adjustment tools belongs to lot 3 and assumes a rig with IK controls,
-   a clip library and a reversible preview mechanism — three things missing from lot P0.
-3. **Offer what exists**: `animation.retime` covers the only implemented adjustment, namely changing
-   the duration of a whole clip into a variant. It handles neither a partial segment, nor amplitude,
-   nor gaze, nor contact.
-4. **Do not requalify the request.** "Slow down the anticipation only" is not `animation.retime`: the
+2. **Offer what exists**: `contact_lock` for a sliding contact; `animation.retime` for the duration
+   of a whole clip. Neither handles a partial segment, amplitude or gaze.
+3. **Do not requalify the request.** "Slow down the anticipation only" is not `animation.retime`: the
    P0 retime stretches the entire clip. Say so instead of delivering a silent approximation.
 
-## Tool contract (to be honored the day lot 3 opens)
+## Tool contract
 
-Every registered tool will have to declare, without exception:
+`contact_lock` declares it in `ADJUSTMENT_TOOLS` (`src/fluidblend/contracts/production.py`); a unit
+test refuses an empty field or a declared test file that does not exist. Every tool declares,
+without exception:
 
 | Field | Content |
 | --- | --- |
@@ -50,7 +122,7 @@ Permanent prohibitions, including while developing a tool: modifying the securit
 (`core/paths.py`, `core/permissions.py`, `core/locks.py`), relaxing a threshold in
 `config/quality.json` to make a result pass, deleting or neutralizing an acceptance test.
 
-## Planned adjustments (lot 3, not available)
+## Planned adjustments (not available, except `contact_lock`)
 
 | Tool | Function | Essential verification |
 | --- | --- | --- |
@@ -90,6 +162,7 @@ names, `let` rather than `var`, no `var`, no jQuery, no heavy framework for a si
 ## Related acceptance scenario
 
 Scenario B08 ("ask for a missing tool on an unsupported rig" → a bounded tool with a test, or a clear
-limitation, never a false success) belongs to the P1 acceptance plan. It is not executed in this lot.
-The rule it encodes applies today nonetheless: faced with an out-of-scope request, the only
-acceptable answer is a clear statement of the limitation.
+limitation, never a false success) passes: unimplemented base tool and IK-less rig get a stated
+limitation and no registration, a tool failing its own test stays unregistered, a bounded tool is
+tested, registered, applied within its bounds and refused beyond them. Faced with an out-of-scope
+request, the only acceptable answer remains a clear statement of the limitation.

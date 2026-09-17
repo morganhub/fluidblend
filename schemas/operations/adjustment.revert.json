@@ -2,25 +2,39 @@
   "$id": "https://fluidblend.local/schemas/operations/adjustment.revert.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Roll back",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Remove an applied adjustment on a new version",
+  "properties": {
+    "adjustment_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Adjustment Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "adjustment_id"
+  ],
+  "title": "AdjustmentRevertParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
     "cli_command": null,
     "input_paths": [],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
     "optional_dependencies": [],
-    "publication": "reports_and_artifacts",
+    "publication": "shot_revision_and_reports",
     "required_dependencies": [
       "blender.batch"
     ],
-    "required_targets": [],
-    "requires_shot": false
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

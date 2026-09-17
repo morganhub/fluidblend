@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-09-17 09:54 UTC",
+  "generated_at": "2026-09-17 12:42 UTC",
   "blender": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
   "scenarios": [
     {
       "scenario": "A01",
       "test": "tests/unit/test_scaffold_and_cli.py::test_A01_init_in_accented_path",
       "status": "passed",
-      "duration_s": 0.07,
+      "duration_s": 0.08,
       "detail": "",
       "title": "Initialize in a Windows path with spaces and accents",
       "notes": []
@@ -15,7 +15,7 @@
       "scenario": "A02",
       "test": "tests/unit/test_scaffold_and_cli.py::test_A02_rerun_init_is_idempotent_and_keeps_manual_edits",
       "status": "passed",
-      "duration_s": 0.11,
+      "duration_s": 0.1,
       "detail": "",
       "title": "Re-run the initialization on the same project",
       "notes": []
@@ -24,7 +24,7 @@
       "scenario": "A03",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A03_live_mcp_inspection",
       "status": "passed",
-      "duration_s": 7.49,
+      "duration_s": 7.31,
       "detail": "",
       "title": "Inspect the scene through the configured MCP",
       "notes": [
@@ -35,7 +35,7 @@
       "scenario": "A04",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A04_build_two_characters_and_prop",
       "status": "passed",
-      "duration_s": 6.46,
+      "duration_s": 6.55,
       "detail": "",
       "title": "Build two simple articulated characters and one prop (240 frames at 24 fps)",
       "notes": [
@@ -46,7 +46,7 @@
       "scenario": "A05",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A05_replay_same_operation_id",
       "status": "passed",
-      "duration_s": 6.35,
+      "duration_s": 6.87,
       "detail": "",
       "title": "Re-run the same operation after a lost response",
       "notes": [
@@ -57,7 +57,7 @@
       "scenario": "A06",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A06_interrupted_worker_reconciles_without_loss",
       "status": "passed",
-      "duration_s": 10.14,
+      "duration_s": 10.98,
       "detail": "",
       "title": "Interrupt the worker after an output is created but before commit",
       "notes": [
@@ -68,7 +68,7 @@
       "scenario": "A07",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A07_manual_change_detected_and_preserved",
       "status": "passed",
-      "duration_s": 3.48,
+      "duration_s": 3.79,
       "detail": "",
       "title": "Manually modify a protected object between two operations",
       "notes": [
@@ -79,7 +79,7 @@
       "scenario": "A08",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A08_retime_on_variant_keeps_source",
       "status": "passed",
-      "duration_s": 8.1,
+      "duration_s": 8.42,
       "detail": "",
       "title": "Slow down an animation on a variant",
       "notes": [
@@ -90,18 +90,18 @@
       "scenario": "A09",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A09_preview_frames_and_video_proof",
       "status": "passed",
-      "duration_s": 18.68,
+      "duration_s": 22.63,
       "detail": "",
       "title": "Render then assemble the preview",
       "notes": [
-        "240/240 Workbench PNG in 10.798 s, MP4 24/1 yuv420p, ffprobe nb_read_frames=240, 10 s duration, shot.validate technical_pass"
+        "240/240 Workbench PNG in 12.986 s, MP4 24/1 yuv420p, ffprobe nb_read_frames=240, 10 s duration, shot.validate technical_pass"
       ]
     },
     {
       "scenario": "A10",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A10_export_glb_validate_and_reimport",
       "status": "passed",
-      "duration_s": 7.84,
+      "duration_s": 10.22,
       "detail": "",
       "title": "Export an animation as GLB",
       "notes": [
@@ -112,7 +112,7 @@
       "scenario": "A11",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A11_offline_execution",
       "status": "passed",
-      "duration_s": 3.16,
+      "duration_s": 3.54,
       "detail": "",
       "title": "Run without network after an approved preparation",
       "notes": [
@@ -145,7 +145,7 @@
       "scenario": "B01",
       "test": "tests/acceptance/test_characters.py::test_B01_character_mapping_and_deformation",
       "status": "passed",
-      "duration_s": 17.28,
+      "duration_s": 26.52,
       "detail": "",
       "title": "Versioned skinned Rigify character: semantic mapping and five deformation poses",
       "notes": [
@@ -153,10 +153,54 @@
       ]
     },
     {
+      "scenario": "B03",
+      "test": "tests/acceptance/test_interactions.py::test_B03_prop_handoff",
+      "status": "passed",
+      "duration_s": 39.74,
+      "detail": "",
+      "title": "Prop hand-off between two characters: contacts, jump and ownership measured",
+      "notes": [
+        "baton passed hero-01 -> sidekick-01 at frame 40; receiver contact 0.01 mm in prop space, jump 0.000 mm; unreachable target, stale plan and second authority refused; a 6 cm human move is detected by validate and preserved; artistic review pending"
+      ]
+    },
+    {
+      "scenario": "B05",
+      "test": "tests/acceptance/test_adjustments.py::test_B05_contact_lock_preview_apply_revert",
+      "status": "passed",
+      "duration_s": 42.99,
+      "detail": "",
+      "title": "Sliding stance fixed with contact_lock: preview, apply, revert",
+      "notes": [
+        "artist drift 100.0 mm -> 0.06 mm after contact_lock (world, DEF-foot.L); travel window and planted foot refused; preview saved nothing; revert restored the drift exactly; artist file hash unchanged; artistic review pending"
+      ]
+    },
+    {
+      "scenario": "B06",
+      "test": "tests/acceptance/test_director.py::test_B06_director_panel",
+      "status": "passed",
+      "duration_s": 61.72,
+      "detail": "",
+      "title": "Director panel: Preview / Apply / Revert run the engine, the session stays clean",
+      "notes": [
+        "panel preview 100.0 -> 0.06 mm with the session untouched (same edit generation, not dirty); five slider moves -> one debounced preview; Apply and Revert published new revisions through the engine journal and reopened the session; Apply refused on unsaved changes, artist object preserved; driven through the panel operators, no human clicked the UI"
+      ]
+    },
+    {
+      "scenario": "B08",
+      "test": "tests/acceptance/test_custom_tools.py::test_B08_custom_tool_is_bounded_tested_or_refused",
+      "status": "passed",
+      "duration_s": 26.54,
+      "detail": "",
+      "title": "Custom tool request: a bounded tested tool, or a stated limitation",
+      "notes": [
+        "unimplemented base tool and IK-less rig -> stated limitation, no test, no registration; failing tool not registered; bounded declarative tool tested (1 fix, 1 refusal), registered, applied within its bounds, refused beyond them and after its declaration changed; no custom code is executed"
+      ]
+    },
+    {
       "scenario": "L01",
       "test": "tests/acceptance/test_live_mcp.py::test_L01_live_inspect_with_identity",
       "status": "passed",
-      "duration_s": 5.6,
+      "duration_s": 6.63,
       "detail": "",
       "title": "Live: identity check and read-only inspection of the open scene",
       "notes": [
@@ -167,7 +211,7 @@
       "scenario": "L02",
       "test": "tests/acceptance/test_live_mcp.py::test_L02_live_retime_publishes_version_and_reloads",
       "status": "passed",
-      "duration_s": 7.74,
+      "duration_s": 8.05,
       "detail": "",
       "title": "Live: isolated write (retime) publishes a new version and reloads the session",
       "notes": [
@@ -178,7 +222,7 @@
       "scenario": "L03",
       "test": "tests/acceptance/test_live_mcp.py::test_L03_dirty_scene_is_blocked",
       "status": "passed",
-      "duration_s": 10.65,
+      "duration_s": 11.04,
       "detail": "",
       "title": "Live: unsaved manual changes block the write and are preserved",
       "notes": [
@@ -189,7 +233,7 @@
       "scenario": "L04",
       "test": "tests/acceptance/test_live_mcp.py::test_L04_wrong_open_file_is_refused",
       "status": "passed",
-      "duration_s": 10.89,
+      "duration_s": 11.23,
       "detail": "",
       "title": "Live: wrong file open in the session is refused",
       "notes": [
@@ -200,7 +244,7 @@
       "scenario": "L05",
       "test": "tests/acceptance/test_live_mcp.py::test_L05_lost_response_reconciles",
       "status": "passed",
-      "duration_s": 23.08,
+      "duration_s": 20.44,
       "detail": "",
       "title": "Live: lost response leaves an unknown state that reconciliation resolves",
       "notes": [
@@ -211,7 +255,7 @@
       "scenario": "L06",
       "test": "tests/acceptance/test_live_mcp.py::test_edit_between_identity_and_execution",
       "status": "passed",
-      "duration_s": 6.01,
+      "duration_s": 6.34,
       "detail": "",
       "title": "Live: edit between admission and execution is preserved",
       "notes": []
@@ -220,7 +264,7 @@
       "scenario": "L07",
       "test": "tests/acceptance/test_live_mcp.py::test_edit_before_publication",
       "status": "passed",
-      "duration_s": 7.14,
+      "duration_s": 7.88,
       "detail": "",
       "title": "Live: edit before publication prevents publishing or reloading",
       "notes": []
@@ -229,10 +273,21 @@
       "scenario": "L08",
       "test": "tests/acceptance/test_live_mcp.py::test_guarded_reload_and_undo",
       "status": "passed",
-      "duration_s": 10.03,
+      "duration_s": 11.78,
       "detail": "",
       "title": "Live: guarded reload preserves a later edit; undo generation is monotonic",
       "notes": []
+    },
+    {
+      "scenario": "L09",
+      "test": "tests/acceptance/test_live_cooperative.py::test_live_cancel_is_acknowledged",
+      "status": "passed",
+      "duration_s": 9.78,
+      "detail": "",
+      "title": "Live: progress is reported and a cancellation is acknowledged by the session",
+      "notes": [
+        "cancel requested after 2 step(s); session wrote cancel.ack.json, task cancelled, nothing saved, session clean and reusable; without acknowledgement the state stays unknown (unit test)"
+      ]
     }
   ]
 }

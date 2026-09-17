@@ -24,7 +24,7 @@ uv run pytest tests -q --acceptance-report docs/acceptance-reports/latest-p0   #
 ```
 
 The full acceptance suite opens a Blender window for a few seconds: scenario A03, and the live
-scenarios L01 to L05, which also need the MCP add-on, the kit's runtime add-on
+scenarios L01 to L09, which also need the MCP add-on, the kit's runtime add-on
 (`uv run fluidblend runtime install --enable`), `uvx`, and port 9876 free. Each of those tests
 creates and stops its own Blender process, and declares itself `not_run` rather than touching a
 session it did not open.

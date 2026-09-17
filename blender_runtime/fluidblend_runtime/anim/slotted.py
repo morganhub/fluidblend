@@ -70,18 +70,20 @@ def fcurve(channelbag, data_path: str, index: int = 0):
     return existing or channelbag.fcurves.new(data_path, index=index)
 
 
-def set_keys(fc, keys: list[tuple[float, float]], *, interpolation: str = "BEZIER") -> None:
-    for frame, value in keys:
+def set_keys(fc, keys: list[tuple], *, interpolation: str = "BEZIER") -> None:
+    """Keys are `(frame, value)` or `(frame, value, interpolation)` for the segment that follows."""
+    for frame, value, *own in keys:
         point = fc.keyframe_points.insert(frame, value, options={"FAST"})
-        point.interpolation = interpolation
+        point.interpolation = own[0] if own else interpolation
     fc.update()
 
 
-def add_cycles(fc) -> None:
+def add_cycles(fc, *, offset: bool = False) -> None:
+    """`offset` accumulates the end value each cycle: root motion advances instead of snapping back."""
     if not any(m.type == "CYCLES" for m in fc.modifiers):
         modifier = fc.modifiers.new(type="CYCLES")
-        modifier.mode_before = "REPEAT"
-        modifier.mode_after = "REPEAT"
+        modifier.mode_before = "REPEAT_OFFSET" if offset else "REPEAT"
+        modifier.mode_after = "REPEAT_OFFSET" if offset else "REPEAT"
 
 
 def is_pose_channel(fc) -> bool:

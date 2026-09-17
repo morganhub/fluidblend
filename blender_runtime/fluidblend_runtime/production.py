@@ -1,8 +1,10 @@
 """Shared rig and version operations, without applying character transforms."""
 
+import json
 import math
 
 import bpy
+from mathutils import Vector
 
 from fluidblend_runtime import RUNTIME_VERSION, blendio
 from fluidblend_runtime.errors import OpError
@@ -14,6 +16,24 @@ def character(request):
     if obj is None or obj.type != "ARMATURE":
         raise OpError("VALIDATION_FAILED", "target.instance_id must identify an armature")
     return obj
+
+
+def prop_object(instance_id):
+    obj = blendio.find_instance_object(instance_id)
+    if obj is None or obj.get("fluidblend_kind") != "prop":
+        raise OpError("VALIDATION_FAILED", f"no prop instance in the scene: {instance_id}")
+    return obj
+
+
+def grip_local(prop, name):
+    grips = json.loads(prop.get("fluidblend_grips", "{}"))
+    if name not in grips:
+        raise OpError("VALIDATION_FAILED", f"prop has no {name} grip", details={"grips": sorted(grips)})
+    return Vector(grips[name])
+
+
+def grip_world(prop, name):
+    return prop.matrix_world @ grip_local(prop, name)
 
 
 def meshes_for(rig):

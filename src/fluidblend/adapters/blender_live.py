@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -170,17 +171,44 @@ def identity(config: LiveConfig) -> dict[str, Any]:
     return data
 
 
+POLL_S = 0.2
+
+
 def run_request(
-    config: LiveConfig, request_path: Path, result_path: Path, *, what: str, timeout_s: float | None = None
+    config: LiveConfig,
+    request_path: Path,
+    result_path: Path,
+    *,
+    what: str,
+    timeout_s: float | None = None,
+    on_progress: Any = None,
 ) -> dict[str, Any]:
-    code = f"import bpy\nbpy.ops.fluidblend.run_request(request_path={_py_string(request_path)}, result_path={_py_string(result_path)})\n"
-    ok, payload = execute(config, code, what=what, timeout_s=timeout_s)
-    if not ok:
-        raise LiveError(f"runtime call failed: {payload[:600]}", kind="script_error")
-    if result_path.exists():
-        return read_json(result_path)
-    marker = extract_marker(payload, "FLUIDBLEND_RESULT=")
-    raise LiveError(f"result file missing after live call ({marker})", kind="script_error")
+    """Queue the request in the session, then wait on files: Blender's main thread stays free, so
+    progress is visible and a cancellation can be acknowledged (`cancel.ack.json`)."""
+    code = f"import bpy\nbpy.ops.fluidblend.start_request(request_path={_py_string(request_path)}, result_path={_py_string(result_path)})\n"
+    budget = timeout_s or config.call_timeout_s
+    deadline = time.monotonic() + budget
+    ok, payload = execute(config, code, what=what, timeout_s=budget)
+    started = extract_marker(payload, "FLUIDBLEND_STARTED=") or {}
+    if not ok or not started.get("started"):
+        raise LiveError(
+            f"runtime call failed: {(started.get('error') or payload)[:600]}", kind="script_error"
+        )
+    progress_path = result_path.with_name("progress.json")
+    last = None
+    while time.monotonic() < deadline:
+        if result_path.exists():
+            return read_json(result_path)
+        if on_progress is not None and progress_path.exists():
+            try:
+                progress = read_json(progress_path)
+            except (OSError, ValueError):
+                progress = None  # being replaced; next poll reads it
+            if progress and progress != last:
+                last = progress
+                on_progress(progress)
+        time.sleep(POLL_S)
+    raise LiveError("live call timed out; the scene state is uncertain", kind="timeout")
 
 
 def open_file(

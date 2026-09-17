@@ -2,25 +2,39 @@
   "$id": "https://fluidblend.local/schemas/operations/interaction.apply.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Apply an interaction",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Apply a planned prop hand-off on a new version",
+  "properties": {
+    "plan_path": {
+      "title": "Plan Path",
+      "type": "string"
+    }
+  },
+  "required": [
+    "plan_path"
+  ],
+  "title": "InteractionApplyParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
     "cli_command": null,
-    "input_paths": [],
+    "input_paths": [
+      "plan_path"
+    ],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
     "optional_dependencies": [],
-    "publication": "reports_and_artifacts",
+    "publication": "shot_revision_and_reports",
     "required_dependencies": [
       "blender.batch"
     ],
-    "required_targets": [],
-    "requires_shot": false
+    "required_targets": [
+      "shot_id"
+    ],
+    "requires_shot": true
   }
 }

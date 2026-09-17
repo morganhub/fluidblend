@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "operation": "adjustment.preview",
+  "operation_id": "adjustment-preview-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010",
+    "instance_id": "hero-01"
+  },
+  "parameters": {
+    "adjustment_id": "plant-left-001",
+    "tool": "contact_lock",
+    "effector": "left_foot",
+    "frame_range": {
+      "start": 1,
+      "end_exclusive": 26
+    },
+    "blend_frames": 3,
+    "max_correction_m": 0.15
+  },
+  "dry_run": false
+}

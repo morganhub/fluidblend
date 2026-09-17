@@ -1,24 +1,144 @@
 {
+  "$defs": {
+    "FrameRange": {
+      "additionalProperties": false,
+      "description": "Canonical half-open interval `[start, end_exclusive)`.",
+      "properties": {
+        "end_exclusive": {
+          "maximum": 1000001,
+          "minimum": -100000,
+          "title": "End Exclusive",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 1000000,
+          "minimum": -100000,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end_exclusive"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    },
+    "Participant": {
+      "additionalProperties": false,
+      "properties": {
+        "hand": {
+          "enum": [
+            "left",
+            "right"
+          ],
+          "title": "Hand",
+          "type": "string"
+        },
+        "instance_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Instance Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "instance_id",
+        "hand"
+      ],
+      "title": "Participant",
+      "type": "object"
+    }
+  },
   "$id": "https://fluidblend.local/schemas/operations/interaction.plan.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Multi-character choreography",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Plan a bounded prop hand-off between two characters",
+  "properties": {
+    "frame_range": {
+      "$ref": "#/$defs/FrameRange"
+    },
+    "giver": {
+      "$ref": "#/$defs/Participant"
+    },
+    "handoff_frame": {
+      "maximum": 1000000,
+      "minimum": -100000,
+      "title": "Handoff Frame",
+      "type": "integer"
+    },
+    "interaction_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Interaction Id",
+      "type": "string"
+    },
+    "kind": {
+      "const": "prop_handoff",
+      "default": "prop_handoff",
+      "title": "Kind",
+      "type": "string"
+    },
+    "meeting_point": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "World point; computed from the shoulders if omitted",
+      "title": "Meeting Point"
+    },
+    "overlap_frames": {
+      "default": 6,
+      "description": "Shared hold on each side of the hand-off",
+      "maximum": 48,
+      "minimum": 2,
+      "title": "Overlap Frames",
+      "type": "integer"
+    },
+    "prop_instance_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Prop Instance Id",
+      "type": "string"
+    },
+    "receiver": {
+      "$ref": "#/$defs/Participant"
+    }
+  },
+  "required": [
+    "interaction_id",
+    "giver",
+    "receiver",
+    "prop_instance_id",
+    "frame_range",
+    "handoff_frame"
+  ],
+  "title": "InteractionPlanParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "host",
     "cli_command": null,
     "input_paths": [],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
     "optional_dependencies": [],
     "publication": "reports_and_artifacts",
     "required_dependencies": [],
-    "required_targets": [],
-    "requires_shot": false
+    "required_targets": [
+      "shot_id"
+    ],
+    "requires_shot": true
   }
 }

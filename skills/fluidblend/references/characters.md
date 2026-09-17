@@ -125,8 +125,16 @@ Do not present a passing audit as an artistic validation.
 
 Use a project-local manifest matching `schemas/asset.json`: asset id/version, blend path/hash,
 license and license path, object names, armature, rig profile. `shot.build` accepts
-`assets: [{manifest_path, instance_id, location}]` and `import_mode: "append"` only.
+`assets: [{manifest_path, instance_id, location, rotation_z}]` (metres, radians; placement of the
+instance root at import) and `import_mode: "append"` only.
 Do not bypass hash/license admission or apply transforms to a skinned character.
+
+A **prop** uses the same manifest with `kind: "prop"`, `root_object` (an unparented non-armature
+object among `objects`), no `armature`/`rig_profile`, and `grips`: named points in the root's local
+space, `primary` mandatory, `secondary` needed for a hand-off. Manifests without `kind` stay
+characters. The profile gains four measurement roles (`left/right_foot_deform`,
+`left/right_hand_deform`): a `rig-profile.json` mapped before they existed must be mapped again
+before `walk`, `take_prop` or `give_prop`, which answer `RIG_MAPPING_REQUIRED` otherwise.
 
 Run `character.inspect` with target shot and instance; then `rig.map` with the published
 `inspection_path`. Evidence must match the current revision. The output `rig-profile.json`

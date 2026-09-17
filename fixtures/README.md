@@ -11,6 +11,7 @@ Other fixtures below remain planned:
 | Fixture | Source | License | Use |
 | --- | --- | --- | --- |
 | Skinned character + full Rigify rig | pinned Vitruvian data, generated with bundled Rigify (present) | CC0 asset (GPL-3 tool, not vendored) | acceptance B01, Rigify rig profile |
+| Baton hand-off prop | original cylinder generated on demand by `scripts/generate_prop_fixture.py`, never versioned as a binary ([licenses/baton.md](../licenses/baton.md)) | CC0 | acceptance B03, `take_prop` recipe |
 | Humanoid animation library | Quaternius — Universal Animation Library | CC0 | `idle`, `walk`, `turn`… clips (FBX → GLB conversion through Blender) |
 | Studio rig references | Blender Studio Snow / Rain (CloudRig) | CC-BY | referenced, never versioned (20–106 MB) |
 

@@ -120,10 +120,21 @@ What this implies, stated plainly:
   the runtime's Python tree, `fluidblend runtime status` and `fluidblend doctor` (capability
   `blender.runtime_addon`) recompute that hash and report `incompatible` when the installed copy no
   longer matches the kit;
-- it has **no user interface** (`bl_info` category `System`) and registers three internal operators:
-  `fluidblend.identity`, `fluidblend.run_request`, `fluidblend.open_file`. It opens no port, starts
-  no thread and makes no network access;
-- the engine transmits nothing else: `import bpy` followed by one of those three calls. No generated
+- it registers four internal operators for the engine — `fluidblend.identity`,
+  `fluidblend.run_request`, `fluidblend.start_request`, `fluidblend.open_file` — and, since the
+  Director panel, **a user interface**: one sidebar panel and four `fluidblend.director_*`
+  operators. It opens no port, starts no thread and makes no network access. It uses
+  `bpy.app.timers` (its own code, not code received through MCP) to advance a queued live operation
+  and to poll the panel's process;
+- the Director panel **starts a process**: the kit's own CLI, whose command is read from
+  `RUNTIME_MANIFEST.json` (`cli`, written by `fluidblend runtime install` with the interpreter that
+  ran it). It is an argument list without a shell, `PYTHON*` environment variables are removed, and
+  the only user values involved go into a typed request file that the engine validates like any
+  other. Consequence to accept knowingly: whoever can rewrite that manifest in the user's Blender
+  profile can change what the panel launches — the same trust level as the add-on's own code, which
+  lives in the same folder. `director.py` is the only runtime module allowed to import `subprocess`
+  (guard test);
+- the engine transmits nothing else: `import bpy` followed by one of the engine operators. No generated
   script, no `exec` of parameters, no user value concatenated into code — paths are passed as
   operator properties, serialised with `json.dumps`;
 - **safe mode stays enabled**, and the kit never generates a configuration that disables it or

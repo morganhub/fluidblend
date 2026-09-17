@@ -1,6 +1,6 @@
 [project]
 name = "fluidblend"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local Blender production kit drivable by an AI: pluggable skill, tested Python engine, headless bpy runtime."
 readme = "README.md"
 license = "MIT"

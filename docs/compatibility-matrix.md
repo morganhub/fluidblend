@@ -21,8 +21,8 @@ GeForce GTX 1080 Ti.
 | FFmpeg / ffprobe | 8.0.1 | preview assembly and proof (A09) |
 | pydantic | 2.12+ | contracts and schema export |
 | filelock | 3.20+ | project lock |
-| mcp (Python SDK) | 1.30 | probe client: fake server in unit tests, real `mcp-for-blender` server in A03; live client (stdio) in L01–L05 |
-| fluidblend runtime add-on | 0.2.0 (`bl_info` 0, 2, 0) | installed in the Blender 5.2 user add-ons directory and enabled headlessly; operators `fluidblend.identity`, `run_request`, `open_file` exercised by L01–L05 |
+| mcp (Python SDK) | 1.30 | probe client: fake server in unit tests, real `mcp-for-blender` server in A03; live client (stdio) in L01–L09 |
+| fluidblend runtime add-on | 0.3.0 (`bl_info` 0, 3, 0) | installed in the Blender 5.2 user add-ons directory and enabled headlessly; operators `fluidblend.identity`, `start_request`, `open_file` exercised by L01–L09, Director operators by B06 |
 
 ## Blender
 
@@ -38,7 +38,8 @@ Points verified on 5.2.2: headless start-up with a script in 3.2 s; `Action.fcur
 `strip.channelbag(slot, ensure=True)` creation working; `animation_data.action_slot` assignable;
 `bpy.ops.export_scene.gltf` available with `export_animation_mode` accepting `ACTIONS`,
 `ACTIVE_ACTIONS`, `BROADCAST`, `NLA_TRACKS`, `SCENE`; `bpy.app.timers` registered but **never
-fired** under `--background`.
+fired** under `--background` (they do fire in the GUI session: live jobs and the Director panel
+rely on them, batch never does).
 
 Core add-ons available without installation on 5.2: `rigify` 0.6.10, `io_scene_gltf2` 5.2.40,
 `io_anim_bvh`, `io_scene_fbx`, `pose_library`, `cycles`. Only `io_scene_gltf2` is used in P0.
@@ -130,8 +131,25 @@ never counted as passed. The timestamped report is authoritative. Regenerate it 
 uv run pytest tests --acceptance-report docs/acceptance-reports/latest-p0
 ```
 
-B01 is passed on the actual skinned Vitruvian/Rigify fixture. B02–B08 remain unqualified.
-See [P1 evidence](acceptance-reports/production-p1.md) and [scope](production-p1.md).
+Later live scenarios, same conditions: L06–L08 (concurrent human edits preserved at admission,
+publication and reload) and L09 (cooperative execution, cancellation acknowledged by the session).
+
+Production scenarios on the actual skinned Vitruvian/Rigify fixture, Blender 5.2.2 LTS:
+
+| Scenario | Status | Note |
+| --- | --- | --- |
+| B01 versioned skinned character, semantic mapping, five poses | passed | |
+| B02 bounded retargeting | not implemented | `animation.retarget` unavailable |
+| B03 prop hand-off between two characters | passed | contacts in the prop's space, jump, single authority |
+| B04 lip-sync applied to a face | not implemented | no facial fixture; `lipsync.apply` unavailable |
+| B05 sliding stance fixed with `contact_lock` | passed | preview, apply, revert |
+| B06 Director panel | passed | driven through its operators in a real GUI session; layout not reviewed by a human |
+| B07 Godot import and smoke test | not implemented | `game.import_test`, `game.smoke_test` unavailable |
+| B08 custom tool: bounded and tested, or stated limitation | passed | declarative tools, no code loaded |
+
+The authoritative, timestamped list is
+[acceptance-reports/implementation.md](acceptance-reports/implementation.md); scope and measured
+figures are in [production-p1.md](production-p1.md). None of these is an artistic validation.
 
 ## Additional live regression
 

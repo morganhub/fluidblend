@@ -2,18 +2,29 @@
   "$id": "https://fluidblend.local/schemas/operations/tool.inspect.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Inspect a custom tool",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Inspect a declarative custom tool",
+  "properties": {
+    "tool_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Tool Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "tool_id"
+  ],
+  "title": "ToolInspectParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "host",
     "cli_command": null,
     "input_paths": [],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
     "optional_dependencies": [],
     "publication": "reports_and_artifacts",

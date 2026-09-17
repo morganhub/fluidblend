@@ -1,75 +1,99 @@
 # Interactions between characters
 
-## Status: not implemented (lot P1) — what to do
+Status: **bounded prop hand-off implemented** (`interaction.plan`, `interaction.apply`,
+`interaction.validate`), acceptance B03. Nothing else is: no handshake, no shared gaze, no body
+contact, no two-handed carry, no walking hand-off. For those, stop and say so.
 
-`interaction.plan`, `interaction.apply` and `interaction.validate` are declared in the catalogue with
-`available=false`. Any request targeting them returns `UNSUPPORTED_CAPABILITY` (exit 2) and writes
-nothing.
+## What the hand-off does
 
-What to do when the user asks for a prop hand-off, a handshake, a shared gaze, a two-character
-choreography or a contact fix:
+One rigid prop, two Rigify characters standing still, one ownership transfer.
 
-1. **Stop.** Do not write a `bpy` script, do not add a constraint by hand, do not "approximate" the
-   result with a retime.
-2. **Explain** that multi-character choreography belongs to lot 3 and that nothing in lot P0
-   measures a contact distance or transfers ownership of a prop.
-3. **Say what does exist**, without overselling it:
-   - the demo scene already contains a held prop, `lantern-01`, parented to the `hand.R` bone of
-     `hero-01` (static parenting, set at build time, never transferred);
-   - `scene.inspect` shows the current parenting (`parent`, `parent_bone`) and the
-     `fluidblend_holder` / `fluidblend_attach_bone` properties;
-   - `scene.audit` detects an object parented to a missing bone (`MISSING_PARENT_BONE`), which
-     remains the only ownership check available;
-   - `animation.retime` can change one character's timing, but it **does not resynchronize** the
-     others: shifting one character breaks the temporal coincidence with its partners, and that must
-     be stated.
-4. **Offer the minimal decision**: wait for lot 3, or stage the action by hand in Blender and then
-   have the modification accepted (`fluidblend revision accept`).
+1. `interaction.plan` (host, no Blender) turns the parameters into a reviewable
+   `interaction-plan.json`: windows (`giver_holds`, `shared_hold` for both hands, `receiver_holds`),
+   ownership order and events. It does **not** look at the scene and says so in a warning. Review it.
+2. `interaction.apply` (Blender, new work version) checks the scene, then:
+   - the giver's palm reaches the meeting point (`meeting_point`, else the midpoint of the two
+     hand-side shoulders lowered by 0.2 m), holds `overlap_frames` on each side of `handoff_frame`,
+     returns;
+   - the prop is attached to the giver's hand bone from the first frame, primary grip in the palm;
+   - the receiver's palm reaches the prop's **secondary** grip where it really is at the hand-off;
+   - ownership moves at `handoff_frame` between two `CHILD_OF` constraints whose influences are
+     keyed constant; the receiver's inverse matrix is computed so the prop keeps its world
+     transform across the switch;
+   - the measurements below gate the write. A failure publishes nothing.
+3. `interaction.validate` (Blender, read) re-runs the same measurements on the current scene.
 
-Never present fixed parenting as an animated interaction.
+```powershell
+fluidblend run --project . --operation requests/interaction-plan.json
+# review reviews/<shot>/<operation_id>/interaction-plan.json
+fluidblend run --project . --operation requests/interaction-apply.json     # parameters.plan_path
+fluidblend run --project . --operation requests/interaction-validate.json  # parameters.interaction_id
+```
 
-## What lot P0 does not measure
+Examples: [request-interaction-plan.json](../assets/request-interaction-plan.json),
+[request-interaction-apply.json](../assets/request-interaction-apply.json),
+[request-interaction-validate.json](../assets/request-interaction-validate.json).
 
-- distance between hand and prop during a grab window;
-- drift of a planted foot (`foot_slide_max_m`);
-- transform pop at the moment of a parent transfer;
-- consistency of gaze between two characters;
-- geometric intersections between bodies.
+## Prerequisites
 
-The corresponding thresholds do already exist in `config/quality.json` (`contact_error_max_m`
-0.02 m, `foot_slide_max_m` 0.02 m): they are **declared, not enforced**. Do not quote these values
-as if a check verified them today.
+- Both characters come from `shot.build` with the `rigify/0.6.10` profile; a baked export skeleton
+  is refused. Explicit `profile_path` mappings are not supported here.
+- The prop is an asset of `kind: "prop"`: `root_object`, no armature, `grips` with at least
+  `primary` and, for a hand-off, `secondary` (prop local space, metres). Unit scale only.
+- Place the characters facing each other within arm's reach (`shot.build` `location` and
+  `rotation_z`, radians). On the reference character, 0.7 m apart works; a target beyond 95 % of
+  the arm length is refused with the measured distances — move the characters, do not force it.
+- The prop must have **no other authority**: no parent, no constraint, no animation.
+  Otherwise `SCENE_CONFLICT`, and nothing is changed.
+- The hand channels (`hand_ik` location, arm `IK_FK`) must be free on both characters, as for any
+  `animation.apply`.
 
-## Decisions already taken for lot 3 (preparation, not available)
+## Refusals you will meet
 
-`interaction.plan` — host operation, no Blender, producing a declarative choreography: participants,
-roles, time windows (`[start, end_exclusive)`), targeted contact points, order of events. The plan is
-an artifact that is reviewed and approved before any write.
+| Situation | Answer |
+| --- | --- |
+| plan made on another revision, or edited after it was written | `SCENE_CONFLICT` (exit 3) at preflight: plan again on the current revision, review, apply |
+| meeting point or grip beyond reach | `VALIDATION_FAILED`, details `needed_m` / `arm_m` |
+| prop already parented, constrained or animated; interaction id already applied | `SCENE_CONFLICT` |
+| participant missing, not an armature, or prop not of kind `prop` | `VALIDATION_FAILED` |
+| hand channels already owned by a clip | `SCENE_CONFLICT` with the overlapping channels |
 
-`interaction.apply` — Blender operation. Ownership transfer through a `CHILD_OF` constraint **that
-preserves the world transform at the moment of the hand-off**, in order to avoid the pop typical of
-a naive parent change. Each application produces a versioned variant, never an in-place modification
-of the source.
+## Measurements (shared with the clip library)
 
-`interaction.validate` — measures and reports: position pop at the parent change, hand-to-object
-distance during the marked windows, compliance with the thresholds in `config/quality.json`. The
-measurement must declare its reference space (world, or relative to the moving support), its window,
-its sampling rate and its tolerance. Drift is not computed over the whole trajectory of a walking
-foot, only over the explicitly marked stance windows.
+Every record states `kind`, `effector`, `control_point`, `space`, `frame_range`, `sampling_step`,
+`value`, `unit`, `tolerance`, `passed`. The control point is the **palm**, halfway along the hand
+deform bone (`DEF-hand.R@0.5`), not the IK control. Contacts are expressed **in the prop's space**,
+every frame of the window.
 
-Related adjustment tools, also P1 (see `tool-development.md`): `contact_lock` to stabilize a hand or
-a foot over a given window, `look_at_target` for gaze, `root_path_adjust` for the global trajectory.
-`contact_lock` is a bounded piece of development, not a universal solver: it must distinguish
-intentional stance, walking and deliberate sliding, otherwise it must not be offered.
+| Kind | Meaning | Gate (`config/quality.json`) |
+| --- | --- | --- |
+| `contact_error` | largest palm-to-grip distance in the window | `contact_error_max_m` (0.02 m) |
+| `contact_slide` | largest palm drift from the window's first frame | `contact_error_max_m` |
+| `handoff_jump` | largest prop displacement between frames h-1, h, h+1 | `handoff_jump_max_m` (0.005 m) |
+| `handoff_rotation_jump` | same for rotation | `handoff_rotation_jump_max_rad` (0.01) |
 
-Technical prerequisites of lot 3 before these operations make any sense: a Rigify rig profile with
-real IK controls, skinned characters, reliable contact markers on the library clips. The P0 rig
-`fluidblend.simple_biped/1` has no IK, no constraints and no skinning: placing contact constraints
-on it would have no usable effect.
+Two checks complete them: `single_authority` (at every frame exactly the planned constraint has
+influence 1, no parent, no other constraint, no transform curve on the prop) and
+`no_constraint_cycle` (no participant bone is constrained to the prop or to the other character).
 
-## Related acceptance scenarios
+Be precise about what is a real test. While a hand **owns** the prop, its contact is true by
+construction. The informative figures are the receiver's `shared_hold` before the hand-off, the
+giver's `shared_hold` after it, and the jump.
 
-Scenarios B03 (prop hand-off from one character to another) and B05 (stance fix with `contact_lock`)
-belong to the P1 acceptance plan of the specification. They are **not executed** in this lot and must
-never appear in any report as passed or partially passed. The acceptance report generated by
-`pytest --acceptance-report` contains only scenarios A01 to A13.
+`interaction.validate` exits 0 even when the measurements fail: read `metrics.technical_pass` and
+`interaction-validation.json`. A failed validation after a human edit or a timing change is reported
+and the edit is preserved; the kit never repairs it silently. Re-timing one participant is **not**
+propagated to the other or to the prop: validate afterwards and report the breaks.
+
+## Hand recipes without ownership
+
+`animation.create` presets `take_prop` (`prop_instance_id`, `hand`) and `give_prop`
+(`target_point`, `hand`) author the same palm reach as library clips for a **static** prop or a
+world point. The hand moves; the prop does not. `animation.apply` re-measures the contact against
+the prop instance in the assembled scene. See [animation.md](animation.md).
+
+## Limits to state every time
+
+Stationary characters, rigid prop, open hands (no finger pose), no wrist orientation change, no
+intersection test between bodies and prop, one transfer per interaction. `technical_pass` is a
+measurement, not an approval of the gesture: art validation stays human and cites the frames looked at.

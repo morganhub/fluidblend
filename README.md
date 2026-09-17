@@ -6,8 +6,9 @@ and deliver scenes for music videos, short films and game prototypes — reprodu
 and resumably. Every operation is validated, journaled, versioned and verified (ffprobe, Khronos
 glTF validator, re-import). Windows 11 only for now.
 
-Status: **0.2.0 + unreleased partial P1**. The batch scenarios (A01–A13) and the live ones (L01–L05) pass
-on the reference machine, see
+Status: **0.3.0** — P0, live mode and production lot 3. Lot 4 (retargeting, facial lip-sync, Godot)
+is planned for 0.4. 27 acceptance scenarios pass on the reference machine — batch A01–A13,
+characters and production B01, B03, B05, B06, B08, live L01–L09 — see
 [docs/acceptance-reports/implementation.md](docs/acceptance-reports/implementation.md). What the kit does not
 do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is simulated.
 
@@ -20,8 +21,23 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 - **Inspection and audit** (`scene.inspect`, `scene.audit`): readable JSON, technical checks.
 - **Versioned characters**: local `shot.build`, `character.inspect`, `rig.map`, `rig.validate`,
   with a licensed, skinned Vitruvian/Rigify fixture and five measured pose tests.
-- **Bounded animation library**: create, apply in NLA, loop and bake; five initial recipes,
-  channel collision checks, deterministic seeds and measured bake deformation error.
+- **Bounded animation library**: create, apply in NLA, loop and bake; eight recipes (`idle_neutral`,
+  `walk`, `turn`, `look_at`, `reach`, `take_prop`, `give_prop`, `react`), channel collision checks,
+  deterministic seeds and measured bake deformation error.
+- **Measured contacts**: every figure states its space, window, sampling, control point and
+  tolerance. The root-motion `walk` is gated on foot slide (≤ 0.02 m) at creation and again on every
+  repetition once applied; hand recipes are gated on palm-to-grip distance.
+- **Prop hand-off between two characters** (`interaction.plan` → review → `interaction.apply` →
+  `interaction.validate`): revision-bound plan, ownership transfer that keeps the prop's world
+  transform, contacts measured in the prop's space, single authority and no constraint cycle.
+- **Adjustments with Preview / Apply / Revert** (`adjustment.*`): one tool, `contact_lock`, holds a
+  sliding hand or foot on its anchor as a removable additive NLA layer; sources are never edited.
+- **Declarative custom tools** (`tool.inspect`, `tool.test`, `tool.register`): a `tool.json` narrows
+  a built-in tool and carries its own tests. No code is loaded; an unsupported request gets a stated
+  limitation, never a registration.
+- **Director panel** in Blender's sidebar: the same Preview / Apply / Revert, run by the kit's engine
+  in a separate process. The open session is never keyed, sliders are debounced, Apply publishes a
+  new revision and reopens it.
 - **Audio preparation and analysis**: real two-pass FFmpeg normalization to 48 kHz and Rhubarb
   mouth cues. Facial animation is not yet implemented.
 - **Retime on a variant** (`animation.retime`): the source stays untouched, before/after images,
@@ -35,7 +51,9 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
   MCP add-on and an approved runtime add-on. Each one starts with an identity check (project, open
   file, revision, runtime version, no unsaved change) and refuses rather than overwrite. A live
   write is saved as a copy, published as the next work version, then the session is reloaded on that
-  file: the version already on disk is never touched. Every other operation stays in batch.
+  file: the version already on disk is never touched. Every other operation stays in batch. Live
+  operations run cooperatively: Blender stays responsive, progress is reported, and `task cancel` is
+  believed only when the session acknowledges it in writing.
 - **Reliability**: same `operation_id` → same result (never a duplicate); a source edited by hand →
   conflict detected and preserved; interrupted worker → `unknown` state then reconciliation;
   permissions, budgets and out-of-scope paths → controlled stop with a documented exit code.
@@ -44,11 +62,19 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 
 ## What the kit does not do yet
 
-Retargeting, multi-character interactions, facial cue application, adjustment tools, Blender panel,
-Godot / Three.js prototype, Rigify walk and prop recipes. The corresponding operations
-exist in the catalogue with `available: false` and answer `UNSUPPORTED_CAPABILITY`: the skill
-refuses, it does not improvise. Live mode covers four operations only — any other request runs in
-batch, on the published work version.
+Retargeting (`animation.retarget`), facial cue and expression application (`lipsync.apply`,
+`expression.apply`), Godot import and smoke test (`game.import_test`, `game.smoke_test`) and the
+Three.js prototype. Those five operations exist in the catalogue with `available: false` and answer
+`UNSUPPORTED_CAPABILITY`: the skill refuses, it does not improvise. Inside the available domains
+the scope is deliberately narrow: one interaction kind (prop hand-off between standing characters),
+one adjustment tool, recipes without arm swing, heel roll or finger poses.
+
+**Technical proof is not artistic approval.** Every measurement above is automated; the generated
+motion has been looked at by the assistant only, and no human art validation is recorded yet.
+
+Live mode covers four operations only — any other request runs in batch, on the published work
+version. The Director panel previews with figures and before/after frames, not with motion in the
+viewport.
 
 See [the implementation status](docs/production-p1.md) for tested scope and outstanding work.
 
@@ -154,8 +180,9 @@ The transport is the community server
 generates (`fluidblend client-config --client claude|codex|vscode`) with safe mode on and telemetry
 off. Because that safe mode only allows `import bpy`, the kit's runtime is installed as an **enabled
 Blender add-on** (hash-checked, `fluidblend doctor` reports it as `blender.runtime_addon`): the
-engine transmits nothing but `bpy.ops.fluidblend.identity()`, `run_request(...)` and
-`open_file(...)`, never a generated script.
+engine transmits nothing but `bpy.ops.fluidblend.identity()`, `start_request(...)` and
+`open_file(...)`, never a generated script. The same add-on provides the **Director** panel
+(3D View sidebar, `fluidblend` tab).
 
 Before every live operation the engine checks the session's identity — runtime version, project,
 open file equal to the shot's latest work version, no unsaved change — and answers `SCENE_CONFLICT`
@@ -168,11 +195,11 @@ interface, and the add-on socket is not authenticated: see [docs/security.md](do
 ```
 skills/fluidblend/      skill (SKILL.md, references/, assets/, PowerShell wrapper)
 src/fluidblend/         engine: CLI, pydantic contracts, core (tasks, journal, revisions), adapters
-blender_runtime/        code executed inside Blender (stdlib + bpy): scene, retime, render, export
+blender_runtime/        code executed inside Blender (stdlib + bpy): scenes, rigs, clips, measures, Director panel
 schemas/                JSON Schema exported from the contracts
 templates/film/         project skeleton created by `init`
 scripts/                install-skill.ps1, bootstrap.ps1, demo.ps1
-tests/                  unit tests (no Blender), acceptance A01–A13 (batch) and L01–L05 (live)
+tests/                  unit tests (no Blender), acceptance A01–A13, B01–B08 (batch) and L01–L09 (live)
 docs/                   installation, CLI, architecture, security, compatibility, roadmap, sources
 ```
 
@@ -180,11 +207,11 @@ docs/                   installation, CLI, architecture, security, compatibility
 
 ```powershell
 uv run pytest tests/unit -q                                   # without Blender, ~5 s
-uv run pytest tests -q --acceptance-report docs/acceptance-reports/latest-p0   # with Blender, ~90 s
+uv run pytest tests -q --acceptance-report docs/acceptance-reports/implementation   # with Blender, ~10 min
 ```
 
 Scenarios that depend on a missing tool are marked `not_run`, never counted as passed. The live
-scenarios (L01–L05) each open and close their own Blender GUI session and need port 9876 free; they
+scenarios (L01–L09, B06) each open and close their own Blender GUI session and need port 9876 free; they
 declare themselves `not_run` otherwise. The GitHub CI runs lint, schema consistency and the unit
 tests on Windows.
 

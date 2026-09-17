@@ -133,7 +133,7 @@ Live mode lets four operations — `scene.inspect`, `scene.audit`, `animation.re
 
 The socket is not authenticated: stay on `localhost` and never open the port. The runtime add-on
 stays enabled in your Blender profile until you delete its folder — see `docs/security.md`. Live
-mode is covered by acceptance scenarios L01 to L05; live reading through `doctor --live` by A03.
+mode is covered by acceptance scenarios L01 to L09; live reading through `doctor --live` by A03.
 
 ## 4. Graft the skill into a project
 
@@ -202,10 +202,10 @@ uv run pytest tests --acceptance-report docs/acceptance-reports/latest-p0
 ```
 
 Tests marked `blender` are skipped automatically and marked `not_run` if no Blender 5.2 is detected;
-they are then not counted as passed. The live scenarios L01 to L05 additionally need the MCP add-on,
+they are then not counted as passed. The live scenarios L01 to L09 additionally need the MCP add-on,
 `uvx`, the runtime add-on and port 9876 free: each of them opens and closes its own Blender GUI
 session, and declares itself `not_run` otherwise. The acceptance report is written in `.json` and
-`.md`, giving for each scenario — A01 to A13 and L01 to L05 — its status, duration and notes.
+`.md`, giving for each scenario — A01 to A13, B01 to B08 and L01 to L09 — its status, duration and notes.
 
 ## Uninstalling
 

@@ -3,7 +3,7 @@
 import math
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from fluidblend.contracts.common import FrameRange, StrictModel
 from fluidblend.contracts.project import IDENT_PATTERN
@@ -24,10 +24,19 @@ class RigValidateParams(StrictModel):
     preview: bool = True
 
 
+def _finite_point(value):
+    if value is not None and not all(math.isfinite(v) for v in value):
+        raise ValueError("point coordinates must be finite")
+    return value
+
+
 class AssetPlacement(StrictModel):
     manifest_path: str
     instance_id: str = Field(pattern=IDENT_PATTERN)
     location: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0], min_length=3, max_length=3)
+    rotation_z: float = Field(
+        default=0.0, ge=-2 * math.pi, le=2 * math.pi, description="Placement yaw in radians"
+    )
 
     @field_validator("location")
     @classmethod
@@ -51,8 +60,30 @@ class AssetManifest(StrictModel):
     license: str = Field(min_length=1)
     license_path: str
     objects: list[str] = Field(min_length=1)
-    armature: str
-    rig_profile: str
+    kind: Literal["character", "prop"] = "character"
+    armature: str | None = None
+    rig_profile: str | None = None
+    root_object: str | None = Field(default=None, description="Prop object that carries the instance")
+    grips: dict[str, list[float]] = Field(
+        default_factory=dict, description="Named grip points in the prop root's local space, metres"
+    )
+
+    @model_validator(mode="after")
+    def kind_is_complete(self):
+        if self.kind == "character" and not (self.armature and self.rig_profile):
+            raise ValueError("a character asset needs armature and rig_profile")
+        if self.kind == "prop":
+            if self.root_object not in self.objects:
+                raise ValueError("a prop asset needs root_object among its objects")
+            if "primary" not in self.grips:
+                raise ValueError("a prop asset needs a primary grip")
+            if self.armature or self.rig_profile:
+                raise ValueError("a prop asset carries no armature or rig profile")
+        for name, point in self.grips.items():
+            if not name or len(point) != 3:
+                raise ValueError("grips are named 3D points")
+            _finite_point(point)
+        return self
 
 
 class RigProfile(StrictModel):
@@ -66,13 +97,45 @@ class RigProfile(StrictModel):
 
 
 class AnimationCreateParams(StrictModel):
-    preset: Literal["idle_neutral", "turn", "look_at", "reach", "react"]
+    preset: Literal["idle_neutral", "walk", "turn", "look_at", "reach", "take_prop", "give_prop", "react"]
     output_clip: str = Field(pattern=IDENT_PATTERN)
     frame_range: FrameRange = Field(default_factory=lambda: FrameRange(start=1, end_exclusive=49))
-    amplitude: float = Field(default=0.3, ge=0, le=0.6)
+    amplitude: float = Field(
+        default=0.3,
+        ge=0,
+        le=0.6,
+        description="Recipe scale; for walk the stride per cycle is 2 x amplitude metres",
+    )
     seed: int = Field(default=0, ge=0)
     stage: Literal["blocking", "spline", "polish"] = "spline"
     profile_path: str | None = None
+    hand: Literal["left", "right"] = Field(default="right", description="take_prop / give_prop only")
+    prop_instance_id: str | None = Field(
+        default=None,
+        pattern=IDENT_PATTERN,
+        description="take_prop: static prop whose primary grip is reached",
+    )
+    target_point: list[float] | None = Field(
+        default=None,
+        min_length=3,
+        max_length=3,
+        description="give_prop: world point the hand extends to, metres",
+    )
+
+    @field_validator("target_point")
+    @classmethod
+    def finite_target(cls, value):
+        return _finite_point(value)
+
+    @model_validator(mode="after")
+    def hand_recipe_inputs(self):
+        if self.preset == "take_prop" and not self.prop_instance_id:
+            raise ValueError("take_prop needs prop_instance_id")
+        if self.preset == "give_prop" and self.target_point is None:
+            raise ValueError("give_prop needs target_point")
+        if self.preset not in ("take_prop", "give_prop") and (self.prop_instance_id or self.target_point):
+            raise ValueError("prop_instance_id and target_point belong to take_prop / give_prop")
+        return self
 
 
 class AnimationApplyParams(StrictModel):
@@ -104,9 +167,16 @@ class LipsyncAnalyzeParams(StrictModel):
 
 class ContactWindow(StrictModel):
     effector: str = Field(min_length=1)
-    support_instance_id: str = Field(pattern=IDENT_PATTERN)
+    control_point: str = Field(min_length=1, description="Evaluated bone whose head is measured")
+    support_instance_id: str | None = Field(
+        default=None, pattern=IDENT_PATTERN, description="None = static world ground"
+    )
     frame_range: FrameRange
-    anchor: list[float] = Field(min_length=3, max_length=3)
+    anchor: list[float] = Field(
+        min_length=3,
+        max_length=3,
+        description="Control point at the window start, in support space (rig object space for the world)",
+    )
 
     @field_validator("anchor")
     @classmethod
@@ -119,6 +189,29 @@ class ContactWindow(StrictModel):
 class ClipEvent(StrictModel):
     name: str = Field(pattern=IDENT_PATTERN)
     frame: float = Field(ge=-100000, le=1_000_001)
+
+
+class Measurement(StrictModel):
+    """A figure with its definition (§16.1); `passed` is None when no tolerance gates it."""
+
+    kind: Literal[
+        "foot_slide",
+        "contact_slide",
+        "contact_error",
+        "loop_pose",
+        "loop_velocity",
+        "handoff_jump",
+        "handoff_rotation_jump",
+    ]
+    effector: str = Field(min_length=1)
+    control_point: str = Field(min_length=1)
+    space: str = Field(min_length=1)
+    frame_range: FrameRange
+    sampling_step: int = Field(ge=1)
+    value: float = Field(ge=0, allow_inf_nan=False)
+    unit: Literal["m", "m/frame", "rad"]
+    tolerance: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    passed: bool | None = None
 
 
 class ClipManifest(StrictModel):
@@ -142,6 +235,9 @@ class ClipManifest(StrictModel):
     source_clip: str | None = None
     repetitions: int | None = Field(default=None, ge=2, le=100)
     loop_error: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    root_motion_channels: list[tuple[str, int]] = Field(default_factory=list)
+    stride_m: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    measurements: list[Measurement] = Field(default_factory=list)
 
     @field_validator("owned_channels")
     @classmethod
@@ -149,6 +245,214 @@ class ClipManifest(StrictModel):
         if len(value) != len(set(value)) or any(index < 0 or not path for path, index in value):
             raise ValueError("owned channels must be unique valid path/index pairs")
         return value
+
+
+MIN_REACH_FRAMES = 8
+
+
+class Participant(StrictModel):
+    instance_id: str = Field(pattern=IDENT_PATTERN)
+    hand: Literal["left", "right"]
+
+
+class InteractionPlanParams(StrictModel):
+    """Bounded prop hand-off: the giver holds the prop, both reach, ownership moves once."""
+
+    interaction_id: str = Field(pattern=IDENT_PATTERN)
+    kind: Literal["prop_handoff"] = "prop_handoff"
+    giver: Participant
+    receiver: Participant
+    prop_instance_id: str = Field(pattern=IDENT_PATTERN)
+    frame_range: FrameRange
+    handoff_frame: int = Field(ge=-100000, le=1_000_000)
+    overlap_frames: int = Field(
+        default=6, ge=2, le=48, description="Shared hold on each side of the hand-off"
+    )
+    meeting_point: list[float] | None = Field(
+        default=None,
+        min_length=3,
+        max_length=3,
+        description="World point; computed from the shoulders if omitted",
+    )
+
+    @field_validator("meeting_point")
+    @classmethod
+    def finite_meeting_point(cls, value):
+        return _finite_point(value)
+
+    @model_validator(mode="after")
+    def windows_fit(self):
+        if len({self.giver.instance_id, self.receiver.instance_id, self.prop_instance_id}) != 3:
+            raise ValueError("giver, receiver and prop must be three distinct instances")
+        reach_in = self.handoff_frame - self.overlap_frames - self.frame_range.start
+        reach_out = self.frame_range.end_exclusive - 1 - (self.handoff_frame + self.overlap_frames)
+        if reach_in < MIN_REACH_FRAMES or reach_out < MIN_REACH_FRAMES:
+            raise ValueError(f"each reach needs at least {MIN_REACH_FRAMES} frames around the shared hold")
+        return self
+
+
+class InteractionWindow(StrictModel):
+    name: Literal["giver_holds", "shared_hold", "receiver_holds"]
+    participant: str = Field(pattern=IDENT_PATTERN)
+    grip: str = Field(min_length=1)
+    frame_range: FrameRange
+
+
+class Ownership(StrictModel):
+    owner_instance_id: str = Field(pattern=IDENT_PATTERN)
+    frame_range: FrameRange
+
+
+class InteractionPlan(InteractionPlanParams):
+    """Reviewable choreography derived from the parameters; nothing is written to a scene."""
+
+    schema_version: Literal["1.0"] = "1.0"
+    shot_id: str = Field(pattern=IDENT_PATTERN)
+    windows: list[InteractionWindow]
+    ownership: list[Ownership] = Field(min_length=2, max_length=2)
+    events: list[ClipEvent]
+
+
+class InteractionApplyParams(StrictModel):
+    plan_path: str
+
+
+class InteractionValidateParams(StrictModel):
+    interaction_id: str = Field(pattern=IDENT_PATTERN)
+
+
+class ContactLockParams(StrictModel):
+    """`contact_lock`: hold one IK effector on its anchor over a stance window (§12.3)."""
+
+    adjustment_id: str = Field(pattern=IDENT_PATTERN)
+    tool: Literal["contact_lock"] = "contact_lock"
+    custom_tool_id: str | None = Field(
+        default=None, pattern=IDENT_PATTERN, description="Registered custom tool whose narrower bounds apply"
+    )
+    effector: Literal["left_foot", "right_foot", "left_hand", "right_hand"]
+    frame_range: FrameRange
+    support_instance_id: str | None = Field(
+        default=None,
+        pattern=IDENT_PATTERN,
+        description="None = static world; else the contact is held in that instance's space",
+    )
+    blend_frames: int = Field(default=3, ge=1, le=24, description="Ramp in and out around the window")
+    max_correction_m: float = Field(
+        default=0.15, gt=0, le=0.5, description="Above this drift the window is travel, not a slide: refused"
+    )
+    preview_samples: int = Field(default=4, ge=0, le=16, description="Before/after frames (preview only)")
+
+    @model_validator(mode="after")
+    def window_is_long_enough(self):
+        if self.frame_range.end_exclusive - self.frame_range.start < 2:
+            raise ValueError("a contact window needs at least 2 frames")
+        return self
+
+
+Effector = Literal["left_foot", "right_foot", "left_hand", "right_hand"]
+
+
+class ToolBounds(StrictModel):
+    """A custom tool may only narrow its base tool, never widen it."""
+
+    effectors: list[Effector] = Field(min_length=1)
+    max_correction_m: float = Field(gt=0, le=0.5)
+    blend_frames_max: int = Field(default=24, ge=1, le=24)
+
+
+class CustomToolTest(StrictModel):
+    name: str = Field(pattern=IDENT_PATTERN)
+    instance_id: str = Field(pattern=IDENT_PATTERN)
+    effector: Effector
+    frame_range: FrameRange
+    support_instance_id: str | None = Field(default=None, pattern=IDENT_PATTERN)
+    expect: Literal["pass", "refuse"] = Field(description="refuse = the tool must decline this case")
+
+
+class CustomTool(StrictModel):
+    """`tools/custom/<tool_id>/tool.json`: declarative, no code. `base_tool` and `supported_rigs` are
+    free text so an unsupported request gets an inspection report instead of a parse error."""
+
+    schema_version: Literal["1.0"] = "1.0"
+    tool_id: str = Field(pattern=IDENT_PATTERN)
+    version: int = Field(ge=1)
+    purpose: str = Field(min_length=10)
+    base_tool: str = Field(min_length=1)
+    supported_rigs: list[str] = Field(min_length=1)
+    bounds: ToolBounds
+    preconditions: list[str] = Field(default_factory=list)
+    known_limits: list[str] = Field(min_length=1)
+    tests: list[CustomToolTest] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def tests_are_distinct_and_cover_a_pass(self):
+        names = [t.name for t in self.tests]
+        if len(names) != len(set(names)):
+            raise ValueError("custom tool tests need distinct names")
+        if not any(t.expect == "pass" for t in self.tests):
+            raise ValueError("a custom tool needs at least one test it is expected to pass")
+        return self
+
+
+class ToolInspectParams(StrictModel):
+    tool_id: str = Field(pattern=IDENT_PATTERN)
+
+
+class ToolTestParams(StrictModel):
+    tool_id: str = Field(pattern=IDENT_PATTERN)
+
+
+class ToolRegisterParams(StrictModel):
+    tool_id: str = Field(pattern=IDENT_PATTERN)
+    test_report_path: str
+
+
+class ToolRegistration(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    tool_id: str = Field(pattern=IDENT_PATTERN)
+    version: int = Field(ge=1)
+    base_tool: str
+    supported_rigs: list[str]
+    bounds: ToolBounds
+    tool_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    test_report: str
+    test_report_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    tests_passed: int = Field(ge=1)
+
+
+class AdjustmentRevertParams(StrictModel):
+    adjustment_id: str = Field(pattern=IDENT_PATTERN)
+
+
+# Tool contract (§12.2). One entry per built-in tool; nothing is registered without its tests.
+ADJUSTMENT_TOOLS = {
+    "contact_lock": {
+        "tool_id": "contact_lock",
+        "version": "1.0",
+        "purpose": "hold one IK hand or foot on its anchor over a marked stance window",
+        "supported_rigs": ["rigify/0.6.10"],
+        "parameters": "ContactLockParams (metres, frames)",
+        "time_scope": "frame_range widened by blend_frames on each side",
+        "affected_channels": "location of the effector's IK control, through an additive NLA strip",
+        "preconditions": [
+            "limb in IK over the window",
+            "drift above the project tolerance and at most max_correction_m",
+            "no adjustment with the same id",
+        ],
+        "preview_mode": "adjustment.preview: same computation in memory, before/after measurements and frames, nothing saved",
+        "effects_on_sources": "none: source Actions and strips are untouched; one new Action and one NLA track are added",
+        "revert": "adjustment.revert removes that track and Action in a new version",
+        "tests": [
+            "tests/unit/test_adjustment_contracts.py",
+            "tests/acceptance/test_adjustments.py::test_B05_contact_lock_preview_apply_revert",
+        ],
+        "known_limits": [
+            "translation only: no foot roll or wrist orientation",
+            "refuses travel (walking through the window) instead of guessing a stance",
+            "does not re-plant later steps or fix the other foot",
+        ],
+    }
+}
 
 
 class ClipIndex(ClipManifest):

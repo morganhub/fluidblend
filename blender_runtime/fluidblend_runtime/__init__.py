@@ -15,7 +15,7 @@ from fluidblend_runtime.envelope import Context, load_envelope
 from fluidblend_runtime.errors import OpError
 from fluidblend_runtime.result import ResultBuilder, write_json_atomic
 
-RUNTIME_VERSION = "0.2.0"
+RUNTIME_VERSION = "0.3.0"
 SUPPORTED_BLENDER_SERIES = (5, 2)
 LIVE_ONLY_OPERATIONS = {"scene.checkpoint"}
 BATCH_ONLY_OPERATIONS = {
@@ -29,16 +29,22 @@ BATCH_ONLY_OPERATIONS = {
     "shot.build",
     "character.inspect",
     "rig.validate",
+    "interaction.apply",
+    "interaction.validate",
+    "adjustment.preview",
+    "adjustment.apply",
+    "adjustment.revert",
+    "tool.test",
 }
 
 # Blender add-on metadata: the runtime is installed and enabled for live mode (operators in addon.py).
 bl_info = {
     "name": "fluidblend runtime",
     "author": "fluidblend",
-    "version": (0, 2, 0),
+    "version": (0, 3, 0),
     "blender": (5, 2, 0),
-    "location": "no UI - operators bpy.ops.fluidblend.* for the fluidblend engine",
-    "description": "Approved fluidblend runtime: typed operations on the open scene (live mode)",
+    "location": "View3D > Sidebar > fluidblend (Director); operators bpy.ops.fluidblend.* for the engine",
+    "description": "Approved fluidblend runtime: typed operations on the open scene, Director panel",
     "category": "System",
 }
 
@@ -87,6 +93,44 @@ def _check_blender() -> None:
 
 
 def run_envelope(envelope: dict) -> dict:
+    """Run to completion. Live jobs step the same generator from a timer instead (live_jobs.py)."""
+    steps = envelope_steps(envelope)
+    try:
+        while True:
+            next(steps)
+    except StopIteration as done:
+        return done.value
+
+
+def _guarded(handler, ctx, request, builder):
+    """Run a handler in the live engine scope. A generator handler is advanced one step per call so
+    the scope is never held while Blender's UI runs: a human edit between steps stays visible."""
+    from fluidblend_runtime import live_state
+
+    with live_state.engine_operation():
+        outcome = handler(ctx, request, builder)
+    if not hasattr(outcome, "__next__"):
+        return
+    while True:
+        mark = live_state.snapshot()
+        yield "handler"
+        if not live_state.matches(mark):
+            outcome.close()
+            raise OpError(
+                "SCENE_CONFLICT", "human edit during a live operation; it is preserved, nothing saved"
+            )
+        with live_state.engine_operation():
+            try:
+                next(outcome)
+            except StopIteration:
+                return
+
+
+def envelope_steps(envelope: dict):
+    """Generator form of an operation: yields a label between cooperative steps, returns the result.
+
+    A result is always produced, including when the generator is closed by a cancellation: the
+    caller then builds the cancelled result itself (see live_jobs)."""
     from fluidblend_runtime import blendio
     from fluidblend_runtime.dispatch import HANDLERS
 
@@ -94,6 +138,9 @@ def run_envelope(envelope: dict) -> dict:
     ctx = Context.from_envelope(envelope)
     builder = ResultBuilder(request, ctx)
     try:
+        for index in range(int(ctx.test_hooks.get("cooperative_wait_steps", 0)) if ctx.live else 0):
+            # Test hook: idle cooperative steps before any change, so a cancellation can land.
+            yield f"waiting {index + 1}"
         _check_blender()
         if ctx.runtime_expected_version and ctx.runtime_expected_version != RUNTIME_VERSION:
             raise OpError(
@@ -128,8 +175,12 @@ def run_envelope(envelope: dict) -> dict:
                 raise OpError(
                     "SCENE_CONFLICT", "live identity changed before execution; human edits preserved"
                 )
-            with live_state.engine_operation():
-                handler(ctx, request, builder)
+            yield "identity checked"
+            if not live_state.matches(expected):
+                raise OpError(
+                    "SCENE_CONFLICT", "live identity changed before execution; human edits preserved"
+                )
+            yield from _guarded(handler, ctx, request, builder)
             builder.metrics["live_completion_identity"] = identity()
         else:
             handler(ctx, request, builder)

@@ -26,6 +26,7 @@
       "additionalProperties": false,
       "properties": {
         "anchor": {
+          "description": "Control point at the window start, in support space (rig object space for the world)",
           "items": {
             "type": "number"
           },
@@ -33,6 +34,12 @@
           "minItems": 3,
           "title": "Anchor",
           "type": "array"
+        },
+        "control_point": {
+          "description": "Evaluated bone whose head is measured",
+          "minLength": 1,
+          "title": "Control Point",
+          "type": "string"
         },
         "effector": {
           "minLength": 1,
@@ -43,14 +50,23 @@
           "$ref": "#/$defs/FrameRange"
         },
         "support_instance_id": {
-          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
-          "title": "Support Instance Id",
-          "type": "string"
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None = static world ground",
+          "title": "Support Instance Id"
         }
       },
       "required": [
         "effector",
-        "support_instance_id",
+        "control_point",
         "frame_range",
         "anchor"
       ],
@@ -79,6 +95,99 @@
         "end_exclusive"
       ],
       "title": "FrameRange",
+      "type": "object"
+    },
+    "Measurement": {
+      "additionalProperties": false,
+      "description": "A figure with its definition (§16.1); `passed` is None when no tolerance gates it.",
+      "properties": {
+        "control_point": {
+          "minLength": 1,
+          "title": "Control Point",
+          "type": "string"
+        },
+        "effector": {
+          "minLength": 1,
+          "title": "Effector",
+          "type": "string"
+        },
+        "frame_range": {
+          "$ref": "#/$defs/FrameRange"
+        },
+        "kind": {
+          "enum": [
+            "foot_slide",
+            "contact_slide",
+            "contact_error",
+            "loop_pose",
+            "loop_velocity",
+            "handoff_jump",
+            "handoff_rotation_jump"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "passed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Passed"
+        },
+        "sampling_step": {
+          "minimum": 1,
+          "title": "Sampling Step",
+          "type": "integer"
+        },
+        "space": {
+          "minLength": 1,
+          "title": "Space",
+          "type": "string"
+        },
+        "tolerance": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tolerance"
+        },
+        "unit": {
+          "enum": [
+            "m",
+            "m/frame",
+            "rad"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "kind",
+        "effector",
+        "control_point",
+        "space",
+        "frame_range",
+        "sampling_step",
+        "value",
+        "unit"
+      ],
+      "title": "Measurement",
       "type": "object"
     }
   },
@@ -166,6 +275,13 @@
       "title": "Manifest Sha256",
       "type": "string"
     },
+    "measurements": {
+      "items": {
+        "$ref": "#/$defs/Measurement"
+      },
+      "title": "Measurements",
+      "type": "array"
+    },
     "owned_channels": {
       "items": {
         "maxItems": 2,
@@ -223,6 +339,23 @@
       ],
       "title": "Root Motion",
       "type": "string"
+    },
+    "root_motion_channels": {
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Root Motion Channels",
+      "type": "array"
     },
     "schema_version": {
       "const": "1.0",
@@ -285,6 +418,19 @@
       ],
       "default": null,
       "title": "Stage"
+    },
+    "stride_m": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stride M"
     }
   },
   "required": [

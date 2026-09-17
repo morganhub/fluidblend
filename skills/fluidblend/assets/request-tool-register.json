@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "operation": "tool.register",
+  "operation_id": "tool-register-001",
+  "project_id": "demo-studio",
+  "target": {},
+  "parameters": {
+    "tool_id": "gentle-foot-lock",
+    "test_report_path": "reviews/shot010/tool-test-001/tool-test.json"
+  },
+  "dry_run": false
+}

@@ -104,6 +104,8 @@ class QualityThresholds(StrictModel):
     schema_version: str = SCHEMA_VERSION
     foot_slide_max_m: float = Field(default=0.02, ge=0)
     contact_error_max_m: float = Field(default=0.02, ge=0)
+    handoff_jump_max_m: float = Field(default=0.005, ge=0)
+    handoff_rotation_jump_max_rad: float = Field(default=0.01, ge=0)
     audio_drift_max_frames: float = Field(default=1.0, ge=0)
     loop_pose_error_max: float = Field(default=1e-3, ge=0)
     preview_missing_frames_max: int = Field(default=0, ge=0)

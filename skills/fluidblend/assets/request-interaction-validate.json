@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "operation": "interaction.validate",
+  "operation_id": "interaction-validate-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010"
+  },
+  "parameters": {
+    "interaction_id": "baton-handoff"
+  },
+  "dry_run": false
+}

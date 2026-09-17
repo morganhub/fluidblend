@@ -21,6 +21,18 @@
       "title": "Foot Slide Max M",
       "type": "number"
     },
+    "handoff_jump_max_m": {
+      "default": 0.005,
+      "minimum": 0,
+      "title": "Handoff Jump Max M",
+      "type": "number"
+    },
+    "handoff_rotation_jump_max_rad": {
+      "default": 0.01,
+      "minimum": 0,
+      "title": "Handoff Rotation Jump Max Rad",
+      "type": "number"
+    },
     "loop_pose_error_max": {
       "default": 0.001,
       "minimum": 0,

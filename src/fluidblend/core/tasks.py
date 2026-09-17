@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextlib
 import shutil
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -44,13 +45,30 @@ from fluidblend.core.locks import LockBusy, ProjectLocks
 from fluidblend.core.paths import PathRejected, assert_not_protected, relpath_posix, resolve_inside
 from fluidblend.core.permissions import operation_allowed
 from fluidblend.core.planner import estimate_for
+from fluidblend.core.production import StaleInput
 from fluidblend.core.project import Project, ProjectError
 from fluidblend.core.revisions import RevisionStore
 from fluidblend.core.state import StateStore
 from fluidblend.hostops import HOST_HANDLERS
 from fluidblend.hostops.context import HostContext, HostOpError
 
-PATH_PARAMS = ("audio_path", "request_path", "inspection_path", "profile_path")
+PATH_PARAMS = (
+    "audio_path",
+    "request_path",
+    "inspection_path",
+    "profile_path",
+    "plan_path",
+    "test_report_path",
+)
+# Operations whose admitted inputs are validated before any task exists.
+INPUT_CHECKED_OPERATIONS = (
+    "shot.build",
+    "rig.validate",
+    "interaction.apply",
+    "adjustment.preview",
+    "adjustment.apply",
+    "tool.test",
+)
 BLOCKED_EXIT = {
     ErrorCode.PERMISSION_REQUIRED: exit_codes.BLOCKED,
     ErrorCode.UNSUPPORTED_CAPABILITY: exit_codes.BLOCKED,
@@ -105,6 +123,8 @@ class TaskRunner:
         self.locks = ProjectLocks(project.root)
         self.test_hooks = test_hooks or {}
         self.allow_unlocked_blender = allow_unlocked_blender
+        # Optional observer `(task, progress)` of cooperative live steps (CLI display, tests).
+        self.on_live_progress = None
 
     # --- Public API ---------------------------------------------------------------------
 
@@ -185,6 +205,7 @@ class TaskRunner:
                     self._live_before_publication(result)
                 result = self._publish(request, spec, task, result)
                 self._index_clip(request, task, result)
+                self._install_registration(request, task, result)
                 if self.mode == "live" and spec.name in LIVE_OPERATIONS and spec.creates_version:
                     self._live_reload(request, task, result)
                 task.status = OperationStatus.succeeded
@@ -204,6 +225,9 @@ class TaskRunner:
             return self._aborted(request, spec, task, abort)
         except PathRejected as exc:
             return self._aborted(request, spec, task, TaskAbort(ErrorCode.PERMISSION_REQUIRED, str(exc)))
+        except StaleInput as exc:
+            # The scene moved between preflight and the lock: same answer as a stale preflight.
+            return self._aborted(request, spec, task, TaskAbort(ErrorCode.SCENE_CONFLICT, str(exc)))
         except (OSError, ValueError) as exc:
             return self._aborted(
                 request,
@@ -244,8 +268,36 @@ class TaskRunner:
             }
         killed, message = (False, "no worker recorded")
         if task.mode == "live":
-            # No live cancellation protocol exists yet. Never kill the user's GUI or
-            # pretend its synchronous operator stopped. A late result can still arrive.
+            # Ask the session to stop between two cooperative steps, and believe it only on its
+            # written acknowledgement. Never kill the user's GUI.
+            task_dir = self._task_dir(task_id)
+            task_dir.mkdir(parents=True, exist_ok=True)
+            (task_dir / "cancel.request").write_text(now_iso(), encoding="utf-8")
+            deadline = time.monotonic() + float(self.test_hooks.get("live_cancel_wait_s", 15.0))
+            ack = task_dir / "cancel.ack.json"
+            while time.monotonic() < deadline and not ack.exists():
+                if (task_dir / "result.json").exists():
+                    break  # the operation finished before it could be stopped
+                time.sleep(0.2)
+            if ack.exists():
+                # The engine process that runs the operation records the final state and journal
+                # entry; this command only reports the proof it saw.
+                return {
+                    "task_id": task_id,
+                    "status": OperationStatus.cancelled,
+                    "cancelled": True,
+                    "worker_killed": False,
+                    "acknowledgement": read_json(ack),
+                    "message": "live operation stopped between two steps; nothing was saved or published",
+                }
+            if (task_dir / "result.json").exists():
+                return {
+                    "task_id": task_id,
+                    "status": task.status,
+                    "cancelled": False,
+                    "worker_killed": False,
+                    "message": "the live operation completed before the stop request was seen",
+                }
             task.status = OperationStatus.unknown
             task.partial_effects = self._partial_effects(task_id)
             self.state.upsert_task(task)
@@ -391,11 +443,17 @@ class TaskRunner:
                 resolve_inside(self.project.root, data["source_path"], allow_missing=False)
             except (OSError, ValueError) as exc:
                 raise TaskAbort(ErrorCode.PERMISSION_REQUIRED, str(exc)) from exc
-        if spec.name in ("shot.build", "rig.validate"):
+        if spec.name in INPUT_CHECKED_OPERATIONS and spec.available:
             from fluidblend.core.production import inputs_for
 
             try:
                 inputs_for(self.project, request)
+            except StaleInput as exc:
+                raise TaskAbort(
+                    ErrorCode.SCENE_CONFLICT,
+                    str(exc),
+                    recovery="run interaction.plan again on the current revision, review it, then apply",
+                ) from exc
             except (OSError, ValueError) as exc:
                 raise TaskAbort(ErrorCode.VALIDATION_FAILED, str(exc), status=OperationStatus.failed) from exc
         for key in PATH_PARAMS:
@@ -750,6 +808,15 @@ class TaskRunner:
         if result_path.exists():
             result_path.unlink()
         timeout = float(self.test_hooks.get("live_call_timeout_s") or config.call_timeout_s)
+        for stale in ("progress.json", "cancel.request", "cancel.ack.json"):
+            (task_dir / stale).unlink(missing_ok=True)
+
+        def on_progress(progress: dict[str, Any]) -> None:
+            task.progress = progress
+            self.state.upsert_task(task)
+            if self.on_live_progress is not None:
+                self.on_live_progress(task, progress)
+
         try:
             data = blender_live.run_request(
                 config,
@@ -757,6 +824,7 @@ class TaskRunner:
                 result_path,
                 what=f"{spec.name} {request.operation_id}",
                 timeout_s=timeout,
+                on_progress=on_progress,
             )
         except blender_live.LiveError as exc:
             if exc.kind == "timeout":
@@ -789,6 +857,18 @@ class TaskRunner:
                 f"result.json is not conformant: {exc}",
                 status=OperationStatus.failed,
             ) from exc
+        if result.status == OperationStatus.cancelled:
+            ack = task_dir / "cancel.ack.json"
+            if not ack.exists():
+                # A cancelled result without its acknowledgement proves nothing about the session.
+                raise TaskAbort(
+                    ErrorCode.TIMEOUT_UNKNOWN_STATE,
+                    "live operation reported a cancellation without acknowledgement",
+                    recovery=f"fluidblend task reconcile --project . --id {task.task_id}",
+                    status=OperationStatus.unknown,
+                )
+            details = {k: v for k, v in read_json(ack).items() if k != "task_id"}
+            self.project.journal().append("live_cancel_acknowledged", task_id=task.task_id, **details)
         result.metrics["mode"] = "live"
         result.metrics["live_identity"] = {
             k: ident.get(k) for k in ("blend_path", "revision", "runtime_version")
@@ -1095,6 +1175,33 @@ class TaskRunner:
             sha256=artifact.sha256,
         )
 
+    def _install_registration(self, request, task, result):
+        """A published `tool.register` report becomes `tools/custom/<id>/registration.json`."""
+        if request.operation != "tool.register":
+            return
+        from fluidblend.contracts.production import ToolRegistration
+        from fluidblend.core.custom_tools import tool_dir
+
+        report = next(a for a in result.artifacts if a.path.endswith("/registration.json"))
+        data = ToolRegistration.model_validate(read_json(self.project.root / report.path))
+        destination = tool_dir(self.project, data.tool_id) / "registration.json"
+        atomic_write_json(destination, data.model_dump(mode="json"))
+        artifact = Artifact(
+            kind="json",
+            path=relpath_posix(self.project.root, destination),
+            sha256=sha256_file(destination),
+            bytes=destination.stat().st_size,
+        )
+        result.artifacts.append(artifact)
+        self.project.journal().append(
+            "artifact_published",
+            task_id=task.task_id,
+            operation_id=request.operation_id,
+            kind=artifact.kind,
+            path=artifact.path,
+            sha256=artifact.sha256,
+        )
+
     def _publish(
         self, request: OperationRequest, spec: OperationSpec, task: TaskRecord, result: OperationResult
     ) -> OperationResult:
@@ -1244,7 +1351,9 @@ class TaskRunner:
         )
 
     def _finish_failed(self, task: TaskRecord, result: OperationResult) -> RunOutcome:
-        task.status = OperationStatus.failed
+        # Only an acknowledged live cancellation reaches here as `cancelled` (see _execute_live).
+        cancelled = result.status == OperationStatus.cancelled
+        task.status = OperationStatus.cancelled if cancelled else OperationStatus.failed
         task.errors = result.errors
         task.partial_effects = self._partial_effects(task.task_id)
         task.result_path = self._save_result(task, result)

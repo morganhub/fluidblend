@@ -3,7 +3,18 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
-## Unreleased — partial P1
+## 0.3.0 — 2026-09-17 — production lot 3
+
+Characters, clip library, measured contacts, prop hand-off, adjustments, custom tools, cooperative
+live mode and the Director panel. 138 tests and 27 acceptance scenarios pass on the reference
+machine (A01–A13, B01, B03, B05, B06, B08, L01–L09). Lot 4 — retargeting (B02), facial lip-sync
+(B04), Godot import and smoke test (B07) — is not started and is planned for 0.4.0. Technical
+measurements only: no human artistic validation is recorded.
+
+Upgrade note: run `fluidblend runtime install --enable` again and restart Blender; the engine
+refuses a runtime add-on whose version differs from the kit. A `rig-profile.json` mapped before this
+version lacks the four deform-bone roles and must be mapped again before `walk`, `take_prop`,
+`give_prop`, `contact_lock` or a hand-off.
 
 - Correct unavailable preflight, uncertain cancellation, dependency-lock comparisons and
   source/revision-bound audit/preview evidence; disable automatic Blender scripts.
@@ -11,6 +22,25 @@ This project follows semantic versioning from 1.0.0 onwards; before that, the in
 - Add CC0 Vitruvian/Rigify fixture and tested local shot assembly, character inspection,
   semantic mapping and five-pose validation.
 - Add bounded slotted Action library, NLA application, loop and measured deformation bake.
+- Add shared contact/loop measurements and a root-motion `walk` recipe whose foot slide is gated at
+  creation and re-measured by `animation.apply` on every repetition; `animation.loop` offsets
+  root-motion channels and gates the evaluated seam pose. Rig profiles gain four deform-bone roles.
+- Add prop assets (`kind: prop`, named grips), `shot.build` yaw placement, `take_prop` / `give_prop`
+  palm-reach recipes and a bounded prop hand-off: revision-bound `interaction.plan`,
+  `interaction.apply` with a world-transform-preserving `CHILD_OF` transfer, `interaction.validate`
+  (contacts in the prop's space, hand-off jump, single authority, no constraint cycle) — B03.
+- Add `adjustment.preview` / `apply` / `revert` with the `contact_lock` tool: a removable additive NLA
+  layer, before/after measurements and frames, refusal of travel windows and planted contacts — B05.
+- Add declarative custom tools (`tool.inspect` / `test` / `register`, `custom_tool_id` on adjustments):
+  narrowing only, no code loaded, stated limitation for unsupported requests — B08.
+- Make live execution cooperative (`start_request`, timer steps, `progress.json`) and believe
+  `task cancel` only on the session's `cancel.ack.json` — L09.
+- Add the Director panel: Preview / Apply / Revert of `contact_lock` run by the engine in a separate
+  process, debounced sliders, session never keyed, identity-guarded reopen — B06. Clicked by a
+  human before release, which led to: character list instead of a free field, wrapped messages,
+  sidebar redraw after a timer, a stale-work-version guard with `Open latest version`, an
+  unsaved-scene banner with `Reload file` (never "save"), plain-language results and a button to
+  open the before/after frames.
 - Add actual two-pass FFmpeg audio preparation and Rhubarb mouth-cue analysis.
 - See `docs/production-p1.md` for exact scope, evidence and outstanding deliveries.
 

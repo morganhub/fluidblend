@@ -2,25 +2,38 @@
   "$id": "https://fluidblend.local/schemas/operations/interaction.validate.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Validate contacts and ownership",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Measure contacts, hand-off jump and prop ownership",
+  "properties": {
+    "interaction_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Interaction Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "interaction_id"
+  ],
+  "title": "InteractionValidateParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
     "cli_command": null,
     "input_paths": [],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
     "optional_dependencies": [],
     "publication": "reports_and_artifacts",
     "required_dependencies": [
       "blender.batch"
     ],
-    "required_targets": [],
-    "requires_shot": false
+    "required_targets": [
+      "shot_id"
+    ],
+    "requires_shot": true
   }
 }

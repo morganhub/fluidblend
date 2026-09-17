@@ -1,26 +1,139 @@
 {
+  "$defs": {
+    "FrameRange": {
+      "additionalProperties": false,
+      "description": "Canonical half-open interval `[start, end_exclusive)`.",
+      "properties": {
+        "end_exclusive": {
+          "maximum": 1000001,
+          "minimum": -100000,
+          "title": "End Exclusive",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 1000000,
+          "minimum": -100000,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end_exclusive"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    }
+  },
   "$id": "https://fluidblend.local/schemas/operations/adjustment.preview.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Preview an adjustment",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Measure and render an adjustment before/after without saving it",
+  "properties": {
+    "adjustment_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Adjustment Id",
+      "type": "string"
+    },
+    "blend_frames": {
+      "default": 3,
+      "description": "Ramp in and out around the window",
+      "maximum": 24,
+      "minimum": 1,
+      "title": "Blend Frames",
+      "type": "integer"
+    },
+    "custom_tool_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Registered custom tool whose narrower bounds apply",
+      "title": "Custom Tool Id"
+    },
+    "effector": {
+      "enum": [
+        "left_foot",
+        "right_foot",
+        "left_hand",
+        "right_hand"
+      ],
+      "title": "Effector",
+      "type": "string"
+    },
+    "frame_range": {
+      "$ref": "#/$defs/FrameRange"
+    },
+    "max_correction_m": {
+      "default": 0.15,
+      "description": "Above this drift the window is travel, not a slide: refused",
+      "exclusiveMinimum": 0,
+      "maximum": 0.5,
+      "title": "Max Correction M",
+      "type": "number"
+    },
+    "preview_samples": {
+      "default": 4,
+      "description": "Before/after frames (preview only)",
+      "maximum": 16,
+      "minimum": 0,
+      "title": "Preview Samples",
+      "type": "integer"
+    },
+    "support_instance_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "None = static world; else the contact is held in that instance's space",
+      "title": "Support Instance Id"
+    },
+    "tool": {
+      "const": "contact_lock",
+      "default": "contact_lock",
+      "title": "Tool",
+      "type": "string"
+    }
+  },
+  "required": [
+    "adjustment_id",
+    "effector",
+    "frame_range"
+  ],
+  "title": "ContactLockParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
     "cli_command": null,
     "input_paths": [],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
     "optional_dependencies": [],
     "publication": "reports_and_artifacts",
     "required_dependencies": [
       "blender.batch"
     ],
-    "required_targets": [],
-    "requires_shot": false
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

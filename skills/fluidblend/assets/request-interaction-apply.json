@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "operation": "interaction.apply",
+  "operation_id": "interaction-apply-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010"
+  },
+  "parameters": {
+    "plan_path": "reviews/shot010/interaction-plan-001/interaction-plan.json"
+  },
+  "dry_run": false
+}

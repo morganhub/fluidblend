@@ -75,6 +75,10 @@ def audit() -> dict:
                     )
                     break
     for obj in blendio.instance_objects("character"):
+        anim = obj.animation_data
+        # Library clips are applied as NLA strips: that is animation too, without an active Action.
+        if anim and not anim.action and any(track.strips for track in anim.nla_tracks):
+            continue
         if not obj.animation_data or not obj.animation_data.action:
             issue(
                 "warning",

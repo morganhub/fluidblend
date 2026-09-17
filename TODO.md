@@ -1,27 +1,30 @@
 # TODO — what remains to complete the specification
 
 Reference: the "Blender Director" specification v1.0 (16 September 2026, kept outside this public
-repository) and [docs/roadmap.md](docs/roadmap.md). Status on 17 September 2026: version 0.2.0 plus unreleased partial P1.
+repository) and [docs/roadmap.md](docs/roadmap.md). Status on 17 September 2026: version 0.3.0 (P0, live, lot 3); lot 4 is planned for 0.4.0.
 Implementation scope and proof: [docs/production-p1.md](docs/production-p1.md).
 
-## Amorce de reprise technique — pause du 17 septembre 2026
+## Amorce de reprise technique — version 0.3.0 du 17 septembre 2026
 
 Ce bloc est le point d'entrée de la prochaine session. Le travail décrit ci-dessous est présent
-dans le **worktree local, non commité** : ne pas réinitialiser, nettoyer ou remplacer les fichiers
-avant d'avoir relu `git status` et ce récapitulatif. Les modifications concernent le moteur, le
+dans la **version 0.3.0** (lot 3). Le lot 4 (B02, B04, B07) est prévu pour la 0.4.0. Relire
+`git status` et ce récapitulatif avant toute reprise. Les modifications concernent le moteur, le
 runtime Blender, les contrats/schémas, les tests, la fixture binaire et la documentation.
 
 ### État mesuré
 
-- Catalogue : **43 opérations**, dont **19 P0 disponibles**, **10 P1 disponibles** et **14 P1
+- Catalogue : **43 opérations**, dont **19 P0 disponibles**, **19 P1 disponibles** et **5 P1
   indisponibles**. Une opération indisponible échoue au précontrôle avec
   `UNSUPPORTED_CAPABILITY`, même si aucun handler hôte n'existe.
 - Nouvelles opérations P1 qualifiées : `shot.build`, `character.inspect`, `rig.map`,
   `rig.validate`, `animation.create`, `animation.apply`, `animation.loop`, `animation.bake`,
   `audio.prepare`, `lipsync.analyze`.
-- Opérations encore indisponibles : `animation.retarget`, `interaction.plan/apply/validate`,
-  `lipsync.apply`, `expression.apply`, `adjustment.preview/apply/revert`,
-  `game.import_test`, `game.smoke_test`, `tool.inspect/test/register`.
+- Qualifiées ensuite (même jour) : recettes `walk`, `take_prop`, `give_prop`, mesures communes,
+  `interaction.plan/apply/validate` (B03), `adjustment.preview/apply/revert` + `contact_lock`
+  (B05), `tool.inspect/test/register` (B08), live coopératif (L09), panneau Director (B06). Dernière régression complète : **138 tests réussis en
+  595,39 s** (après la refonte du panneau Director), 27 scénarios passés (A01–A13, B01, B03, B05, B06, B08, L01–L09), lint/format/schémas OK.
+- Opérations encore indisponibles : `animation.retarget`, `lipsync.apply`, `expression.apply`,
+  `game.import_test`, `game.smoke_test`.
 - Régression combinée : **121 tests réussis en 324,35 s**, avec A01–A13, B01 et L01–L08 sur
   Blender 5.2.2 LTS. Contrôles ciblés suivants : **98 tests unitaires**, **3 tests audio réels**
   (mono, stéréo et dépendance absente) et B01 renforcé réussi. Ruff, formatage, schémas et
@@ -64,13 +67,46 @@ runtime Blender, les contrats/schémas, les tests, la fixture binaire et la docu
    - Contrats stricts `clip`/`clip-index`, Actions à slots, manifests avec profil, timing, couche,
      canaux possédés, seed, limites, contacts et événements ; index publié avec SHA du `.blend` et
      du rapport.
-   - Recettes disponibles : `idle_neutral`, `turn`, `look_at`, `reach`, `react`. Les recettes
-     `walk`, `take_prop` et `give_prop` restent à réaliser.
+   - Recettes disponibles : `idle_neutral`, `walk`, `turn`, `look_at`, `reach`, `take_prop`,
+     `give_prop`, `react`. `take_prop`/`give_prop` amènent la paume (`DEF-hand.X@0.5`) sur la prise
+     d'un prop statique ou sur un point monde ; portée refusée au-delà de 95 % du bras.
+   - Mesures communes (`anim/measures.py`) : chaque chiffre porte espace, fenêtre d'appui, pas
+     d'échantillonnage, point de contrôle (os de déformation), tolérance et `passed` (`null` si non
+     contrôlé). `walk` = cycle root motion sur pieds IK, glissement contrôlé à la création puis
+     remesuré par `animation.apply` sur chaque répétition, avec le déplacement racine.
    - `animation.apply` crée des pistes NLA `REPLACE` et refuse conservativement tout chevauchement
-     de canaux. `animation.loop` vérifie la continuité de valeur aux extrémités.
+     de canaux. `animation.loop` vérifie la continuité de valeur aux extrémités (hors canaux de
+     root motion, répétés avec offset) et la pose évaluée à la couture.
    - `animation.bake` produit une variante d'export, retire contraintes/drivers de cette variante
      seulement, conserve la source et contrôle l'écart géométrique sous 1 mm aux trois images
      échantillonnées. Cela ne prouve ni tous les frames, ni les contacts, ni la continuité de vitesse.
+
+3b. **Props et passation d'objet (B03)**
+   - Asset `kind: prop` (`root_object`, `grips` nommés en mètres locaux) ; `shot.build` place la
+     racine d'instance (`location`, `rotation_z` en radians). Prop de test `baton` CC0 généré à la
+     demande par `scripts/generate_prop_fixture.py`, aucun binaire versionné.
+   - `interaction.plan` (hôte) produit un plan relisible lié à la révision par `evidence.json` ;
+     `interaction.apply` refuse un plan périmé ou modifié (`SCENE_CONFLICT`), un prop ayant déjà une
+     autorité, des canaux de main occupés, une cible hors de portée. Transfert par deux `CHILD_OF`
+     à influences en clés constantes, inverse calculée pour conserver la transformée monde.
+   - `interaction.validate` rejoue exactement le code de mesure d'`apply` (contacts dans l'espace du
+     prop, saut de passation, autorité unique, absence de cycle) et sort 0 avec
+     `technical_pass: false` en cas d'échec : lire la métrique, pas le code de sortie.
+   - Limites : personnages immobiles, prop rigide à l'échelle 1, mains ouvertes, pas de propagation
+     du retiming d'un participant.
+
+3c. **Ajustements Preview/Apply/Revert (B05)**
+   - Un seul outil : `contact_lock`. Couche NLA additive (une Action + une piste `ADD`) sur la
+     location du contrôle IK ; aucune source modifiée ; `revert` retire exactement cette couche, ou
+     répond `SCENE_CONFLICT` si elle a été modifiée à la main.
+   - Refus : contact déjà dans la tolérance, membre en FK, dérive > `max_correction_m` (fenêtre
+     contenant un pas = déplacement, pas glissement).
+   - Outils custom déclaratifs (B08) : `tools/custom/<id>/tool.json` borne un outil intégré et
+     porte ses tests ; `tool.inspect` répond `unsupported` avec la raison (outil de base absent,
+     rig sans IK) ; `tool.test` rejoue les tests en mémoire ; `tool.register` exige rapport
+     intègre + tous tests réussis ; `custom_tool_id` applique les bornes au précontrôle. Aucun
+     code n'est chargé depuis `tools/custom/`.
+   - Reste : sept autres outils d'ajustement.
 
 4. **Audio et dialogue préparatoire**
    - `audio.prepare` conserve la source, mesure puis normalise avec FFmpeg `loudnorm` en deux
@@ -105,10 +141,12 @@ runtime Blender, les contrats/schémas, les tests, la fixture binaire et la docu
    `pytest tests/unit -q` via `.venv/Scripts/`.
 3. Créer un commit de jalon seulement après revue du diff et vérification que la fixture
    `fixtures/vitruvian/character.blend` est bien prise en charge par Git LFS.
-4. Reprendre la livraison 3 par les mesures communes de contacts/boucles, puis les recettes
-   `walk`, `take_prop`, `give_prop`; enchaîner sur `interaction.plan/apply/validate` et B03.
-5. Implémenter ensuite les ajustements et le cycle Preview/Apply/Revert (B05/B08), puis le live
-   coopératif et le panneau Director (B06). Garder `available: false` jusqu'au test Blender réel et
+4. Fait : mesures communes de contacts/boucles, recettes `walk`, `take_prop`, `give_prop`,
+   `interaction.plan/apply/validate` et B03. Le travail est dans le worktree, non commité.
+5. Fait aussi : cycle Preview/Apply/Revert avec `contact_lock` (B05), registre d'outils
+   déclaratifs `tool.inspect/test/register` (B08), live coopératif avec annulation acquittée (L09)
+   et panneau Director (B06). Le lot 3 est clos côté scénarios ; restent les points `[~]`/`[ ]`
+   listés plus bas (autres outils, autres interactions, relecture humaine du panneau). Garder `available: false` jusqu'au test Blender réel et
    au scénario d'acceptation correspondant.
 6. Pour la livraison film/jeu, poursuivre dans l'ordre : fixture faciale + `lipsync.apply`/B04,
    retarget borné/B02, puis template Godot et import/smoke tests/B07. Ne pas démarrer P2 sans demande.
@@ -146,9 +184,11 @@ Spec §9, §10, §11, §12, §16.1, §18 (lot 3); acceptance B01, B03, B05, B06,
 
 ### Animation library and layers (§10)
 - [~] Clip manifests (`animation/clips/<clip_id>/`: Action + slot, rig profile, timing, loop,
-      root-motion convention, contacts, events, owned channels) and `animation/recipes/`.
-- [~] Initial library on the Rigify profile: `idle_neutral`, `walk`, `turn`, `look_at`, `reach`,
-      `take_prop`, `give_prop`, `react` — each with supported rigs and parameters.
+      root-motion convention, contacts, events, owned channels, measurements) and
+      `animation/recipes/` (recipes are code, not yet declarative files).
+- [x] Initial library on the Rigify profile: `idle_neutral`, `walk`, `turn`, `look_at`, `reach`,
+      `take_prop`, `give_prop`, `react` — each with supported rigs and parameters. Bounded recipes:
+      no arm swing, heel roll or finger pose; none is artistically approved.
 - [x] `animation.create`, `animation.apply`, `animation.loop`, `animation.bake`.
 - [~] Logical layers (global motion, locomotion, upper body, hands/contacts, gaze, face, lips,
       secondary) mapped to NLA tracks and channel partitions; documented priority resolution;
@@ -159,33 +199,51 @@ Spec §9, §10, §11, §12, §16.1, §18 (lot 3); acceptance B01, B03, B05, B06,
       paths, secondary oscillation, blinks, extras variation).
 
 ### Interactions (§11)
-- [ ] `interaction.plan` / `interaction.apply` / `interaction.validate`: choreography manifest
-      (participants, prop instance, interval, anchors, contact windows, ownership order).
-- [ ] Prop hand-off: attach with known offset → synchronized reach → constraint transfer keeping
+- [x] `interaction.plan` / `interaction.apply` / `interaction.validate`: choreography manifest
+      (participants, prop instance, interval, anchors, contact windows, ownership order) — one
+      bounded kind, `prop_handoff`; the plan is bound to its revision and refused once stale.
+- [x] Prop hand-off: attach with known offset → synchronized reach → constraint transfer keeping
       the world transform → release; validations for position jump, hand distance, ownership → B03.
-- [ ] Single authority on a prop's transform; no constraint cycles between characters.
-- [ ] Timing change propagates to contacts, gaze, events and associated audio; report breaks.
+- [x] Single authority on a prop's transform; no constraint cycles between characters.
+- [~] Timing change propagates to contacts, gaze, events and associated audio; report breaks.
+      Breaks are reported by `interaction.validate`; nothing is propagated yet.
+- [ ] Other interaction kinds (handshake, shared gaze, two-handed carry, hand-off while walking),
+      finger poses, wrist orientation, body/prop intersection test.
 
 ### Adjustment tools (§12)
-- [ ] Tool contract (§12.2): id, version, purpose, supported rigs, bounded parameters with units,
+- [x] Tool contract (§12.2): id, version, purpose, supported rigs, bounded parameters with units,
       time scope, affected channels, preconditions, preview mode, effects on sources, revert,
-      tests, known limits. Lifecycle spec → code → unit tests → Blender fixture → before/after
-      preview → measurement → registered capability.
-- [ ] `adjustment.preview` / `adjustment.apply` / `adjustment.revert`.
-- [ ] Tools (§12.3): `retime_segment` (keys and events order preserved), `scale_gesture`
-      (rig limits, contacts preserved), `look_at_target` (no flips, limits), `contact_lock`
-      (measured contact error in the right space) → B05, `root_path_adjust` (no double
+      tests, known limits (`ADJUSTMENT_TOOLS`, completeness enforced by a unit test). Lifecycle
+      spec → code → unit tests → Blender fixture → before/after preview → measurement →
+      registered capability, followed for `contact_lock`.
+- [x] `adjustment.preview` / `adjustment.apply` / `adjustment.revert` (additive, removable NLA layer).
+- [~] Tools (§12.3): done — `contact_lock` (measured contact error in the right space) → B05;
+      its support-space variant is implemented but not exercised by a scenario. Remaining —
+      `retime_segment` (keys and events order preserved), `scale_gesture`
+      (rig limits, contacts preserved), `look_at_target` (no flips, limits), `root_path_adjust` (no double
       application), `loop_cleanup` (pose and optional velocity continuity), `curve_cleanup`
       (max deviation under threshold, contacts untouched), `expression_strength`.
-- [ ] `tools/custom/<tool_id>/` registry with `tool.inspect` / `tool.test` / `tool.register`;
-      a bounded tool with tests or a clear limitation, never a fake success → B08.
-- [ ] Quality measures (§16.1): foot slide ≤ 0.02 m, hand/prop contact ≤ 0.02 m, loop error,
+- [x] `tools/custom/<tool_id>/` registry with `tool.inspect` / `tool.test` / `tool.register`;
+      a bounded tool with tests or a clear limitation, never a fake success → B08. Declarative
+      only (no code loaded); with one built-in tool a custom tool is a stricter `contact_lock`.
+- [~] Quality measures (§16.1): foot slide ≤ 0.02 m, hand/prop contact ≤ 0.02 m, loop error,
       with the measurement defined (space, support window, sampling, control points, tolerance).
+      Done: shared `anim/measures.py`, foot slide (world), palm/grip contact in the prop's space,
+      hand-off jump and loop pose gated, seam velocity reported ungated. Remaining: `animation.apply`
+      re-measures only the applied clip's contacts, not those of clips already on the rig.
 
 ### Native Blender panel (§12.4)
-- [ ] `blender_addon/`: "Director" panel — target, parameters, range, Preview / Apply / Revert,
-      state, link to the report; same operations as the CLI/live mode; bounded, debounced sliders;
-      preview on a reversible temporary state; Apply = explicit new revision → B06.
+- [x] "Director" panel — target, parameters, range, Preview / Apply / Revert, state, report path;
+      same operations as the CLI; bounded, debounced sliders; Apply = explicit new revision → B06.
+      It lives in the runtime add-on (`fluidblend_runtime/director.py`), not in a separate
+      `blender_addon/`. The preview does not use a temporary state in the session at all: the engine
+      previews the published version in a separate process, so the session stays clean.
+- [x] Human review of the panel in the GUI (17 September 2026): five usability defects found and
+      fixed (empty character field, truncated messages, no redraw after a timer, stale work version
+      not reported, unsaved scene blocking Apply/Revert with misleading "save" advice). Strict rule
+      kept on purpose: Apply and Revert need a clean scene; `Reload file` discards on confirmation.
+- [ ] In-viewport preview of an adjustment (today: figures and before/after frames only), and a
+      demo shot where the fix is visible to the eye (the B05 fixture drifts 10 cm sideways).
 
 ## Lot 4 — voice and game target (P1)
 
@@ -244,7 +302,10 @@ Spec §1 (P2), §7.3, §10.5, §11, §12.4, §13, §18 (lot 5).
       client must call `fluidblend run --mode live`. Shared operation ids and lock policy between
       shell and MCP tools remain to be exposed (§7.2).
 - [x] Live edit generation and undo/redo/load signals; checked before execution, publication and reload (§7.4).
-- [~] Progress and cancellation of long live calls; `task.cancel` for live tasks (§7.5).
+- [x] Progress and cancellation of long live calls; `task.cancel` for live tasks (§7.5) — cooperative
+      timer steps, `progress.json`, cancellation believed only on `cancel.ack.json` (L09). The four
+      live operations are single-step, so a stop lands before or after them; a long live operation
+      must be written as a generator to be interruptible inside.
 - [ ] Permissions enforced outside the agent's reach when the client allows it (hooks or client
       permission settings); the JSON permissions file remains a weak boundary (§15.3).
 - [~] Archive imports: size and expansion limits, external references of imported `.blend`
