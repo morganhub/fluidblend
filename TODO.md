@@ -250,7 +250,11 @@ Spec §9, §10, §11, §12, §16.1, §18 (lot 3); acceptance B01, B03, B05, B06,
 - [x] A fix visible to the eye: `adjustment.preview` adds top-down close-ups on the contact
       (`review/closeup-before|after/`), clipped above the effector, over a red cross fixed at the
       anchor. Looked at on B05: the ankle sits 10 cm off the cross before, on it after.
-- [ ] In-viewport preview of an adjustment (today: figures and rendered frames only).
+- [x] In-viewport preview of an adjustment: the preview report carries the effector path before and
+      after (`viewport`), and the panel draws both over the 3D view with the GPU module — red today,
+      green fixed, white cross at the anchor, two dots following the timeline. No datablock, no key,
+      no dirty flag (asserted in B06; looked at in a GUI session). `contact_lock` only; the mesh
+      itself does not move before Apply, by design of the strict clean-session rule.
 
 ## Lot 4 — voice and game target (P1)
 

@@ -152,6 +152,16 @@ def contact_anchor(ctx, rig, params):
     return Vector(measures.sample(rig, [point], first)[point][0])
 
 
+def effector_path(ctx, rig, params):
+    """World path of the measured control point, ramps included: what the panel draws in the viewport."""
+    _control, _switch, point = effector_roles(controls_for(ctx, rig), params["effector"])
+    window, blend = params["frame_range"], params.get("blend_frames", 3)
+    frames = measures.window_frames(
+        {"start": window["start"] - blend, "end_exclusive": window["end_exclusive"] + blend}
+    )
+    return frames, [[round(v, 5) for v in p] for p in measures.sample(rig, [point], frames)[point]]
+
+
 def anchor_marker(anchor, support):
     """A flat red cross centred on the anchor, longer than a foot so its arms show around it."""
     arm, half = 0.35, 0.006
@@ -363,13 +373,26 @@ def preview(ctx, request, builder):
         if tool_of(params) == "contact_lock":
             anchor = contact_anchor(ctx, rig, params)
             render_closeups(ctx, rig, params, "before", anchor)
-    before, after, _track, _action, _point = solve(ctx, rig, params)
+    viewport = None
+    if tool_of(params) == "contact_lock":
+        frames, path_before = effector_path(ctx, rig, params)
+    before, after, _track, _action, point = solve(ctx, rig, params)
+    if tool_of(params) == "contact_lock":
+        # Drawn by the Director panel over the open scene; the scene itself is never changed.
+        viewport = {
+            "control_point": point,
+            "space": "world",
+            "frames": frames,
+            "before": path_before,
+            "after": effector_path(ctx, rig, params)[1],
+            "window": params["frame_range"],
+        }
     if rendered:
         render_frames(ctx, params, "after")
         if anchor is not None:
             render_closeups(ctx, rig, params, "after", anchor)
         builder.add_dir("frames", os.path.join(ctx.out_dir, "review"))
-    data = {**report(params, before, after), "saved": False}
+    data = {**report(params, before, after), "saved": False, "viewport": viewport}
     builder.write_report("adjustment-preview.json", data)
     builder.metrics.update(summary(data))
     builder.next_safe_actions.append("adjustment.apply with the same parameters and a new operation_id")

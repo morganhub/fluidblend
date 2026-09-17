@@ -21,6 +21,8 @@ This project follows semantic versioning from 1.0.0 onwards; before that, the in
   removable COMBINE layer, gated on gaze error (2°) and on head turn per frame; targets beyond
   `max_angle_deg` are refused. `adjustment.*` parameters now select the tool with `tool`; requests
   without it remain `contact_lock`. New quality key `gaze_error_max_deg`.
+- Director panel: after a preview, the effector paths before (red) and after (green) and the anchor
+  are drawn over the 3D view from the report's new `viewport` block. The session is not modified.
 - `animation.bake` samples five frames instead of three, names the clip `<rig>.<output_clip>` and
   removes control-rig NLA tracks from the export variant (their Actions are kept).
 - `game.export` counts deform bones when `export_def_bones` is set, exports only the baked clip of a

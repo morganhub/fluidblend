@@ -52,6 +52,9 @@ def test_runtime_has_no_third_party_imports():
                 # The Director panel alone may start a process: the kit's own CLI, nothing else.
                 if root == "subprocess" and path.name == "director.py":
                     continue
+                # gpu ships with Blender; the viewport overlay alone draws with it.
+                if root in ("gpu", "gpu_extras") and path.name == "director_overlay.py":
+                    continue
                 if root not in allowed_roots and root not in stdlib_ok:
                     offenders.append(f"{path.name}: {line.strip()}")
     assert offenders == [], "\n".join(offenders)

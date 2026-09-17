@@ -97,6 +97,12 @@ def test_B06_director_panel(director_session):
     project, blend = director_session
     before = _identity(project)
     source_hash = sha256_file(blend)
+    before_counts = blender_live.extract_marker(
+        call(
+            project, "import bpy\nprint('FB_COUNTS=' + str([len(bpy.data.objects), len(bpy.data.actions)]))\n"
+        ),
+        "FB_COUNTS=",
+    )
 
     call(project, SETUP + "bpy.ops.fluidblend.director_preview()\n")
     preview = settle(project)
@@ -109,6 +115,15 @@ def test_B06_director_panel(director_session):
     assert after_preview["is_dirty"] is False
     assert after_preview["edit_generation"] == before["edit_generation"]
     assert project.latest_work_blend("shot010")[1] == blend
+    # The fix is shown where the artist looks: both effector paths are drawn over the viewport,
+    # from the engine's report, without a datablock, a key or a dirty flag in the session.
+    overlay = preview["overlay"]
+    assert overlay["drawing"] and overlay["frames"] >= 25
+    assert overlay["max_gap_m"] == pytest.approx(0.10, abs=0.01), "red and green paths really differ"
+    counts = "import bpy\nprint('FB_COUNTS=' + str([len(bpy.data.objects), len(bpy.data.actions)]))\n"
+    assert blender_live.extract_marker(call(project, counts), "FB_COUNTS=") == before_counts
+    call(project, "import bpy\nbpy.ops.fluidblend.director_hide_overlay()\n")
+    assert status(project)["overlay"] is None and _identity(project)["is_dirty"] is False
 
     drags = "".join(f"d.max_correction_m = {value}\n" for value in (0.11, 0.12, 0.13, 0.14, 0.2))
     call(project, SETUP + "d.auto_preview = True\n" + drags)
@@ -120,6 +135,7 @@ def test_B06_director_panel(director_session):
     call(project, SETUP + "bpy.ops.fluidblend.director_apply()\n")
     applied = settle(project)
     assert applied["last_status"] == "succeeded" and "opened" in applied["status"], applied
+    assert applied["overlay"] is None, "the paths of a preview do not outlive the scene they describe"
     version, published = project.latest_work_blend("shot010")
     assert published != blend and sha256_file(blend) == source_hash
     session = _identity(project)

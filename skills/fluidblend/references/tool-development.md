@@ -7,7 +7,9 @@ tools chosen by `parameters.tool`: `contact_lock` (acceptance B05; the default w
 omitted) and `look_at_target`. `tool.inspect`, `tool.test` and `tool.register` manage
 **declarative** custom tools (acceptance B08): a custom tool narrows a built-in tool and proves it
 with tests. It never brings code: the kit loads no script from `tools/custom/`, and you write none
-there. There is no Blender panel.
+there. The Director panel in Blender's sidebar runs the same three operations for `contact_lock`; after
+a preview it draws the effector path today (red) and fixed (green) over the viewport, from the
+`viewport` block of `adjustment-preview.json`, without changing the session.
 
 ### `contact_lock`
 

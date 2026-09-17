@@ -16,6 +16,8 @@ import time
 import bpy
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, PointerProperty, StringProperty
 
+from fluidblend_runtime import director_overlay
+
 UNSAVED = (
     "unsaved changes in this scene (even a selection counts). Do not save over a published version: "
     "reload the file to drop them, then retry"
@@ -319,10 +321,18 @@ def _collect() -> None:
     props.after_m = metrics.get("contact_after_m", -1.0)
     reports = [a["path"] for a in result.get("artifacts", []) if a["path"].endswith(".json")]
     props.last_report = reports[0] if reports else ""
+    # Whatever happened, the lines of an earlier preview no longer describe these parameters.
+    director_overlay.clear()
     if result.get("errors"):
         props.status = f"{run['kind']} refused: {result['errors'][0]['message']}"[:300]
         return
     props.status = f"{run['kind']} done"
+    if run["kind"] == "preview" and props.last_report:
+        try:
+            with open(os.path.join(run["root"], props.last_report), encoding="utf-8") as handle:
+                director_overlay.load(json.load(handle).get("viewport"), bpy.data.filepath)
+        except (OSError, ValueError):
+            pass
     blend = next((a["path"] for a in result.get("artifacts", []) if a.get("kind") == "blend"), None)
     if blend:
         # Identity-guarded: a human edit made meanwhile cancels the reload and is kept.
@@ -347,11 +357,13 @@ def snapshot() -> dict:
         "after_m": props.after_m,
         "launched": props.launched,
         "pending_preview": _pending_at is not None,
+        "overlay": director_overlay.summary(),
     }
 
 
 BUTTON_HELP = {
-    "preview": "Measure the slide before and after the fix. Nothing is saved, the open scene is not touched",
+    "preview": "Measure the slide before and after the fix and draw both paths in the viewport. "
+    "Nothing is saved, the open scene is not touched",
     "apply": "Publish a new version of the shot with the fix, then open it. Needs a saved, unmodified scene",
     "revert": "Publish a new version without the fix named above, then open it",
 }
@@ -476,7 +488,17 @@ class FLUIDBLEND_PT_director(bpy.types.Panel):
                 f"With the fix: {props.after_m * 1000:.1f} mm.",
             )
         if props.last_kind == "preview":
-            # The preview runs outside this session on purpose: nothing moves in the viewport.
+            shown = director_overlay.summary()
+            if shown:
+                # Drawn over the scene, stored nowhere in it: the character itself does not move.
+                wrapped(
+                    box,
+                    f"In the viewport, frames {shown['first_frame']}-{shown['last_frame']}: red = the {limb} "
+                    "today, green = with the fix, white cross = where it should stay. Scrub the timeline: "
+                    "the two dots follow.",
+                    icon="HIDE_OFF",
+                )
+                box.operator("fluidblend.director_hide_overlay", icon="HIDE_ON")
             wrapped(
                 box,
                 "Nothing changed in this scene yet. Apply publishes a new version with the fix and opens it.",
@@ -528,6 +550,18 @@ class FLUIDBLEND_OT_director_reload(bpy.types.Operator):
         return bpy.ops.fluidblend.open_file(filepath=bpy.data.filepath)
 
 
+class FLUIDBLEND_OT_director_hide_overlay(bpy.types.Operator):
+    """Hide the red and green preview paths of the viewport. They never changed the scene"""
+
+    bl_idname = "fluidblend.director_hide_overlay"
+    bl_label = "Hide preview paths"
+
+    def execute(self, context):  # noqa: ANN001
+        director_overlay.clear()
+        redraw()
+        return {"FINISHED"}
+
+
 class FLUIDBLEND_OT_director_open_review(bpy.types.Operator):
     """Open the folder with the report and the before/after images of the last operation"""
 
@@ -551,6 +585,7 @@ CLASSES = (
     FLUIDBLEND_OT_director_status,
     FLUIDBLEND_OT_director_open_latest,
     FLUIDBLEND_OT_director_reload,
+    FLUIDBLEND_OT_director_hide_overlay,
     FLUIDBLEND_OT_director_open_review,
     FLUIDBLEND_PT_director,
 )
@@ -563,6 +598,7 @@ def register() -> None:
 
 
 def unregister() -> None:
+    director_overlay.unregister()
     del bpy.types.WindowManager.fluidblend_director
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)

@@ -86,8 +86,8 @@ two adjustment tools, one retargeting preset, recipes without arm swing, heel ro
 motion has been looked at by the assistant only, and no human art validation is recorded yet.
 
 Live mode covers four operations only — any other request runs in batch, on the published work
-version. The Director panel previews with figures, before/after frames and contact close-ups, not with motion in the
-viewport.
+version. The Director panel previews with figures, rendered frames, contact close-ups and the two effector
+paths drawn over the viewport (today in red, fixed in green); the character itself does not move until Apply.
 
 See [the implementation status](docs/production-p1.md) for tested scope and outstanding work.
 
