@@ -13,6 +13,7 @@ from mathutils import Vector
 from fluidblend_runtime import blendio, render
 from fluidblend_runtime.anim import measures, slotted
 from fluidblend_runtime.errors import OpError
+from fluidblend_runtime.ops import look_at
 from fluidblend_runtime.ops.animation_library import hand_point, require_roles
 from fluidblend_runtime.production import character, controls_for, save_version
 
@@ -233,7 +234,30 @@ def render_frames(ctx, params, folder):
         scene.frame_set(current)
 
 
+def tool_of(params):
+    return params.get("tool", "contact_lock")
+
+
+def solve(ctx, rig, params):
+    """One computation per tool, shared by preview and apply."""
+    if tool_of(params) == "look_at_target":
+        return look_at.solve(ctx, rig, params, registry(bpy.context.scene))
+    return lock(ctx, rig, params)
+
+
 def report(params, before, after):
+    if tool_of(params) == "look_at_target":
+        return {
+            "adjustment_id": params["adjustment_id"],
+            "tool": "look_at_target",
+            "parameters": params,
+            "before": before,
+            "after": after,
+            "technical_pass": not measures.failures(after),
+            "visual_review": "pending",
+            "effects_on_sources": "none; one COMBINE NLA track and its Action",
+            "limits": look_at.LIMITS,
+        }
     return {
         "adjustment_id": params["adjustment_id"],
         "tool": "contact_lock",
@@ -252,6 +276,13 @@ def report(params, before, after):
 
 
 def summary(data):
+    if data["tool"] == "look_at_target":
+        return {
+            "technical_pass": data["technical_pass"],
+            "gaze_before_deg": data["before"][0]["value"],
+            "gaze_after_deg": data["after"][0]["value"],
+            "gaze_step_deg": data["after"][1]["value"],
+        }
     return {
         "technical_pass": data["technical_pass"],
         "contact_before_m": worst(data["before"]),
@@ -326,14 +357,17 @@ def preview(ctx, request, builder):
     rig = character(request)
     params = resolved(ctx, request, rig)
     anchor = None
-    if params.get("preview_samples", 4) and bpy.context.scene.camera:
+    rendered = bool(params.get("preview_samples", 4) and bpy.context.scene.camera)
+    if rendered:
         render_frames(ctx, params, "before")
-        anchor = contact_anchor(ctx, rig, params)
-        render_closeups(ctx, rig, params, "before", anchor)
-    before, after, _track, _action, _point = lock(ctx, rig, params)
-    if anchor is not None:
+        if tool_of(params) == "contact_lock":
+            anchor = contact_anchor(ctx, rig, params)
+            render_closeups(ctx, rig, params, "before", anchor)
+    before, after, _track, _action, _point = solve(ctx, rig, params)
+    if rendered:
         render_frames(ctx, params, "after")
-        render_closeups(ctx, rig, params, "after", anchor)
+        if anchor is not None:
+            render_closeups(ctx, rig, params, "after", anchor)
         builder.add_dir("frames", os.path.join(ctx.out_dir, "review"))
     data = {**report(params, before, after), "saved": False}
     builder.write_report("adjustment-preview.json", data)
@@ -344,18 +378,18 @@ def preview(ctx, request, builder):
 def apply(ctx, request, builder):
     rig = character(request)
     params = resolved(ctx, request, rig)
-    before, after, track, action, point = lock(ctx, rig, params)
+    before, after, track, action, point = solve(ctx, rig, params)
     data = report(params, before, after)
     if not data["technical_pass"]:
         raise OpError(
             "VALIDATION_FAILED",
-            "contact_lock could not bring the contact within tolerance; nothing was published",
+            f"{data['tool']} could not bring its measurements within tolerance; nothing was published",
             details={"after": measures.failures(after)},
         )
     scene = bpy.context.scene
     known = registry(scene)
     known[params["adjustment_id"]] = {
-        "tool": "contact_lock",
+        "tool": data["tool"],
         "instance_id": request["target"]["instance_id"],
         "track": track.name,
         "action": action.name,
@@ -393,6 +427,20 @@ def revert(ctx, request, builder):
     scene[REGISTRY] = json.dumps(known)
     bpy.context.view_layer.update()
     params = entry["parameters"]
+    if entry["tool"] == "look_at_target":
+        restored = look_at.restored(ctx, rig, params)
+        save_version(ctx, request, builder)
+        builder.write_report(
+            "adjustment-revert.json",
+            {
+                "adjustment_id": adjustment_id,
+                "removed": [entry["track"], entry["action"]],
+                "restored": restored,
+            },
+        )
+        builder.changed("adjustment", adjustment_id, "deleted")
+        builder.metrics.update({"reverted": True, "gaze_restored_deg": restored[0]["value"]})
+        return
     support_id = params.get("support_instance_id")
     support = blendio.find_instance_object(support_id) if support_id else None
     point = entry["control_point"]

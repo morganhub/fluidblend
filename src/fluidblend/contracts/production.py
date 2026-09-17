@@ -1,9 +1,9 @@
 """Versioned production inputs; runtime receives plain JSON."""
 
 import math
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Discriminator, Field, RootModel, Tag, field_validator, model_validator
 
 from fluidblend.contracts.common import FrameRange, StrictModel
 from fluidblend.contracts.project import IDENT_PATTERN
@@ -417,6 +417,56 @@ class ContactLockParams(StrictModel):
         return self
 
 
+class LookAtTargetParams(StrictModel):
+    """`look_at_target`: turn the head towards a point or an instance over a window (§12.3)."""
+
+    adjustment_id: str = Field(pattern=IDENT_PATTERN)
+    tool: Literal["look_at_target"]
+    frame_range: FrameRange
+    target_point: list[float] | None = Field(default=None, description="World point, metres")
+    target_instance_id: str | None = Field(
+        default=None, pattern=IDENT_PATTERN, description="Instance origin, followed on every frame"
+    )
+    blend_frames: int = Field(default=8, ge=1, le=48, description="Ramp in and out around the window")
+    max_angle_deg: float = Field(
+        default=60.0, gt=0, le=80, description="Beyond this head turn the request is refused, never clamped"
+    )
+    max_step_deg: float = Field(
+        default=12.0, gt=0, le=45, description="Largest head rotation per frame, ramps included"
+    )
+    preview_samples: int = Field(default=4, ge=0, le=16, description="Before/after frames (preview only)")
+
+    @model_validator(mode="after")
+    def one_finite_target(self):
+        if (self.target_point is None) == (self.target_instance_id is None):
+            raise ValueError("give exactly one of target_point and target_instance_id")
+        if self.target_point is not None:
+            if len(self.target_point) != 3:
+                raise ValueError("target_point is a 3D point")
+            _finite_point(self.target_point)
+        if self.frame_range.end_exclusive - self.frame_range.start < 2:
+            raise ValueError("a gaze window needs at least 2 frames")
+        return self
+
+
+def _adjustment_tool(value) -> str:
+    # Requests written before the second tool carry no `tool`: they are contact_lock requests.
+    tool = value.get("tool", "contact_lock") if isinstance(value, dict) else getattr(value, "tool", None)
+    return tool if tool in ("contact_lock", "look_at_target") else "contact_lock"
+
+
+class AdjustmentParams(
+    RootModel[
+        Annotated[
+            Annotated[ContactLockParams, Tag("contact_lock")]
+            | Annotated[LookAtTargetParams, Tag("look_at_target")],
+            Discriminator(_adjustment_tool),
+        ]
+    ]
+):
+    """Parameters of `adjustment.preview` / `adjustment.apply`: one built-in tool, chosen by `tool`."""
+
+
 Effector = Literal["left_foot", "right_foot", "left_hand", "right_hand"]
 
 
@@ -519,8 +569,38 @@ ADJUSTMENT_TOOLS = {
             "refuses travel (walking through the window) instead of guessing a stance",
             "does not re-plant later steps or fix the other foot",
         ],
-    }
+    },
+    "look_at_target": {
+        "tool_id": "look_at_target",
+        "version": "1.0",
+        "purpose": "turn the head towards a world point or an instance over a marked window",
+        "supported_rigs": ["rigify/0.6.10"],
+        "parameters": "LookAtTargetParams (metres, frames, degrees)",
+        "time_scope": "frame_range widened by blend_frames on each side",
+        "affected_channels": "rotation_quaternion of the head control, through a COMBINE NLA strip",
+        "preconditions": [
+            "head control in quaternion rotation mode",
+            "target within max_angle_deg of the current gaze on every frame",
+            "head turn per frame within max_step_deg, ramps included",
+            "no adjustment with the same id",
+        ],
+        "preview_mode": "adjustment.preview: same computation in memory, before/after measurements and frames, nothing saved",
+        "effects_on_sources": "none: source Actions and strips are untouched; one new Action and one NLA track are added",
+        "revert": "adjustment.revert removes that track and Action in a new version",
+        "tests": [
+            "tests/unit/test_adjustment_contracts.py",
+            "tests/acceptance/test_adjustments.py::test_look_at_target_preview_apply_revert",
+        ],
+        "known_limits": [
+            "head only: eyes, neck share and torso are not driven",
+            "refuses a target beyond max_angle_deg instead of turning the body",
+            "custom tools cannot narrow it yet: ToolBounds describes contact_lock only",
+        ],
+    },
 }
+
+# Custom tools narrow these only: `ToolBounds` speaks of effectors and correction distances.
+CUSTOMIZABLE_TOOLS = ("contact_lock",)
 
 
 class ClipIndex(ClipManifest):

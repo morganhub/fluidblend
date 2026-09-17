@@ -201,7 +201,7 @@ path has no identity check, no lock, no checkpoint, no version and no journal.
 `scene.checkpoint`, `shot.validate`, `film.assemble`, `providers.check`); the others go through a
 dedicated subcommand (see `docs/cli.md`). 24 bounded P1 operations are available: `shot.build`,
 `character.inspect`, `rig.map`, `rig.validate`, `animation.create/apply/loop/bake`,
-`interaction.plan/apply/validate`, `adjustment.preview/apply/revert` (one tool, `contact_lock`),
+`interaction.plan/apply/validate`, `adjustment.preview/apply/revert` (two tools, `contact_lock` and `look_at_target`),
 `tool.inspect/test/register` (declarative custom tools, no code), `audio.prepare`,
 `lipsync.analyze`, `lipsync.apply`, `expression.apply` (characters with a face profile only),
 `animation.retarget` (one preset: P0 biped → Rigify; any other rig pair is refused),

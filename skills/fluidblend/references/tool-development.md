@@ -1,9 +1,10 @@
 # Adjustment tools generated on demand
 
-## Status: one built-in tool, declarative custom tools
+## Status: two built-in tools, declarative custom tools
 
-`adjustment.preview`, `adjustment.apply` and `adjustment.revert` are available with **one** built-in
-tool, `contact_lock` (acceptance B05). `tool.inspect`, `tool.test` and `tool.register` manage
+`adjustment.preview`, `adjustment.apply` and `adjustment.revert` are available with **two** built-in
+tools chosen by `parameters.tool`: `contact_lock` (acceptance B05; the default when `tool` is
+omitted) and `look_at_target`. `tool.inspect`, `tool.test` and `tool.register` manage
 **declarative** custom tools (acceptance B08): a custom tool narrows a built-in tool and proves it
 with tests. It never brings code: the kit loads no script from `tools/custom/`, and you write none
 there. There is no Blender panel.
@@ -49,6 +50,33 @@ the effector, over a red cross fixed at the contact anchor. Look at those first 
 invisible on a whole-body frame, obvious against the cross. `technical_pass` is a contact measurement; look at the frames and say which ones you looked
 at before calling the fix good. Limits: translation only (no foot roll, no wrist orientation), the
 other contacts of the character are not re-planted, one effector per adjustment.
+
+### `look_at_target`
+
+"Make her look at the baton while she walks" — the **head** of a `rigify/0.6.10` character turns
+towards a world point or an instance over a marked window. Same three operations, same lifecycle,
+`"tool": "look_at_target"` is mandatory. Example: [preview](../assets/request-adjustment-preview-look-at.json).
+
+Parameters: `adjustment_id`, `tool`, `frame_range`, exactly one of `target_point` (world, metres)
+and `target_instance_id` (its origin, followed on every frame), `blend_frames` (1–48, default 8),
+`max_angle_deg` (≤ 80, default 60), `max_step_deg` (≤ 45, default 12), `preview_samples`.
+
+How it works: one Action on one **COMBINE** NLA track keying the head control's quaternion, solved
+per frame by shortest arc (no roll, so no flip) and measured on the **deform** bone that carries the
+skull, not on the control. Two gated records, in degrees: `gaze_error` over the window against
+`quality.gaze_error_max_deg` (2°), and `gaze_step`, the largest head turn per frame with the ramps
+included, against `max_step_deg`.
+
+| Situation | Answer |
+| --- | --- |
+| target further than `max_angle_deg` from the current gaze | `VALIDATION_FAILED` "turn the body first": never clamp, never raise the bound to force it |
+| head already on target | `VALIDATION_FAILED` "nothing to adjust" |
+| head snaps faster than `max_step_deg` (`apply`) | `VALIDATION_FAILED`, nothing published: lengthen `blend_frames` |
+| head control not in quaternion mode, or no `head` role | `RIG_MAPPING_REQUIRED` |
+| character asked to look at itself, unknown instance | `VALIDATION_FAILED` |
+
+Limits to state: head only (eyes, neck share and torso are not driven), no close-up is rendered for
+this tool, the Director panel does not offer it, and custom tools cannot narrow it yet.
 
 ### Custom tools: bounded, tested, or refused
 

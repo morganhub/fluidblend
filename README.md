@@ -29,7 +29,7 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 - **Prop hand-off between two characters** (`interaction.plan` → review → `interaction.apply` →
   `interaction.validate`): revision-bound plan, ownership transfer that keeps the prop's world
   transform, contacts measured in the prop's space, single authority and no constraint cycle.
-- **Adjustments with Preview / Apply / Revert** (`adjustment.*`): one tool, `contact_lock`, holds a
+- **Adjustments with Preview / Apply / Revert** (`adjustment.*`): `look_at_target` turns the head towards a point or an instance, and `contact_lock` holds a
   sliding hand or foot on its anchor as a removable additive NLA layer; sources are never edited.
 - **Declarative custom tools** (`tool.inspect`, `tool.test`, `tool.register`): a `tool.json` narrows
   a built-in tool and carries its own tests. No code is loaded; an unsupported request gets a stated
@@ -80,7 +80,7 @@ outside is refused with a stated reason (`RIG_MAPPING_REQUIRED`, `VALIDATION_FAI
 `MISSING_DEPENDENCY`), never improvised. Not done at all: the Three.js prototype, and the whole P2
 list (multi-shot render queue, simulation caches, crowds, mocap providers, OTIO export, domain MCP
 facade, web panel). Inside the available domains the scope is: one interaction kind (prop hand-off between standing characters),
-one adjustment tool, one retargeting preset, recipes without arm swing, heel roll or finger poses.
+two adjustment tools, one retargeting preset, recipes without arm swing, heel roll or finger poses.
 
 **Technical proof is not artistic approval.** Every measurement above is automated; the generated
 motion has been looked at by the assistant only, and no human art validation is recorded yet.

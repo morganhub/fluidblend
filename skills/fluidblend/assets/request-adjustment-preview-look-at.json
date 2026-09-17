@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "operation": "adjustment.preview",
+  "operation_id": "gaze-preview-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010",
+    "instance_id": "hero-01"
+  },
+  "parameters": {
+    "adjustment_id": "watch-baton",
+    "tool": "look_at_target",
+    "target_instance_id": "baton-01",
+    "frame_range": {
+      "start": 12,
+      "end_exclusive": 40
+    },
+    "blend_frames": 8,
+    "max_angle_deg": 60
+  }
+}

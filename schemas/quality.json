@@ -21,6 +21,12 @@
       "title": "Foot Slide Max M",
       "type": "number"
     },
+    "gaze_error_max_deg": {
+      "default": 2.0,
+      "minimum": 0,
+      "title": "Gaze Error Max Deg",
+      "type": "number"
+    },
     "handoff_jump_max_m": {
       "default": 0.005,
       "minimum": 0,

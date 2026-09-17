@@ -107,6 +107,7 @@ class QualityThresholds(StrictModel):
     handoff_jump_max_m: float = Field(default=0.005, ge=0)
     handoff_rotation_jump_max_rad: float = Field(default=0.01, ge=0)
     retarget_limb_error_max_deg: float = Field(default=3.0, ge=0)
+    gaze_error_max_deg: float = Field(default=2.0, ge=0)
     audio_drift_max_frames: float = Field(default=1.0, ge=0)
     loop_pose_error_max: float = Field(default=1e-3, ge=0)
     preview_missing_frames_max: int = Field(default=0, ge=0)

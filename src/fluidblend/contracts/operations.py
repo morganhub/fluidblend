@@ -14,6 +14,7 @@ from pydantic import Field, ValidationError, field_validator
 
 from fluidblend.contracts.common import SCHEMA_VERSION, StrictModel
 from fluidblend.contracts.production import (
+    AdjustmentParams,
     AdjustmentRevertParams,
     AnimationApplyParams,
     AnimationBakeParams,
@@ -22,7 +23,6 @@ from fluidblend.contracts.production import (
     AnimationRetargetParams,
     AudioPrepareParams,
     CharacterInspectParams,
-    ContactLockParams,
     ExpressionApplyParams,
     GameImportTestParams,
     GameSmokeTestParams,
@@ -472,7 +472,7 @@ OPERATIONS: dict[str, OperationSpec] = {
         # Adjustment (P1)
         _spec(
             "adjustment.preview",
-            ContactLockParams,
+            AdjustmentParams,
             "blender",
             "read",
             "P1",
@@ -481,7 +481,7 @@ OPERATIONS: dict[str, OperationSpec] = {
         ),
         _spec(
             "adjustment.apply",
-            ContactLockParams,
+            AdjustmentParams,
             "blender",
             "write",
             "P1",

@@ -221,14 +221,16 @@ Spec §9, §10, §11, §12, §16.1, §18 (lot 3); acceptance B01, B03, B05, B06,
       registered capability, followed for `contact_lock`.
 - [x] `adjustment.preview` / `adjustment.apply` / `adjustment.revert` (additive, removable NLA layer).
 - [~] Tools (§12.3): done — `contact_lock` (measured contact error in the right space) → B05;
-      its support-space variant is implemented but not exercised by a scenario. Remaining —
-      `retime_segment` (keys and events order preserved), `scale_gesture`
-      (rig limits, contacts preserved), `look_at_target` (no flips, limits), `root_path_adjust` (no double
+      its support-space variant is implemented but not exercised by a scenario; `look_at_target`
+      (shortest arc so no flip, angle and per-frame turn limits, measured on the deform bone).
+      Remaining — `retime_segment` (keys and events order preserved), `scale_gesture`
+      (rig limits, contacts preserved), `root_path_adjust` (no double
       application), `loop_cleanup` (pose and optional velocity continuity), `curve_cleanup`
       (max deviation under threshold, contacts untouched), `expression_strength`.
 - [x] `tools/custom/<tool_id>/` registry with `tool.inspect` / `tool.test` / `tool.register`;
       a bounded tool with tests or a clear limitation, never a fake success → B08. Declarative
-      only (no code loaded); with one built-in tool a custom tool is a stricter `contact_lock`.
+      only (no code loaded); a custom tool is a stricter `contact_lock` (`look_at_target` cannot be
+      narrowed yet: `ToolBounds` speaks of effectors and distances).
 - [x] Quality measures (§16.1): foot slide ≤ 0.02 m, hand/prop contact ≤ 0.02 m, loop error,
       with the measurement defined (space, support window, sampling, control points, tolerance).
       Shared `anim/measures.py`, foot slide (world), palm/grip contact in the prop's space,

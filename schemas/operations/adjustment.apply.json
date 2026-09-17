@@ -1,5 +1,94 @@
 {
   "$defs": {
+    "ContactLockParams": {
+      "additionalProperties": false,
+      "description": "`contact_lock`: hold one IK effector on its anchor over a stance window (§12.3).",
+      "properties": {
+        "adjustment_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Adjustment Id",
+          "type": "string"
+        },
+        "blend_frames": {
+          "default": 3,
+          "description": "Ramp in and out around the window",
+          "maximum": 24,
+          "minimum": 1,
+          "title": "Blend Frames",
+          "type": "integer"
+        },
+        "custom_tool_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Registered custom tool whose narrower bounds apply",
+          "title": "Custom Tool Id"
+        },
+        "effector": {
+          "enum": [
+            "left_foot",
+            "right_foot",
+            "left_hand",
+            "right_hand"
+          ],
+          "title": "Effector",
+          "type": "string"
+        },
+        "frame_range": {
+          "$ref": "#/$defs/FrameRange"
+        },
+        "max_correction_m": {
+          "default": 0.15,
+          "description": "Above this drift the window is travel, not a slide: refused",
+          "exclusiveMinimum": 0,
+          "maximum": 0.5,
+          "title": "Max Correction M",
+          "type": "number"
+        },
+        "preview_samples": {
+          "default": 4,
+          "description": "Before/after frames (preview only)",
+          "maximum": 16,
+          "minimum": 0,
+          "title": "Preview Samples",
+          "type": "integer"
+        },
+        "support_instance_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None = static world; else the contact is held in that instance's space",
+          "title": "Support Instance Id"
+        },
+        "tool": {
+          "const": "contact_lock",
+          "default": "contact_lock",
+          "title": "Tool",
+          "type": "string"
+        }
+      },
+      "required": [
+        "adjustment_id",
+        "effector",
+        "frame_range"
+      ],
+      "title": "ContactLockParams",
+      "type": "object"
+    },
     "FrameRange": {
       "additionalProperties": false,
       "description": "Canonical half-open interval `[start, end_exclusive)`.",
@@ -23,97 +112,108 @@
       ],
       "title": "FrameRange",
       "type": "object"
+    },
+    "LookAtTargetParams": {
+      "additionalProperties": false,
+      "description": "`look_at_target`: turn the head towards a point or an instance over a window (§12.3).",
+      "properties": {
+        "adjustment_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Adjustment Id",
+          "type": "string"
+        },
+        "blend_frames": {
+          "default": 8,
+          "description": "Ramp in and out around the window",
+          "maximum": 48,
+          "minimum": 1,
+          "title": "Blend Frames",
+          "type": "integer"
+        },
+        "frame_range": {
+          "$ref": "#/$defs/FrameRange"
+        },
+        "max_angle_deg": {
+          "default": 60.0,
+          "description": "Beyond this head turn the request is refused, never clamped",
+          "exclusiveMinimum": 0,
+          "maximum": 80,
+          "title": "Max Angle Deg",
+          "type": "number"
+        },
+        "max_step_deg": {
+          "default": 12.0,
+          "description": "Largest head rotation per frame, ramps included",
+          "exclusiveMinimum": 0,
+          "maximum": 45,
+          "title": "Max Step Deg",
+          "type": "number"
+        },
+        "preview_samples": {
+          "default": 4,
+          "description": "Before/after frames (preview only)",
+          "maximum": 16,
+          "minimum": 0,
+          "title": "Preview Samples",
+          "type": "integer"
+        },
+        "target_instance_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Instance origin, followed on every frame",
+          "title": "Target Instance Id"
+        },
+        "target_point": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "World point, metres",
+          "title": "Target Point"
+        },
+        "tool": {
+          "const": "look_at_target",
+          "title": "Tool",
+          "type": "string"
+        }
+      },
+      "required": [
+        "adjustment_id",
+        "tool",
+        "frame_range"
+      ],
+      "title": "LookAtTargetParams",
+      "type": "object"
     }
   },
   "$id": "https://fluidblend.local/schemas/operations/adjustment.apply.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
   "description": "Apply an adjustment as an additive layer on a new version",
-  "properties": {
-    "adjustment_id": {
-      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
-      "title": "Adjustment Id",
-      "type": "string"
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ContactLockParams"
     },
-    "blend_frames": {
-      "default": 3,
-      "description": "Ramp in and out around the window",
-      "maximum": 24,
-      "minimum": 1,
-      "title": "Blend Frames",
-      "type": "integer"
-    },
-    "custom_tool_id": {
-      "anyOf": [
-        {
-          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "Registered custom tool whose narrower bounds apply",
-      "title": "Custom Tool Id"
-    },
-    "effector": {
-      "enum": [
-        "left_foot",
-        "right_foot",
-        "left_hand",
-        "right_hand"
-      ],
-      "title": "Effector",
-      "type": "string"
-    },
-    "frame_range": {
-      "$ref": "#/$defs/FrameRange"
-    },
-    "max_correction_m": {
-      "default": 0.15,
-      "description": "Above this drift the window is travel, not a slide: refused",
-      "exclusiveMinimum": 0,
-      "maximum": 0.5,
-      "title": "Max Correction M",
-      "type": "number"
-    },
-    "preview_samples": {
-      "default": 4,
-      "description": "Before/after frames (preview only)",
-      "maximum": 16,
-      "minimum": 0,
-      "title": "Preview Samples",
-      "type": "integer"
-    },
-    "support_instance_id": {
-      "anyOf": [
-        {
-          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "None = static world; else the contact is held in that instance's space",
-      "title": "Support Instance Id"
-    },
-    "tool": {
-      "const": "contact_lock",
-      "default": "contact_lock",
-      "title": "Tool",
-      "type": "string"
+    {
+      "$ref": "#/$defs/LookAtTargetParams"
     }
-  },
-  "required": [
-    "adjustment_id",
-    "effector",
-    "frame_range"
   ],
-  "title": "ContactLockParams",
-  "type": "object",
+  "title": "AdjustmentParams",
   "x-fluidblend": {
     "available": true,
     "backend": "blender",

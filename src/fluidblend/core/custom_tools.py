@@ -4,7 +4,12 @@ No code is loaded from `tools/custom/`. A tool that asks for an unimplemented ba
 unsupported rig gets a stated limitation, never a registration.
 """
 
-from fluidblend.contracts.production import ADJUSTMENT_TOOLS, CustomTool, ToolRegistration
+from fluidblend.contracts.production import (
+    ADJUSTMENT_TOOLS,
+    CUSTOMIZABLE_TOOLS,
+    CustomTool,
+    ToolRegistration,
+)
 from fluidblend.core.atomic import read_json
 from fluidblend.core.hashing import sha256_file
 from fluidblend.core.paths import assert_not_protected, relpath_posix, resolve_inside
@@ -33,6 +38,11 @@ def limitations(tool):
         return [
             f"base tool {tool.base_tool!r} is not implemented; available: {sorted(ADJUSTMENT_TOOLS)}. "
             "A custom tool narrows an existing tool, it cannot add an algorithm."
+        ]
+    if tool.base_tool not in CUSTOMIZABLE_TOOLS:
+        return [
+            f"base tool {tool.base_tool!r} cannot be narrowed yet: custom bounds describe "
+            f"{list(CUSTOMIZABLE_TOOLS)} only (effectors, correction distance)."
         ]
     found = []
     unsupported = sorted(set(tool.supported_rigs) - set(base["supported_rigs"]))

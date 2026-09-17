@@ -17,6 +17,10 @@ This project follows semantic versioning from 1.0.0 onwards; before that, the in
   the skill now ships an exact asset manifest example and states the path, licence and `shot.build`
   rules it had to learn from error messages; `game.export` no longer claims a skinned character is
   not skinned.
+- Add a second adjustment tool, `look_at_target`: the head turns towards a point or an instance as a
+  removable COMBINE layer, gated on gaze error (2°) and on head turn per frame; targets beyond
+  `max_angle_deg` are refused. `adjustment.*` parameters now select the tool with `tool`; requests
+  without it remain `contact_lock`. New quality key `gaze_error_max_deg`.
 - `animation.bake` samples five frames instead of three, names the clip `<rig>.<output_clip>` and
   removes control-rig NLA tracks from the export variant (their Actions are kept).
 - `game.export` counts deform bones when `export_def_bones` is set, exports only the baked clip of a
