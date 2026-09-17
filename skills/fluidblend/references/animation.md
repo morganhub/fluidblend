@@ -120,9 +120,18 @@ channel overlap with existing active/NLA animation. Shared-channel priority blen
 supported. `animation.loop` takes target `clip_id`, `output_clip`, `repetitions`; it verifies
 endpoint curve values before adding repetition. This is not a physical contact/velocity test.
 
-`animation.bake` takes `output_clip`, `frame_range`, `step` and creates an export variant.
-It removes constraints and drivers only in that variant, checks mesh deformation within 1 mm
-at first/middle/last frames, and preserves the source. Baked rigs cannot accept control recipes.
+`animation.bake` takes `output_clip`, `frame_range`, `step`, `rigid_limbs` and creates an export
+variant. It removes constraints, drivers and control-rig NLA tracks only in that variant (their
+Actions stay in the file), names the clip `<rig>.<output_clip>`, checks mesh deformation within 1 mm
+at five frames (ends and quarters), and preserves the source. Baked rigs cannot accept control recipes.
+
+A Rigify character needs `"rigid_limbs": true`. Blender's IK solver compresses a stretchy limb before
+it bends it; the deform bones then carry a non-uniform scale that shears their children, which
+neither TRS keys nor glTF can hold (measured: 13.8 mm at the feet). Without the option the bake is
+refused and names the bones (`non_uniform_scale_bones`, `hint`). With it, IK stretch is disabled in
+the new version only, so knees and elbows bend instead: the report states `max_pose_delta_m`
+(35.8 mm on the walk fixture, at the knees) and refuses if an IK tip leaves its target by more than
+1 mm (`ik_tip_drift_m`). Say it plainly: the baked pose is not the control-rig pose, contacts are kept.
 Indexes at `animation/clips/<id>/clip.json` cite versioned blend/report hashes. Only `walk` and
 `take_prop` declare contacts; do not claim measured locomotion or hand contact from the other clips.
 

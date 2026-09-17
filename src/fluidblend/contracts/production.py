@@ -155,6 +155,14 @@ class AnimationBakeParams(StrictModel):
     output_clip: str = Field(pattern=IDENT_PATTERN)
     frame_range: FrameRange
     step: int = Field(default=1, ge=1, le=10)
+    rigid_limbs: bool = Field(
+        default=False,
+        description=(
+            "Disable IK chain stretch in the new work version before sampling. Compressed limbs carry a "
+            "non-uniform scale that neither baked TRS keys nor glTF can represent; the pose change is "
+            "measured and reported, never hidden"
+        ),
+    )
 
 
 class AnimationRetargetParams(StrictModel):

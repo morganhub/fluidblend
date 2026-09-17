@@ -50,7 +50,9 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 - **Godot check**: `game.import_test` lets Godot 4.7 import an exported GLB headless and verifies
   what the engine wrote, not only its exit code; `game.smoke_test` launches the kit's GDScript
   template — controllable character, `idle`/`walk` states, a wall, a prop to pick up — and fails
-  unless its 13 checks pass. Without Godot the game target is reported `not_tested`.
+  unless its 13 checks pass. Without Godot the game target is reported `not_tested`. A skinned
+  Rigify character gets there through `animation.bake` with `rigid_limbs` (IK stretch off, pose
+  change reported) and a deform-bone export whose re-imported skeleton is gated at 1 mm.
 - **Retime on a variant** (`animation.retime`): the source stays untouched, before/after images,
   contact markers preserved, measured duration.
 - **Video preview** (`shot.preview`): idempotent PNG sequence then an H.264 MP4 assembled by FFmpeg,

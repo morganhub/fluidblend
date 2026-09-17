@@ -614,6 +614,68 @@ def loop(ctx, request, builder):
     builder.metrics.update({"loop_error": error, "repetitions": repetitions})
 
 
+def sheared_bones(rig):
+    """Deform bones whose evaluated scale is non-uniform at the current frame."""
+    names = []
+    for bone in rig.pose.bones:
+        scale = bone.matrix.to_scale()
+        if bone.bone.use_deform and max(scale) - min(scale) > 0.002:
+            names.append(bone.name)
+    return names
+
+
+def ik_tips(rig):
+    return {
+        bone.name: rig.matrix_world @ bone.tail
+        for bone in rig.pose.bones
+        if any(c.type == "IK" and not c.mute and c.influence > 0 for c in bone.constraints)
+    }
+
+
+def rigid_limbs(rig, meshes, frames):
+    """Make IK chains bend instead of stretch, and measure what that changes.
+
+    Blender's IK solver compresses a stretchy chain before it bends it; the deform bones then
+    carry a volume-preserving non-uniform scale, which shears their rotated children.
+    """
+    from fluidblend_runtime.ops.rig_validate import positions
+
+    def sampled():
+        out = {}
+        for frame in frames:
+            bpy.context.scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            out[frame] = (positions(meshes), ik_tips(rig))
+        return out
+
+    stretchy = [bone for bone in rig.pose.bones if bone.ik_stretch]
+    before = sampled()
+    for bone in stretchy:
+        bone.ik_stretch = 0.0
+    after = sampled()
+    pose_delta = tip_drift = 0.0
+    for frame in frames:
+        pose_delta = max(
+            pose_delta,
+            max(
+                ((a - b).length for a, b in zip(before[frame][0], after[frame][0], strict=True)), default=0.0
+            ),
+        )
+        tip_drift = max(
+            tip_drift,
+            max(((after[frame][1][n] - p).length for n, p in before[frame][1].items()), default=0.0),
+        )
+    report = {
+        "bones": [b.name for b in stretchy],
+        "max_pose_delta_m": pose_delta,
+        "ik_tip_drift_m": tip_drift,
+    }
+    # A rigid chain that no longer reaches its target would move the contacts the clip was measured on.
+    if tip_drift > 0.001:
+        raise OpError("VALIDATION_FAILED", "rigid limbs cannot reach their IK targets", details=report)
+    return report
+
+
 def bake(ctx, request, builder):
     rig = character(request)
     if rig.library or rig.override_library:
@@ -629,18 +691,16 @@ def bake(ctx, request, builder):
     from fluidblend_runtime.production import meshes_for
 
     meshes = meshes_for(rig)
-    sample_frames = sorted(
-        {
-            interval["start"],
-            (interval["start"] + interval["end_exclusive"] - 1) // 2,
-            interval["end_exclusive"] - 1,
-        }
-    )
+    # Quarters as well as the ends: a swing foot peaks between the extremes of a cycle.
+    last = interval["end_exclusive"] - 1
+    sample_frames = sorted({interval["start"] + (last - interval["start"]) * k // 4 for k in range(5)})
+    rigid = rigid_limbs(rig, meshes, sample_frames) if params.get("rigid_limbs") else None
     before = {}
     for frame in sample_frames:
         bpy.context.scene.frame_set(frame)
         bpy.context.view_layer.update()
         before[frame] = positions(meshes)
+    sheared = sheared_bones(rig)
     bpy.ops.object.select_all(action="DESELECT")
     rig.select_set(True)
     bpy.context.view_layer.objects.active = rig
@@ -657,8 +717,13 @@ def bake(ctx, request, builder):
     )
     if "FINISHED" not in result or rig.animation_data.action is None:
         raise OpError("VALIDATION_FAILED", "Blender bake did not produce an Action")
-    for track in rig.animation_data.nla_tracks:
-        track.mute = True
+    # The export variant carries the baked clip only: control-rig strips cannot play on it, and
+    # glTF would export them next to it. Their Actions stay in the file, and in the previous version.
+    for track in list(rig.animation_data.nla_tracks):
+        for strip in track.strips:
+            if strip.action:
+                strip.action.use_fake_user = True
+        rig.animation_data.nla_tracks.remove(track)
     # Blender's bake leaves constraints tagged is_override_data in place even
     # on this admitted local append. Explicitly remove them from the export
     # variant so sampled transforms cannot be applied a second time.
@@ -680,8 +745,16 @@ def bake(ctx, request, builder):
             error, max(((a - b).length for a, b in zip(before[frame], after, strict=True)), default=0.0)
         )
     if error > 0.001:
-        raise OpError("VALIDATION_FAILED", "bake changed evaluated geometry", details={"max_error_m": error})
+        details = {"max_error_m": error}
+        if sheared and rigid is None:
+            details["non_uniform_scale_bones"] = sheared[:8]
+            details["hint"] = (
+                "stretched or compressed limbs cannot be baked to TRS keys; retry with rigid_limbs"
+            )
+        raise OpError("VALIDATION_FAILED", "bake changed evaluated geometry", details=details)
     action = rig.animation_data.action
+    # Same `<rig>.<clip>` naming as authored clips: a game engine finds the clip by its name.
+    action.name = f"{rig.name}.{params['output_clip']}"
     rig["fluidblend_baked"] = True
     manifest = write_manifest(
         action,
@@ -691,10 +764,17 @@ def bake(ctx, request, builder):
         interval["end_exclusive"],
         "baked",
         loop=False,
-        limits=["export skeleton variant; control rig constraints removed in this new work version"],
+        limits=["export skeleton variant; control rig constraints removed in this new work version"]
+        + (
+            ["rigid limbs: IK stretch disabled, the pose differs from the control rig by rigid_limbs"]
+            if rigid
+            else []
+        ),
     )
     save_version(ctx, request, builder)
     builder.write_report("clip.json", manifest)
+    if rigid:
+        builder.metrics["rigid_limbs"] = rigid
     builder.metrics.update(
         {
             "baked": True,

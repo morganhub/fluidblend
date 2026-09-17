@@ -3,6 +3,17 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## Unreleased — P1 refinement
+
+- A skinned Rigify character now reaches Godot. `animation.bake` gains `rigid_limbs`: IK stretch is
+  disabled in the export variant, because a compressed limb carries a non-uniform scale that neither
+  baked keys nor glTF can represent (13.8 mm at the feet, refused with the offending bones named).
+  The pose change (35.8 mm at the knees on the walk fixture) is reported, IK tips are gated at 1 mm.
+- `animation.bake` samples five frames instead of three, names the clip `<rig>.<output_clip>` and
+  removes control-rig NLA tracks from the export variant (their Actions are kept).
+- `game.export` counts deform bones when `export_def_bones` is set, exports only the baked clip of a
+  baked skeleton, and replays the re-import: `skeleton_fidelity` gates deform bone heads at 1 mm.
+
 ## 0.4.0 — 2026-09-17 — production lot 4
 
 Dialogue on a face, bounded retargeting and the Godot check: acceptance B02, B04 and B07. With them

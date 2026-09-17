@@ -38,6 +38,12 @@
       "title": "Output Clip",
       "type": "string"
     },
+    "rigid_limbs": {
+      "default": false,
+      "description": "Disable IK chain stretch in the new work version before sampling. Compressed limbs carry a non-uniform scale that neither baked TRS keys nor glTF can represent; the pose change is measured and reported, never hidden",
+      "title": "Rigid Limbs",
+      "type": "boolean"
+    },
     "step": {
       "default": 1,
       "maximum": 10,

@@ -290,9 +290,11 @@ Spec §13, §14, §17 (B02, B04, B07), §18 (lot 4). Estimate: 4–6 days.
 - [x] `game.import_test` (headless `--import`, `.import` and imported scene verified) and
       `game.smoke_test` (exit 0/1 **and** a required JSON report) → B07; if the engine is missing
       the game stays `not_tested`. Deviation: plain GDScript smoke test, **GUT not used**.
+- [x] A skinned Rigify character in Godot: `animation.bake` with `rigid_limbs`, `game.export` with
+      `export_def_bones` and the re-imported `skeleton_fidelity` gate, import, 13-check smoke test
+      (`tests/acceptance/test_game_rigify.py`, negative control included).
 - [ ] Performance measured on a declared machine: only headless wall time and the machine are
-      recorded; no rendering, frame-rate or GPU figure. A Rigify character (via `animation.bake`)
-      has not been tried in Godot.
+      recorded; no rendering, frame-rate or GPU figure.
 - [ ] `templates/game-web/` (Three.js r186, `let` only, no jQuery) only if the target is a web game.
 
 ## Lot 5 — studio extensions (P2, only on real demand)

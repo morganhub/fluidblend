@@ -40,9 +40,12 @@ or `target_point`). Clip creation creates a library Action without assigning it.
 takes `clip_id` and `start_frame`; channel overlap with active animation is refused.
 `animation.loop` takes target `clip_id`, `output_clip`, `repetitions`; it checks endpoint curve
 values, not foot contact or velocity continuity. `animation.bake` takes `output_clip`,
-`frame_range`, `step`; it produces an export variant with constraints/drivers removed. The control
-rig source is preserved. A mesh comparison at start/middle/end must stay within 1 mm; this is
-a sampled check, not an all-frame proof. The baked variant cannot accept control-rig recipes.
+`frame_range`, `step`, `rigid_limbs`; it produces an export variant with constraints, drivers and
+control-rig NLA tracks removed. The control rig source is preserved. A mesh comparison at five frames
+(ends and quarters) must stay within 1 mm; this is a sampled check, not an all-frame proof. The baked
+variant cannot accept control-rig recipes. `rigid_limbs` disables IK stretch in that variant: a
+compressed Rigify limb carries a non-uniform scale that TRS keys and glTF cannot represent; the
+resulting pose change is measured and reported, and IK tips must stay on their targets within 1 mm.
 
 Indexes in `animation/clips/<id>/clip.json` cite the immutable work blend and report with hashes.
 Only `walk` and `take_prop` declare contacts and events. Missing locomotion/contact features must not
@@ -163,7 +166,17 @@ walked past the pickup (it now walks until the pickup is in reach). A deliberate
 `pickup_is_empty`. Deviations from the preparatory decisions, on purpose: the smoke test is plain
 GDScript instead of GUT (no new dependency), states are handled in code instead of an
 `AnimationTree`, and the controller is original. Limits: headless, so no rendering, frame-rate or
-GPU claim; a Rigify character (through `animation.bake`) has not been tried in Godot; no web variant.
+GPU claim; no web variant.
+
+Rigify into Godot (P1 refinement, after 0.4.0): the skinned Vitruvian walks through `animation.bake`,
+`game.export` (`export_def_bones`), `game.import_test` and the 13-check `game.smoke_test`. The first
+run was refused by the bake gate, rightly: 13.8 mm at the feet. B-Bones and drivers were ruled out by
+measurement (0.7 mm and 0 mm); the cause is the IK solver compressing the legs by up to 3.5 %, whose
+volume-preserving scale shears the child bones. With `rigid_limbs` the bake error is 0.002 mm, the
+pose differs from the control rig by 35.8 mm at the knees (stated in the report), IK tips drift
+0.2 mm. The former start/middle/end sampling missed the worst frame; quarters are now sampled. The
+re-imported skeleton matches within 0.003 mm (940 bone heads); that check first read 39 mm because
+`slide_to_zero` shifts the clip by one frame, which it now accounts for.
 
 ## Dialogue workflow (after 0.3.0)
 

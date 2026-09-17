@@ -133,7 +133,11 @@ preparatory choice, dropped to avoid a new dependency).
 
 Limits to state: it is the kit's test bed, not the user's game; headless, so no rendering, frame-rate
 or GPU figure is claimed (`wall_time_ms` and the machine are recorded, nothing more); one character,
-one clip; a P0 biped export has been exercised, a Rigify character must first go through
-`animation.bake` and has not been tried in Godot; Godot 4.7 only; no web (Three.js) variant.
+one clip; Godot 4.7 only; no web (Three.js) variant. Both a P0 biped and a skinned Rigify character
+have been exercised. The Rigify path is `animation.bake` with `rigid_limbs` (see animation.md), then
+`game.export` with `export_def_bones` (188 deform bones instead of 1063). On a baked skeleton the
+export carries that one clip and the re-import is replayed: `reimport.skeleton_fidelity` compares
+every deform bone head by name at five frames and must stay within 1 mm (measured: 0.003 mm over
+940 comparisons). It measures the skeleton in Blender's importer, not the skinned surface in Godot.
 Asked for a real playable game: say the kit proves the character arrives and animates in the engine,
 and stop there.
