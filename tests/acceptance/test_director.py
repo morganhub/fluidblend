@@ -8,7 +8,12 @@ import pytest
 from tests.acceptance.test_adjustments import DRIFT
 from tests.acceptance.test_characters import install_character
 from tests.acceptance.test_interactions import human_edit
-from tests.acceptance.test_live_mcp import PORT, _identity, live_ready  # noqa: F401 - fixture
+from tests.acceptance.test_live_mcp import (  # noqa: F401 - live_ready is a fixture
+    PORT,
+    _identity,
+    live_ready,
+    require_own_session,
+)
 from tests.conftest import make_request, note
 from tests.live_blender import launch_live_blender, port_open
 
@@ -58,6 +63,7 @@ def director_session(project, blender_exe, live_ready):  # noqa: F811
     if session is None:
         pytest.skip("not_run: Blender GUI session with the MCP add-on did not come up")
     try:
+        require_own_session(project, blend)
         yield project, blend
     finally:
         session.stop()

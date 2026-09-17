@@ -15,7 +15,7 @@ from fluidblend_runtime.envelope import Context, load_envelope
 from fluidblend_runtime.errors import OpError
 from fluidblend_runtime.result import ResultBuilder, write_json_atomic
 
-RUNTIME_VERSION = "0.3.0"
+RUNTIME_VERSION = "0.4.0"
 SUPPORTED_BLENDER_SERIES = (5, 2)
 LIVE_ONLY_OPERATIONS = {"scene.checkpoint"}
 BATCH_ONLY_OPERATIONS = {
@@ -37,13 +37,14 @@ BATCH_ONLY_OPERATIONS = {
     "tool.test",
     "lipsync.apply",
     "expression.apply",
+    "animation.retarget",
 }
 
 # Blender add-on metadata: the runtime is installed and enabled for live mode (operators in addon.py).
 bl_info = {
     "name": "fluidblend runtime",
     "author": "fluidblend",
-    "version": (0, 3, 0),
+    "version": (0, 4, 0),
     "blender": (5, 2, 0),
     "location": "View3D > Sidebar > fluidblend (Director); operators bpy.ops.fluidblend.* for the engine",
     "description": "Approved fluidblend runtime: typed operations on the open scene, Director panel",

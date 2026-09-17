@@ -1,26 +1,97 @@
 {
+  "$defs": {
+    "FrameRange": {
+      "additionalProperties": false,
+      "description": "Canonical half-open interval `[start, end_exclusive)`.",
+      "properties": {
+        "end_exclusive": {
+          "maximum": 1000001,
+          "minimum": -100000,
+          "title": "End Exclusive",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 1000000,
+          "minimum": -100000,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end_exclusive"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    }
+  },
   "$id": "https://fluidblend.local/schemas/operations/animation.retarget.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Bounded retargeting",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Transfer a clip between two known rig profiles into a new library clip",
+  "properties": {
+    "frame_range": {
+      "$ref": "#/$defs/FrameRange"
+    },
+    "output_clip": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Output Clip",
+      "type": "string"
+    },
+    "preset": {
+      "const": "simple_biped_to_rigify",
+      "default": "simple_biped_to_rigify",
+      "title": "Preset",
+      "type": "string"
+    },
+    "source_clip": {
+      "description": "Clip assigned to the source instance",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Source Clip",
+      "type": "string"
+    },
+    "source_instance_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Source Instance Id",
+      "type": "string"
+    },
+    "test_poses": {
+      "default": 3,
+      "description": "Poses transferred and measured before the rest",
+      "maximum": 9,
+      "minimum": 2,
+      "title": "Test Poses",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "source_instance_id",
+    "source_clip",
+    "output_clip",
+    "frame_range"
+  ],
+  "title": "AnimationRetargetParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
     "cli_command": null,
     "input_paths": [],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
     "optional_dependencies": [],
-    "publication": "reports_and_artifacts",
+    "publication": "shot_revision_and_reports",
     "required_dependencies": [
       "blender.batch"
     ],
-    "required_targets": [],
-    "requires_shot": false
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

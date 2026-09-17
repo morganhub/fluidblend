@@ -1,31 +1,33 @@
 # TODO — what remains to complete the specification
 
 Reference: the "Blender Director" specification v1.0 (16 September 2026, kept outside this public
-repository) and [docs/roadmap.md](docs/roadmap.md). Status on 17 September 2026: version 0.3.0 (P0, live, lot 3); lot 4 is planned for 0.4.0.
+repository) and [docs/roadmap.md](docs/roadmap.md). Status on 17 September 2026: version 0.4.0 (P0, live, lots 3 and 4: every P1 scenario passes).
 Implementation scope and proof: [docs/production-p1.md](docs/production-p1.md).
 
-## Amorce de reprise technique — version 0.3.0 du 17 septembre 2026
+## Amorce de reprise technique — version 0.4.0 du 17 septembre 2026
 
 Ce bloc est le point d'entrée de la prochaine session. Le travail décrit ci-dessous est présent
-dans la **version 0.3.0** (lot 3). Le lot 4 (B02, B04, B07) est prévu pour la 0.4.0. Relire
+dans les **versions 0.3.0** (lot 3) et **0.4.0** (lot 4 : B02, B04, B07). Relire
 `git status` et ce récapitulatif avant toute reprise. Les modifications concernent le moteur, le
 runtime Blender, les contrats/schémas, les tests, la fixture binaire et la documentation.
 
 ### État mesuré
 
-- Catalogue : **43 opérations**, dont **19 P0 disponibles**, **21 P1 disponibles** et **3 P1
-  indisponibles**. Une opération indisponible échoue au précontrôle avec
+- Catalogue : **43 opérations**, dont **19 P0 disponibles**, **24 P1 disponibles**, aucune
+  indisponible. Une opération indisponible échoue au précontrôle avec
   `UNSUPPORTED_CAPABILITY`, même si aucun handler hôte n'existe.
 - Nouvelles opérations P1 qualifiées : `shot.build`, `character.inspect`, `rig.map`,
   `rig.validate`, `animation.create`, `animation.apply`, `animation.loop`, `animation.bake`,
   `audio.prepare`, `lipsync.analyze`.
 - Qualifiées ensuite (même jour) : recettes `walk`, `take_prop`, `give_prop`, mesures communes,
   `interaction.plan/apply/validate` (B03), `adjustment.preview/apply/revert` + `contact_lock`
-  (B05), `tool.inspect/test/register` (B08), live coopératif (L09), panneau Director (B06). Dernière régression complète : **146 tests réussis en
-  621,85 s** (après B04), 28 scénarios passés (A01–A13, B01, B03, B04, B05, B06, B08, L01–L09), lint/format/schémas OK.
+  (B05), `tool.inspect/test/register` (B08), live coopératif (L09), panneau Director (B06). Dernière régression complète : **148 tests réussis en
+  703,32 s** (candidate 0.4.0), 30 scénarios passés (A01–A13, B01–B08, L01–L09), lint/format/schémas OK.
 - Après la 0.3.0 (non publié, vers 0.4.0) : fixture faciale `vitruvian-face`, `lipsync.apply` et
   `expression.apply` (B04).
-- Opérations encore indisponibles : `animation.retarget`, `game.import_test`, `game.smoke_test`.
+- Aussi après la 0.3.0 : `animation.retarget`, un préréglage biped P0 → Rigify (B02).
+- Aussi : template Godot, `game.import_test`, `game.smoke_test` (B07). Plus aucune opération du
+  catalogue n'est indisponible ; chacune a un périmètre étroit et refuse le reste.
 - Régression combinée : **121 tests réussis en 324,35 s**, avec A01–A13, B01 et L01–L08 sur
   Blender 5.2.2 LTS. Contrôles ciblés suivants : **98 tests unitaires**, **3 tests audio réels**
   (mono, stéréo et dépendance absente) et B01 renforcé réussi. Ruff, formatage, schémas et
@@ -271,7 +273,9 @@ Spec §13, §14, §17 (B02, B04, B07), §18 (lot 4). Estimate: 4–6 days.
       caches versioned by input hashes.
 
 ### Retargeting (§10.4)
-- [ ] `animation.retarget` (bounded): preserve the source, identify source/target profiles,
+- [x] B02 done after 0.3.0 with one preset (`simple_biped_to_rigify`). Remaining: other rig pairs,
+      feet re-planting after transfer, fingers/face/props, human review of the transferred motion.
+- [~] `animation.retarget` (bounded): preserve the source, identify source/target profiles,
       normalize conventions, verified reference pose, produce a new Action, test a few poses and
       a short excerpt first; record contacts and constraints → B02.
 - [ ] Optional adapters as external add-ons (Retarget/Expy-Kit presets, Rokoko) — never vendored.
@@ -280,11 +284,15 @@ Spec §13, §14, §17 (B02, B04, B07), §18 (lot 4). Estimate: 4–6 days.
 - [ ] Export contract: deform-skeleton variant, baked clips, compatible textures/materials,
       documented events, collision and LOD per target; recorded axes, units, root name, in-place
       vs root motion, loops, exported bones, influence limits, texture sizes, geometry budget.
-- [ ] `templates/game-godot/` (Godot 4.7.2): test scene, controllable character, movement, at
-      least two animation states, simple collision, one prop interaction (GDScript).
-- [ ] `game.import_test` (headless `--import`, `.import` files verified) and `game.smoke_test`
-      (GUT, exit 0/1) → B07; performance measured on a declared machine; if the engine is
-      missing the game stays `not_tested`.
+- [x] `templates/game-godot/` (Godot 4.7.2): test scene, controllable character, movement, two
+      states (`idle`, `walk`; one clip, idle plays nothing), simple collision, one prop interaction
+      (GDScript, original, no add-on).
+- [x] `game.import_test` (headless `--import`, `.import` and imported scene verified) and
+      `game.smoke_test` (exit 0/1 **and** a required JSON report) → B07; if the engine is missing
+      the game stays `not_tested`. Deviation: plain GDScript smoke test, **GUT not used**.
+- [ ] Performance measured on a declared machine: only headless wall time and the machine are
+      recorded; no rendering, frame-rate or GPU figure. A Rigify character (via `animation.bake`)
+      has not been tried in Godot.
 - [ ] `templates/game-web/` (Three.js r186, `let` only, no jQuery) only if the target is a web game.
 
 ## Lot 5 — studio extensions (P2, only on real demand)

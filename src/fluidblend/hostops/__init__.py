@@ -5,6 +5,7 @@ from __future__ import annotations
 from fluidblend.hostops import (
     audio,
     film_assemble,
+    game,
     interaction_plan,
     providers_check,
     rig_map,
@@ -21,6 +22,8 @@ HOST_HANDLERS = {
     "scene.checkpoint": scene_checkpoint.run,
     "shot.validate": shot_validate.run,
     "film.assemble": film_assemble.run,
+    "game.import_test": game.import_test,
+    "game.smoke_test": game.smoke_test,
     "providers.check": providers_check.run,
     "tool.inspect": tools.inspect,
     "tool.register": tools.register,

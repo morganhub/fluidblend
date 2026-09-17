@@ -2,23 +2,46 @@
   "$id": "https://fluidblend.local/schemas/operations/game.import_test.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Import into the target engine",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Import an exported GLB into the Godot template and check what the engine wrote",
+  "properties": {
+    "export_path": {
+      "description": "Published .glb from game.export, project-relative",
+      "title": "Export Path",
+      "type": "string"
+    },
+    "template": {
+      "const": "godot",
+      "default": "godot",
+      "title": "Template",
+      "type": "string"
+    }
+  },
+  "required": [
+    "export_path"
+  ],
+  "title": "GameImportTestParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "host",
     "cli_command": null,
-    "input_paths": [],
+    "input_paths": [
+      "export_path"
+    ],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
     "optional_dependencies": [],
     "publication": "reports_and_artifacts",
-    "required_dependencies": [],
-    "required_targets": [],
-    "requires_shot": false
+    "required_dependencies": [
+      "game.godot"
+    ],
+    "required_targets": [
+      "shot_id"
+    ],
+    "requires_shot": true
   }
 }

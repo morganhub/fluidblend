@@ -27,11 +27,53 @@ RIGIFY_CONTROLS = {
     "right_arm_switch": "upper_arm_parent.R",
     "left_leg_switch": "thigh_parent.L",
     "right_leg_switch": "thigh_parent.R",
+    "left_hand_fk": "hand_fk.L",
+    "right_hand_fk": "hand_fk.R",
+    "left_foot_fk": "foot_fk.L",
+    "right_foot_fk": "foot_fk.R",
     # Deform bones are measurement control points: the control may reach a target the limb does not.
     "left_foot_deform": "DEF-foot.L",
     "right_foot_deform": "DEF-foot.R",
     "left_hand_deform": "DEF-hand.L",
     "right_hand_deform": "DEF-hand.R",
+}
+
+
+# Bounded retargeting presets: source bone name -> semantic FK role of the target profile, parents
+# first. Limbs are checked end to end: [name, first source bone, second source bone, source end
+# bone, target end role (a deform bone, so an FK control that drives nothing is caught)].
+RETARGET_PRESETS = {
+    "simple_biped_to_rigify": {
+        "source_profile": "fluidblend.simple_biped/1",
+        "target_profile": "rigify/0.6.10",
+        "bones": [
+            ["pelvis", "pelvis"],
+            ["chest", "chest"],
+            ["head", "head"],
+            ["upper_arm.L", "left_upper_arm_fk"],
+            ["forearm.L", "left_forearm_fk"],
+            ["hand.L", "left_hand_fk"],
+            ["upper_arm.R", "right_upper_arm_fk"],
+            ["forearm.R", "right_forearm_fk"],
+            ["hand.R", "right_hand_fk"],
+            ["thigh.L", "left_thigh_fk"],
+            ["shin.L", "left_shin_fk"],
+            ["foot.L", "left_foot_fk"],
+            ["thigh.R", "right_thigh_fk"],
+            ["shin.R", "right_shin_fk"],
+            ["foot.R", "right_foot_fk"],
+        ],
+        "unmapped_source_bones": ["spine", "neck"],
+        "limbs": [
+            ["left_arm", "upper_arm.L", "forearm.L", "hand.L", "left_hand_deform"],
+            ["right_arm", "upper_arm.R", "forearm.R", "hand.R", "right_hand_deform"],
+            ["left_leg", "thigh.L", "shin.L", "foot.L", "left_foot_deform"],
+            ["right_leg", "thigh.R", "shin.R", "foot.R", "right_foot_deform"],
+        ],
+        "fk_switches": ["left_arm_switch", "right_arm_switch", "left_leg_switch", "right_leg_switch"],
+        "source_leg": ["thigh.L", "foot.L"],
+        "target_leg": ["left_thigh_fk", "left_foot_deform"],
+    }
 }
 
 
@@ -136,6 +178,10 @@ def inputs_for(project, request):
     inputs = {"rigify_controls": RIGIFY_CONTROLS}
     if request.operation == "interaction.apply":
         inputs["interaction_plan"] = admitted_plan(project, request)
+    if request.operation == "animation.retarget":
+        inputs["retarget_preset"] = RETARGET_PRESETS[
+            request.parameters.get("preset", "simple_biped_to_rigify")
+        ]
     if request.operation in ("lipsync.apply", "expression.apply"):
         inputs["face_profiles"] = FACE_PROFILES
     if request.operation == "lipsync.apply":

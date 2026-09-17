@@ -1,0 +1,12 @@
+; fluidblend game template - Godot 4.7. Opened headless by game.import_test and game.smoke_test.
+config_version=5
+
+[application]
+
+config/name="fluidblend game template"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7")
+
+[physics]
+
+common/physics_ticks_per_second=60

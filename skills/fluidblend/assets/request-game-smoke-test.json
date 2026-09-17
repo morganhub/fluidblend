@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "operation": "game.smoke_test",
+  "operation_id": "game-smoke-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010"
+  },
+  "parameters": {
+    "game_dir": "reviews/shot010/game-import-001/game"
+  },
+  "dry_run": false
+}

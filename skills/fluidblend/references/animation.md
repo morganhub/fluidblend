@@ -4,7 +4,7 @@ Status: **partially implemented**.
 
 - Lot P0: `animation.retime` (a slower or faster variant of a clip).
 - Bounded P1: `animation.create`, `animation.apply`, `animation.loop`, `animation.bake`.
-- Unavailable: `animation.retarget`.
+- Bounded P1: `animation.retarget`, one preset (`simple_biped_to_rigify`), never a universal solver.
 
 ## Slotted Actions: the only allowed API
 
@@ -169,5 +169,32 @@ end so the character does not snap back.
 Limits to state: straight walk on flat static ground, ankle control point, no heel roll, no arm
 swing, linear stance/swing keys. It is a technical contact measurement, not an approved gait.
 
-Retargeting and contact cleanup tools (`contact_lock`) remain unavailable. Reject such
-requests without improvised scripts. Optional retarget add-ons remain external, never vendored.
+## Bounded retargeting: `animation.retarget`
+
+One preset, `simple_biped_to_rigify`: a clip played by a P0 biped (`fluidblend.simple_biped/1`) is
+transferred onto the FK controls of a `rigify/0.6.10` character **of the same shot** (add it with
+`shot.build`). Example: [request-animation-retarget.json](../assets/request-animation-retarget.json).
+Target: `shot_id` + the Rigify `instance_id`. Parameters: `source_instance_id`, `source_clip` (must
+be the clip really assigned to the source, else `SCENE_CONFLICT`), `output_clip`, `frame_range`
+(2–600 frames), `test_poses` (2–9).
+
+How: rotations are transferred as **deltas from each rig's own rest pose**, in character space, so
+arms-down against an A-pose needs no manual alignment. A few poses are transferred and measured
+first; if one fails, the full range is not attempted. The result is a **new library clip** (FK
+rotations, arm and leg `IK_FK` held at 1, root travel scaled by the leg-length ratio, source contact
+markers copied as events), indexed like any other clip; apply it with `animation.apply`. The source
+Action is only evaluated, never edited.
+
+Gates: each limb's end, measured on the target's **deform** bone, must point within
+`quality.retarget_limb_error_max_deg` (3°) of where the source deltas send it, on every frame — an
+FK control that drives nothing is caught; and the source limbs must really swing (≥ 1°), so a
+motionless source cannot pass with a perfect zero.
+
+Refuse plainly, do not look for a workaround: any other pair of rigs (`RIG_MAPPING_REQUIRED` — Mixamo,
+mocap, another Rigify version, a baked skeleton), a source that does not play `source_clip`. Limits
+to state: `spine` and `neck` of the source are dropped; **feet are not re-planted**, so foot slide is
+neither measured nor promised (use `contact_lock` on a marked stance afterwards); no fingers, face
+or props; a technical transfer check, not an approval of the motion on the new body.
+
+Contact cleanup beyond `contact_lock` remains unavailable. Optional retarget add-ons remain
+external, never vendored.

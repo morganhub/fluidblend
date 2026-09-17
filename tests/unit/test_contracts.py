@@ -68,9 +68,9 @@ def test_shot_required_for_scene_ops():
         validate_request(make_request("scene.build", "build-001"))
 
 
-def test_unavailable_operations_are_declared_not_hidden():
+def test_unavailable_operations_are_declared_not_hidden(unavailable_operation):
     unavailable = [name for name, spec in OPERATIONS.items() if not spec.available]
-    assert "animation.retarget" in unavailable and "game.smoke_test" in unavailable
+    assert unavailable == [unavailable_operation]
     assert all(OPERATIONS[n].lot in ("P1", "P2") for n in unavailable)
 
 
@@ -85,7 +85,7 @@ def test_operation_result_defaults_are_empty_not_missing():
     )
 
 
-def test_schema_export_is_deterministic(tmp_path: Path):
+def test_schema_export_is_deterministic(tmp_path: Path, unavailable_operation):
     written = export_all(tmp_path)
     assert (tmp_path / "operation-request.json").exists() and (
         tmp_path / "operations" / "animation.retime.json"
@@ -96,7 +96,7 @@ def test_schema_export_is_deterministic(tmp_path: Path):
     assert {p.name: p.read_text(encoding="utf-8") for p in written} == first
     schemas = build_schemas()
     assert schemas["operations/animation.retime"]["x-fluidblend"]["available"] is True
-    assert schemas["operations/game.smoke_test"]["x-fluidblend"]["available"] is False
+    assert schemas[f"operations/{unavailable_operation}"]["x-fluidblend"]["available"] is False
 
 
 def test_repo_schemas_are_up_to_date():

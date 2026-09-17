@@ -45,6 +45,12 @@
       "title": "Preview Missing Frames Max",
       "type": "integer"
     },
+    "retarget_limb_error_max_deg": {
+      "default": 3.0,
+      "minimum": 0,
+      "title": "Retarget Limb Error Max Deg",
+      "type": "number"
+    },
     "schema_version": {
       "default": "1.0",
       "title": "Schema Version",

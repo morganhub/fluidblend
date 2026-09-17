@@ -60,7 +60,10 @@ PATH_PARAMS = (
     "plan_path",
     "test_report_path",
     "analysis_path",
+    "export_path",
 )
+# Operations that publish a library clip and its index.
+CLIP_OPERATIONS = ("animation.create", "animation.loop", "animation.bake", "animation.retarget")
 # Operations whose admitted inputs are validated before any task exists.
 INPUT_CHECKED_OPERATIONS = (
     "shot.build",
@@ -934,7 +937,7 @@ class TaskRunner:
         result: OperationResult,
     ) -> OperationResult:
         out_dir = self._task_dir(task.task_id) / "out"
-        if spec.name in ("animation.create", "animation.loop", "animation.bake"):
+        if spec.name in CLIP_OPERATIONS:
             from fluidblend.contracts.production import ClipManifest
 
             ClipManifest.model_validate(read_json(out_dir / "clip.json"))
@@ -1130,7 +1133,7 @@ class TaskRunner:
         )
 
     def _check_clip_destination(self, request):
-        if request.operation not in ("animation.create", "animation.loop", "animation.bake"):
+        if request.operation not in CLIP_OPERATIONS:
             return
         # A succeeded request is handled by idempotent replay, never by an overwrite.
         previous = self.state.ledger_entry(request.operation_id)
@@ -1143,7 +1146,7 @@ class TaskRunner:
             raise TaskAbort(ErrorCode.SCENE_CONFLICT, "clip index already exists")
 
     def _index_clip(self, request, task, result):
-        if request.operation not in ("animation.create", "animation.loop", "animation.bake"):
+        if request.operation not in CLIP_OPERATIONS:
             return
         clip_id = request.parameters["output_clip"]
         manifest = next(a for a in result.artifacts if a.path.endswith("/clip.json"))

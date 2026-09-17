@@ -7,7 +7,6 @@ from tests.unit.test_state_and_revisions import _task
 from fluidblend.cli import main
 from fluidblend.contracts.capabilities import CapabilitiesReport, Capability
 from fluidblend.contracts.common import OperationStatus
-from fluidblend.contracts.operations import OPERATIONS
 from fluidblend.core.atomic import atomic_write_json
 from fluidblend.core.dependencies import compare_lock
 from fluidblend.core.evidence import verify_evidence
@@ -16,10 +15,16 @@ from fluidblend.core.project import load_project
 from fluidblend.core.tasks import TaskRunner
 
 
-@pytest.mark.parametrize("operation", [name for name, spec in OPERATIONS.items() if not spec.available])
-def test_all_unavailable_operations_stop_before_routing(project_root, operation):
+def test_unavailable_operation_stops_before_routing(project_root, unavailable_operation):
     runner = TaskRunner(load_project(project_root))
-    outcome = runner.run(make_request(operation, "unavailable-001"))
+    outcome = runner.run(
+        make_request(
+            unavailable_operation,
+            "unavailable-001",
+            target={"shot_id": "shot010"},
+            parameters={"game_dir": "reviews/shot010/import/game"},
+        )
+    )
     assert outcome.exit_code == 2
     assert outcome.result.errors[0].code == "UNSUPPORTED_CAPABILITY"
     assert runner.state.tasks() == []

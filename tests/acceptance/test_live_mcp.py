@@ -59,6 +59,7 @@ def live_project(project: Project, live_ready: None):
     if session is None:
         pytest.skip("not_run: Blender GUI session with the MCP add-on did not come up")
     try:
+        require_own_session(project, blend)
         yield TaskRunner(project, mode="live"), blend, session
     finally:
         session.stop()
@@ -66,6 +67,16 @@ def live_project(project: Project, live_ready: None):
 
 def _identity(project: Project) -> dict:
     return blender_live.identity(blender_live.server_config_for(project))
+
+
+def require_own_session(project: Project, blend: Path) -> None:
+    """The port answers, but is it the Blender this test just opened? A user's Blender started in
+    the same seconds can take the port first: never drive, nor judge, somebody else's session."""
+    opened = _identity(project).get("blend_path") or ""
+    if Path(opened).resolve() != Path(blend).resolve():
+        pytest.skip(
+            f"not_run: port {PORT} is answered by another Blender session ({opened or 'unsaved scene'})"
+        )
 
 
 @pytest.mark.acceptance("L06", title="Live: edit between admission and execution is preserved")

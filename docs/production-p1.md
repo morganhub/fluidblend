@@ -1,9 +1,9 @@
-# P1 implementation status — 0.3.0
+# P1 implementation status — 0.4.0
 
-Version 0.3.0 delivers lot 3 of the seven-delivery plan. It is not completion of the whole TODO:
-lot 4 is in progress on `main` for 0.4.0 — B04 facial lip-sync is done, B02 retargeting and B07 Godot
-are not started. P2 remains conditional on a real request. Existing P0 projects remain readable.
-The catalogue contains 40 available operations (19 P0, 21 P1) and 3 unavailable P1 operations.
+Version 0.3.0 delivered lot 3 and 0.4.0 delivers lot 4 (B02, B04, B07): every P1 acceptance scenario
+passes. It is not completion of the whole TODO — each operation works in a narrow scope, and the
+`[~]` / `[ ]` items of `TODO.md` remain. P2 remains conditional on a real request. Existing P0 projects remain readable.
+The catalogue contains 43 available operations (19 P0, 24 P1); none is left unavailable.
 The historical 6–9 / 4–6 day estimates have not been revalidated against the remaining work.
 
 | Delivery | Implemented and automatically exercised | Remaining |
@@ -14,7 +14,7 @@ The historical 6–9 / 4–6 day estimates have not been revalidated against the
 | Interaction/adjustment | Prop assets (`kind: prop`, grips); `interaction.plan/apply/validate` for one bounded prop hand-off: revision-bound plan, `CHILD_OF` transfer preserving the world transform, contacts measured in the prop's space, jump, single-authority and cycle checks (B03); `adjustment.preview/apply/revert` with one tool, `contact_lock`, as a removable additive NLA layer with a declared tool contract (B05); declarative custom tools through `tool.inspect/test/register`, code-free, narrowing only (B08) | Timing propagation between participants, other interaction kinds; the seven other adjustment tools |
 | Live/Director | Four operations, monotonic edit generation and guarded publication/reload; cooperative timer-driven execution with progress and acknowledged cancellation (L09); Director panel running `adjustment.*` through the engine with debounced sliders (B06) | Multi-step live operations (today a stop lands between operations' single step), live mode for more operations, in-viewport preview (the panel shows figures and before/after frames; a human clicked it on 17 September 2026 and five usability defects were fixed) |
 | Film/dialogue | Two-pass FFmpeg normalization, 48 kHz PCM, rational sample/frame durations, real Rhubarb phonetic analysis; after 0.3.0: `vitruvian-face` fixture, `lipsync.apply` and `expression.apply` on shape keys with fractional-frame timing and real-motion gates (B04) | Short cues are passed through unchecked, no co-articulation, audio not in the sequencer, sequences, human review workflow, final render |
-| Retarget/game | Existing GLB export only | Bounded retarget, Godot template/import/GUT, B02/B07 |
+| Retarget/game | Existing GLB export; after 0.3.0: `animation.retarget` with one preset (P0 biped → Rigify FK), rest-pose deltas, test poses first, limb direction gated on the deform chain, non-trivial source required (B02); Godot 4.7 template in plain GDScript, `game.import_test` checking what the engine wrote, `game.smoke_test` launching the prototype headless with 13 checks (B07) | Feet not re-planted, other rig pairs; Rigify character in Godot not tried, no rendering or frame-rate figure, no web variant, GUT not used |
 
 ## Character workflow
 
@@ -121,6 +121,50 @@ and is refused; `gentle-foot-lock` (feet, 0.12 m) passes one fix and one refusal
 the foot (0.100 m → 0.06 mm), and is refused for a hand, for 0.15 m, and after its bound was edited.
 Limit: with a single built-in tool, a custom tool can only be a stricter `contact_lock`.
 
+## Retargeting workflow (after 0.3.0)
+
+`animation.retarget` has one preset, `simple_biped_to_rigify` (`RETARGET_PRESETS`): fifteen source
+bones mapped to semantic FK roles of the Rigify profile, parents first; `spine` and `neck` are
+dropped and said so. Each frame, every mapped control receives the source bone's rotation **delta
+from its own rest pose**, in character space, so different rest poses need no alignment. The target
+is evaluated bare (its Action detached, NLA muted, `IK_FK` at 1) and its pose and switches are
+restored afterwards; only the new Action carries the result. Three test poses are transferred and
+measured before the full range. The clip is published and indexed like any library clip.
+
+Gate: for each limb, the direction from the first FK control to the **deform** end bone must match
+the direction predicted from the source deltas within 3° on every frame. On a rigid FK chain that is
+0.000° by construction once the FK switch really drives the deform chain — which is what the check
+protects; it says nothing about how the motion looks on the new body. Because a motionless source
+would also score a perfect zero, the source limbs must swing by at least 1° (measured 31.5° on the
+walk). B02: 48 frames of the P0 walk onto the Vitruvian, leg-length ratio 1.008, root travel
+0.79 m, source Action identical before and after; biped target, Rigify source and unassigned clip
+refused. Assistant visual inspection: the Rigify character steps in phase with the biped; arms swing
+from the A-pose. Feet are not re-planted and no foot-slide figure is claimed.
+
+## Godot workflow (after 0.3.0)
+
+`templates/game-godot/` is a Godot 4.7 test bed in original GDScript, with no add-on and no binary:
+the scene is built in code (floor, wall, `Area3D` pickup, light, camera) around a `CharacterBody3D`
+with two states, `idle` and `walk`, that plays the first imported animation whose name contains
+"walk" and makes it loop. Tests and keyboard share one input path (`simulated_input`).
+
+`game.import_test` copies the template and a published GLB, runs `godot --headless --import`, and
+requires `character.glb.import` to declare `importer="scene"` and an imported scene to exist under
+`.godot/imported` — the exit code alone is not accepted. The machine-local `.godot` cache is removed
+before publication. `game.smoke_test` re-imports a private copy and runs `res://test/smoke.gd`
+headless: the operation succeeds only with exit 0, a written report, `headless: true` and every
+check passed. Without Godot both answer `MISSING_DEPENDENCY` and name the state: `not_tested`.
+
+B07: the P0 hero exported alone (`instance_ids`), imported by Godot 4.7.2, prototype launched, 13
+checks passed. The first real run failed two checks and was right both times: the imported walk clip
+stopped after one cycle (glTF has no loop flag — the template now sets `LOOP_LINEAR`), and the test
+walked past the pickup (it now walks until the pickup is in reach). A deliberately broken prototype
+(`SPEED = 0`) fails the operation with `character_moved`, `reached_pickup`, `prop_is_held`,
+`pickup_is_empty`. Deviations from the preparatory decisions, on purpose: the smoke test is plain
+GDScript instead of GUT (no new dependency), states are handled in code instead of an
+`AnimationTree`, and the controller is original. Limits: headless, so no rendering, frame-rate or
+GPU claim; a Rigify character (through `animation.bake`) has not been tried in Godot; no web variant.
+
 ## Dialogue workflow (after 0.3.0)
 
 `fixtures/vitruvian-face/` is the body fixture plus thirteen CC0 facial morphs of the same pinned
@@ -155,16 +199,15 @@ The source hash is checked before/after. Analysis does not apply keys or approve
 
 See `docs/acceptance-reports/implementation.md` for the combined regression and the earlier
 `production-p1.md`, `consolidation-batch.md` reports. B01 uses the actual 37,436-vertex skinned fixture; animation and audio
-integration tests use real Blender, FFmpeg and Rhubarb. B03, B04, B05, B06 and B08 pass; B02 and B07 are not declared passed.
+integration tests use real Blender, FFmpeg and Rhubarb. B01 to B08 all pass.
 Technical automation, assistant visual inspection and human artistic approval are separate.
 Five inspected deformation views and their hashes are in `docs/reviews/vitruvian/review.json`.
 The squat is a deformation test with floating feet; it is not a contact test.
 No human approval or fresh Claude Code/Codex skill session is recorded for this change.
 
 Latest full regression on 17 September 2026, after walk, prop recipes, the hand-off and
-`contact_lock`, custom tools, cooperative live and the Director panel: **146 passed** in 621.85 s (after B04),
-28 scenarios passed (A01–A13, B01, B03, B04,
-B05, B06, B08, L01–L09),
+`contact_lock`, custom tools, cooperative live and the Director panel: **148 passed** in 703.32 s (0.4.0 candidate),
+30 scenarios passed (A01–A13, B01–B08, L01–L09),
 lint, formatting and schemas clean. Earlier the same day: combined regression **121 passed** in 324.35 s, including
 A01–A13, B01, L01–L08. Subsequent targeted checks passed: **98 unit tests**, **3 audio integration
 tests** (mono, stereo, dependency absence), and strengthened B01 with duplicate-instance refusal

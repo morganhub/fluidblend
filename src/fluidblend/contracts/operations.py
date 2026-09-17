@@ -19,10 +19,13 @@ from fluidblend.contracts.production import (
     AnimationBakeParams,
     AnimationCreateParams,
     AnimationLoopParams,
+    AnimationRetargetParams,
     AudioPrepareParams,
     CharacterInspectParams,
     ContactLockParams,
     ExpressionApplyParams,
+    GameImportTestParams,
+    GameSmokeTestParams,
     InteractionApplyParams,
     InteractionPlanParams,
     InteractionValidateParams,
@@ -167,6 +170,8 @@ class OperationSpec:
             required.append("audio.rhubarb")
         if self.name == "game.export":
             optional.append("gltf.khronos_validator")
+        if self.name in ("game.import_test", "game.smoke_test"):
+            required.append("game.godot")
         targets = ["shot_id"] if self.requires_shot else []
         if self.name in {
             "character.inspect",
@@ -177,6 +182,7 @@ class OperationSpec:
             "animation.loop",
             "animation.bake",
             "animation.retime",
+            "animation.retarget",
             "adjustment.preview",
             "adjustment.apply",
             "adjustment.revert",
@@ -392,7 +398,14 @@ OPERATIONS: dict[str, OperationSpec] = {
             creates_version=True,
         ),
         _spec(
-            "animation.retarget", NoParams, "blender", "write", "P1", "Bounded retargeting", available=False
+            "animation.retarget",
+            AnimationRetargetParams,
+            "blender",
+            "write",
+            "P1",
+            "Transfer a clip between two known rig profiles into a new library clip",
+            requires_shot=True,
+            creates_version=True,
         ),
         _spec(
             "animation.bake",
@@ -528,14 +541,22 @@ OPERATIONS: dict[str, OperationSpec] = {
         ),
         _spec(
             "game.import_test",
-            NoParams,
+            GameImportTestParams,
             "host",
             "read",
             "P1",
-            "Import into the target engine",
-            available=False,
+            "Import an exported GLB into the Godot template and check what the engine wrote",
+            requires_shot=True,
         ),
-        _spec("game.smoke_test", NoParams, "host", "read", "P1", "Launch the prototype", available=False),
+        _spec(
+            "game.smoke_test",
+            GameSmokeTestParams,
+            "host",
+            "read",
+            "P1",
+            "Launch the imported Godot prototype headless and run its smoke test",
+            requires_shot=True,
+        ),
         # Tasks
         _spec(
             "task.status",

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "operation": "animation.retarget",
+  "operation_id": "animation-retarget-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010",
+    "instance_id": "actor-01"
+  },
+  "parameters": {
+    "preset": "simple_biped_to_rigify",
+    "source_instance_id": "hero-01",
+    "source_clip": "walk",
+    "output_clip": "walk-from-biped",
+    "frame_range": {
+      "start": 1,
+      "end_exclusive": 49
+    },
+    "test_poses": 3
+  },
+  "dry_run": false
+}

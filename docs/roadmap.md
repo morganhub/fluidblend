@@ -1,6 +1,6 @@
 # Roadmap
 
-Lots 1 and 2 are released. Lots 3 and 4 are partially implemented in the working tree;
+Lots 1 to 4 are released (0.4.0). Lots 3 and 4 pass their acceptance scenarios inside narrow scopes;
 [production-p1.md](production-p1.md) records exact scope and evidence. Planned features are not
 claims of completion.
 
@@ -50,7 +50,7 @@ Remaining live items, **not implemented**:
 | Live mode for the other operations | not implemented | `scene.build`, `shot.preview` and `game.export` need a dedicated process and are refused in a live envelope with `UNSUPPORTED_CAPABILITY` |
 | Progress feedback and cancellation during a live call | implemented (L09) | cooperative timer steps, `progress.json`, `task cancel` believed only on `cancel.ack.json`; the four live operations are single-step today, so a stop lands before or after them, not inside |
 
-## Lot 3 — P1 characters and adjustments — **partial**
+## Lot 3 — P1 characters and adjustments — **scenarios done (version 0.3.0), narrow scope**
 
 | Item | Status | Preparatory decision |
 | --- | --- | --- |
@@ -63,23 +63,24 @@ Remaining live items, **not implemented**:
 | Adjustment tools | `contact_lock` implemented with preview/apply/revert (B05); the others not implemented | `retime_segment`, `look_at_target`, `contact_lock` at the very least, each with bounded parameters, a preview, an undo path and tests |
 | Custom tools | declarative registry implemented (B08) | `tools/custom/<id>/tool.json` narrows a built-in tool and carries its tests; `tool.inspect/test/register`; no code is loaded |
 | `Director` Blender panel | implemented for `contact_lock` (B06); clicked by a human on 17 September 2026, which exposed and fixed an empty character field, truncated messages, a sidebar that did not refresh, a stale-version trap and an unsaved-scene trap; the preview shows figures and frames, not motion in the viewport | operators calling the same operations as the CLI; bounded sliders, debounce through `bpy.app.timers` (hence GUI only) |
-| Bounded retargeting | not implemented | name-to-name preset in the Expy-Kit format, constraints then `nla.bake(visual_keying=True, clear_constraints=True)`; Retarget and Rokoko stay external (GPL-3 / LGPL-3) |
+| Bounded retargeting | one preset implemented (B02): P0 biped → Rigify, rest-pose deltas keyed on FK controls, no constraints or bake needed | name-to-name preset in the Expy-Kit format, constraints then `nla.bake(visual_keying=True, clear_constraints=True)`; Retarget and Rokoko stay external (GPL-3 / LGPL-3) |
 
 Target acceptance scenarios: B01, B03, B05, B06 and B08 — all passed.
 
-## Lot 4 — P1 voice and game target — **partial**
+## Lot 4 — P1 voice and game target — **scenarios done (version 0.4.0), narrow scope**
 
 | Item | Status | Preparatory decision |
 | --- | --- | --- |
 | Rhubarb lip-sync | analysis and application on shape keys (B04) | Rhubarb 1.14.0 (MIT), `-f json -r phonetic`; mapping of cues A–H and X to Actions then to NLA strips |
 | Audio preparation | implemented | FFmpeg, 48 kHz mono WAV, two-pass `loudnorm`, `aresample=48000` systematically; drift tolerated up to one frame at most |
-| Godot template | not implemented | Godot 4.7.2 (MIT), `CharacterBody3D`, `AnimationTree` with an `idle` ↔ `walk` state machine, based on the Jeh3no controller (MIT) |
-| GUT tests | not implemented | GUT 9.7.1 in headless mode; check that the `.import` files exist, not only the return code |
-| `game.import_test`, `game.smoke_test` | not implemented | a real import then a prototype actually launched, not merely file generation |
+| Godot template | implemented (B07), plain GDScript, state handled in code rather than an `AnimationTree`, original controller | Godot 4.7.2 (MIT), `CharacterBody3D`, `AnimationTree` with an `idle` ↔ `walk` state machine, based on the Jeh3no controller (MIT) |
+| GUT tests | not used: replaced by a dependency-free GDScript smoke test (exit 0/1 plus a JSON report) | GUT 9.7.1 in headless mode; check that the `.import` files exist, not only the return code |
+| `game.import_test`, `game.smoke_test` | implemented (B07) | a real import then a prototype actually launched, not merely file generation |
 | Web variant | not implemented | Three.js r186, `GLTFLoader`, `AnimationMixer.crossFadeTo`, `let` only, no jQuery |
 
-Target acceptance scenarios: B02, B04, B07. Godot 4.7.2 and Rhubarb 1.14.0 are present on the
-machine and detected by `doctor`, but no kit operation calls them: nothing is tested.
+Target acceptance scenarios: B02, B04, B07 — all passed after 0.3.0. Godot 4.7.2 and Rhubarb 1.14.0
+are really called by `game.import_test` / `game.smoke_test` and `lipsync.analyze`. Not done: the web
+variant, the animatic / review / final-render items of §13.
 
 ## Lot 5 — P2 extensions — **not implemented, on demand**
 
@@ -90,15 +91,15 @@ domain-level MCP facade, additional retargeters, local mocap, a web interface.
 Deliberate exclusions: no distributed framework, no Kubernetes, no multi-agent orchestration imposed
 on an individual project.
 
-## Operations not available in this lot
+## Operations not available
 
-| Domain | Operations | Lot |
-| --- | --- | --- |
-| Animation | `animation.retarget` | P1 |
-| Game | `game.import_test`, `game.smoke_test` | P1 |
+None: the 43 catalogue operations are available. Each one works inside a narrow, stated scope and
+refuses the rest with a reason (`RIG_MAPPING_REQUIRED`, `VALIDATION_FAILED`, `SCENE_CONFLICT`,
+`MISSING_DEPENDENCY`). The preflight for an unavailable operation (`UNSUPPORTED_CAPABILITY`, exit 2)
+stays in place and tested, for the day an entry is declared before it is qualified.
 
-What to do when faced with one of these requests: stop, explain that the lot does not implement it,
-offer the closest P0 operation if one exists, and simulate nothing.
+What to do when a request falls outside an operation's scope, or names a P2 feature: stop, say
+exactly which limit is hit, offer the closest supported operation if one exists, simulate nothing.
 
 ## Debts and open points of lots 1 and 2
 

@@ -6,9 +6,8 @@ and deliver scenes for music videos, short films and game prototypes — reprodu
 and resumably. Every operation is validated, journaled, versioned and verified (ffprobe, Khronos
 glTF validator, re-import). Windows 11 only for now.
 
-Status: **0.3.0** — P0, live mode and production lot 3. Lot 4 (retargeting, facial lip-sync, Godot)
-is in progress on `main` for 0.4. 28 acceptance scenarios pass on the reference machine — batch
-A01–A13, characters and production B01, B03, B04, B05, B06, B08, live L01–L09 — see
+Status: **0.4.0** — P0, live mode and the whole P1 plan (lots 3 and 4). 30 acceptance scenarios pass
+on the reference machine — batch A01–A13, production B01–B08, live L01–L09 — see
 [docs/acceptance-reports/implementation.md](docs/acceptance-reports/implementation.md). What the kit does not
 do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is simulated.
 
@@ -40,10 +39,18 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
   new revision and reopens it.
 - **Audio preparation and analysis**: real two-pass FFmpeg normalization to 48 kHz and Rhubarb
   mouth cues.
-- **Dialogue on a face** *(on `main`, after 0.3.0)*: `lipsync.apply` keys the analysed cues on the
+- **Dialogue on a face**: `lipsync.apply` keys the analysed cues on the
   character's real face controllers (shape keys of the CC0 `vitruvian-face` fixture) with exact
   fractional-frame timing, and refuses a character without a face profile; `expression.apply` keys a
   bounded smile, blink, anger, fear or sadness. Both are gated on the mesh really moving.
+- **Bounded retargeting**: `animation.retarget` transfers a P0 biped clip
+  onto the Rigify character as a new library clip — rotation deltas from each rest pose, a few test
+  poses first, limb directions gated at 3° on the deform chain. One preset; any other pair of rigs
+  is refused, and feet are not re-planted.
+- **Godot check**: `game.import_test` lets Godot 4.7 import an exported GLB headless and verifies
+  what the engine wrote, not only its exit code; `game.smoke_test` launches the kit's GDScript
+  template — controllable character, `idle`/`walk` states, a wall, a prop to pick up — and fails
+  unless its 13 checks pass. Without Godot the game target is reported `not_tested`.
 - **Retime on a variant** (`animation.retime`): the source stays untouched, before/after images,
   contact markers preserved, measured duration.
 - **Video preview** (`shot.preview`): idempotent PNG sequence then an H.264 MP4 assembled by FFmpeg,
@@ -66,12 +73,12 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 
 ## What the kit does not do yet
 
-Retargeting (`animation.retarget`), Godot import and smoke test (`game.import_test`,
-`game.smoke_test`) and the Three.js prototype. Those three operations exist in the catalogue with
-`available: false` and answer
-`UNSUPPORTED_CAPABILITY`: the skill refuses, it does not improvise. Inside the available domains
-the scope is deliberately narrow: one interaction kind (prop hand-off between standing characters),
-one adjustment tool, recipes without arm swing, heel roll or finger poses.
+Every catalogue operation is now implemented, **each inside a deliberately narrow scope**; what is
+outside is refused with a stated reason (`RIG_MAPPING_REQUIRED`, `VALIDATION_FAILED`,
+`MISSING_DEPENDENCY`), never improvised. Not done at all: the Three.js prototype, and the whole P2
+list (multi-shot render queue, simulation caches, crowds, mocap providers, OTIO export, domain MCP
+facade, web panel). Inside the available domains the scope is: one interaction kind (prop hand-off between standing characters),
+one adjustment tool, one retargeting preset, recipes without arm swing, heel roll or finger poses.
 
 **Technical proof is not artistic approval.** Every measurement above is automated; the generated
 motion has been looked at by the assistant only, and no human art validation is recorded yet.
@@ -93,7 +100,7 @@ See [the implementation status](docs/production-p1.md) for tested scope and outs
 | [glTF-Validator](https://github.com/KhronosGroup/glTF-Validator/releases) | 2.0.0-dev.3.10 | recommended: without it Khronos validation is `not_run` |
 | [MCP for Blender](https://github.com/ahujasid/mcp-for-blender) | 2.0.0 (add-on 1.7) | optional: live mode (open GUI session) |
 | Rhubarb Lip Sync | 1.14 | optional phonetic mouth-cue analysis |
-| Godot | 4.7 | detected; game import and prototype not yet implemented |
+| Godot | 4.7 | optional: `game.import_test` and `game.smoke_test` |
 
 Optional binaries can be dropped into `%LOCALAPPDATA%\fluidblend\tools\<tool>\`: they are found
 without touching the PATH ([docs/installation.md](docs/installation.md)).
@@ -202,6 +209,7 @@ src/fluidblend/         engine: CLI, pydantic contracts, core (tasks, journal, r
 blender_runtime/        code executed inside Blender (stdlib + bpy): scenes, rigs, clips, measures, Director panel
 schemas/                JSON Schema exported from the contracts
 templates/film/         project skeleton created by `init`
+templates/game-godot/   Godot 4.7 test bed (GDScript) used by game.import_test / game.smoke_test
 scripts/                install-skill.ps1, bootstrap.ps1, demo.ps1
 tests/                  unit tests (no Blender), acceptance A01–A13, B01–B08 (batch) and L01–L09 (live)
 docs/                   installation, CLI, architecture, security, compatibility, roadmap, sources

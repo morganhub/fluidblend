@@ -2,23 +2,38 @@
   "$id": "https://fluidblend.local/schemas/operations/game.smoke_test.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Launch the prototype",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Launch the imported Godot prototype headless and run its smoke test",
+  "properties": {
+    "game_dir": {
+      "description": "Game folder published by game.import_test, project-relative",
+      "title": "Game Dir",
+      "type": "string"
+    }
+  },
+  "required": [
+    "game_dir"
+  ],
+  "title": "GameSmokeTestParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "host",
     "cli_command": null,
     "input_paths": [],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "read",
     "optional_dependencies": [],
     "publication": "reports_and_artifacts",
-    "required_dependencies": [],
-    "required_targets": [],
-    "requires_shot": false
+    "required_dependencies": [
+      "game.godot"
+    ],
+    "required_targets": [
+      "shot_id"
+    ],
+    "requires_shot": true
   }
 }

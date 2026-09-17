@@ -1,7 +1,7 @@
 # Game export
 
-Status: **implemented (lot P0)** for `game.export`. **Not implemented (lot P1)**:
-`game.import_test`, `game.smoke_test`, and any playable prototype.
+Status: `game.export` (P0), `game.import_test` and `game.smoke_test` (P1, Godot 4.7) are implemented.
+The kit imports and launches **its own template**; it does not build the user's game.
 
 ## `game.export`
 
@@ -105,30 +105,35 @@ Metrics: `glb_bytes`, `armatures`, `actions`, `reimport_passed`, `khronos_valida
   systematically.
 - A GLB that exports and reimports is not a game, nor even an asset validated in an engine.
 
-## Status: not implemented (lot P1) — what to do
+## Godot: `game.import_test` then `game.smoke_test`
 
-`game.import_test` and `game.smoke_test` answer `UNSUPPORTED_CAPABILITY` (exit 2). Godot 4.7.2 is
-installed and detected by `doctor`, but **no kit operation calls it**: no template, no import, no
-engine test. The `game` profile is therefore **untested**. A project initialized with
-`--profile game --game-engine godot` creates the `game/` and `exports/game` folders, nothing more.
-A detected executable is not an exercised capability: do not confuse the two in a report.
+Examples: [request-game-import-test.json](../assets/request-game-import-test.json),
+[request-game-smoke-test.json](../assets/request-game-smoke-test.json). Both need Godot
+(`fluidblend doctor`, capability `game.godot`); without it they answer `MISSING_DEPENDENCY` and the
+game target is **not_tested** — say exactly that, never "probably fine".
 
-What to do when asked for a playable prototype: stop, say that the kit can produce a verified GLB and
-nothing else, do not write an improvised Godot project, do not mistake a 3D export for a playable
-game.
+1. `game.export` with `instance_ids: ["<one character>"]`: one character per GLB for the template.
+2. `game.import_test` (`export_path` = the published `.glb`, target `shot_id`): copies
+   `templates/game-godot/` and the GLB (`assets/character.glb`), runs
+   `godot --headless --path <game> --import`, and checks **what the engine wrote**, not only its
+   exit code: `character.glb.import` says `importer="scene"` and an imported scene exists. It
+   publishes the `game/` folder without the machine-local `.godot` cache, and `game-import.json`.
+3. `game.smoke_test` (`game_dir` = that published `game` folder): re-imports a private copy and runs
+   `res://test/smoke.gd` headless. The prototype plays the real main scene through the same input
+   path as the keyboard: 13 checks — scene loads, character instantiated, `AnimationPlayer` and a
+   walk clip found, stands on the floor, `idle` plays nothing, `walk` plays the looping clip, the
+   character moves, the wall stops it, back to `idle`, reaches the pickup, holds the prop, the pickup
+   is empty. Exit 0 **and** a report with every check passed, or the operation fails
+   (`VALIDATION_FAILED`, `failed_checks`). No report = the run proves nothing.
 
-Decisions already taken for lot 4, as preparation only:
+Template facts: `CharacterBody3D`, two states (`idle`, `walk`), first animation whose name contains
+"walk", made to loop in Godot because glTF carries no loop flag; one wall, one `Area3D` pickup;
+original GDScript, no add-on. The smoke test is plain GDScript: **GUT is not used** (it was the
+preparatory choice, dropped to avoid a new dependency).
 
-- **Godot 4.7.2 stable** (MIT), present on the workstation and pinned in `dependencies.lock.json` —
-  Godot has no LTS. The `_console` variant is preferred during detection (usable stdout in headless
-  mode).
-- **Explicit GLB import only**: direct import of `.blend` by Godot has not been verified with
-  Blender 5.x.
-- Template `templates/game-godot/`: `CharacterBody3D`, `AnimationTree` with an `idle` ↔ `walk` state
-  machine, collision, interaction with an object. Controller base from Jeh3no (MIT).
-- Headless tests with **GUT 9.7.1**: `godot --headless --path <p> --import`, then
-  `godot --headless --path <p> -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`.
-  Check that the `.import` files exist, not only the return code.
-- Optional web variant: Three.js r186, `GLTFLoader`, `AnimationMixer.crossFadeTo`.
-
-Acceptance scenario B07 (a prototype actually launched in the engine) is not executed in this lot.
+Limits to state: it is the kit's test bed, not the user's game; headless, so no rendering, frame-rate
+or GPU figure is claimed (`wall_time_ms` and the machine are recorded, nothing more); one character,
+one clip; a P0 biped export has been exercised, a Rigify character must first go through
+`animation.bake` and has not been tried in Godot; Godot 4.7 only; no web (Three.js) variant.
+Asked for a real playable game: say the kit proves the character arrives and animates in the engine,
+and stop there.

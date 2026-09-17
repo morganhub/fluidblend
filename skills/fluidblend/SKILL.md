@@ -11,7 +11,7 @@ description: >-
   between two characters, audio preparation and mouth-cue analysis. Check the
   operation catalogue for unsupported production features; never simulate success.
 license: MIT
-metadata: {version: "0.3.0", lot: "P0+live+P1-lot3", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
+metadata: {version: "0.4.0", lot: "P0+live+P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
 ---
 
 # fluidblend — driven Blender production
@@ -88,10 +88,12 @@ the dialogue.
 | Create or resume a project, read state, plan | project | `references/project.md` | `fluidblend init`, `inspect`, `plan`, `resume` |
 | Build or audit a scene, characters, rigs | scene | `references/characters.md` | `scene.build`, `shot.build`, `character.inspect`, `rig.map`, `rig.validate`, scene inspection/audit |
 | Slow down, speed up, vary a clip | animation | `references/animation.md` | `animation.retime/create/apply/loop/bake` |
+| Put one character's motion on another | animation | `references/animation.md` | `animation.retarget` — only P0 biped → Rigify; Mixamo, mocap or any other pair: refuse (`RIG_MAPPING_REQUIRED`) and say so |
 | Pass a prop from one character to another, contacts | interactions | `references/interactions.md` | `interaction.plan` → review → `interaction.apply` → `interaction.validate` (bounded prop hand-off only) |
 | Shot preview, video, film assembly, audio | film | `references/film.md` | `shot.preview`, `film.assemble`, `audio.prepare`, `lipsync.analyze`; `fluidblend validate` |
 | Make a character say a line, smile, blink | film | `references/film.md` | `audio.prepare` → `lipsync.analyze` → `lipsync.apply`; `expression.apply` — needs a character with a `face_profile`, otherwise `RIG_MAPPING_REQUIRED`: say so |
 | Export to a game engine, broken export | game | `references/game.md` | `run` on `game.export` |
+| "Does it work in Godot?" | game | `references/game.md` | `game.export` (one character) → `game.import_test` → `game.smoke_test`; no Godot = `not_tested`, say so |
 | "fix the sliding foot", "keep the hand on the handle" | tools | `references/tool-development.md` | `adjustment.preview` → look at the frames → `adjustment.apply`; `adjustment.revert` (tool `contact_lock` only) |
 | "make me a tool that…" | tools | `references/tool-development.md` | declarative `tools/custom/<id>/tool.json` narrowing `contact_lock` → `tool.inspect` → `tool.test` → `tool.register`; `unsupported` = state the limitation, stop |
 | "add a slider", gesture amplitude, gaze, partial retime | tools | `references/tool-development.md` | not implemented (P1) |
@@ -197,13 +199,16 @@ path has no identity check, no lock, no checkpoint, no version and no journal.
 19 operations are available in P0, of which only 10 run through `fluidblend run` (`scene.build`,
 `scene.inspect`, `scene.audit`, `animation.retime`, `shot.preview`, `game.export`,
 `scene.checkpoint`, `shot.validate`, `film.assemble`, `providers.check`); the others go through a
-dedicated subcommand (see `docs/cli.md`). 21 bounded P1 operations are available: `shot.build`,
+dedicated subcommand (see `docs/cli.md`). 24 bounded P1 operations are available: `shot.build`,
 `character.inspect`, `rig.map`, `rig.validate`, `animation.create/apply/loop/bake`,
 `interaction.plan/apply/validate`, `adjustment.preview/apply/revert` (one tool, `contact_lock`),
 `tool.inspect/test/register` (declarative custom tools, no code), `audio.prepare`,
-`lipsync.analyze`, `lipsync.apply`, `expression.apply` (characters with a face profile only). The
-remaining catalogue entries are declared `available=false` and answer `UNSUPPORTED_CAPABILITY`
-(exit 2): `animation.retarget`, `game.import_test`, `game.smoke_test`. The catalogue is the authority: check with `fluidblend ops --all`.
+`lipsync.analyze`, `lipsync.apply`, `expression.apply` (characters with a face profile only),
+`animation.retarget` (one preset: P0 biped → Rigify; any other rig pair is refused),
+`game.import_test`, `game.smoke_test` (Godot 4.7, the kit's own template). Every catalogue entry is
+now available, **each inside a narrow, stated scope**: most requests still end in a refusal
+(`RIG_MAPPING_REQUIRED`, `VALIDATION_FAILED`, `MISSING_DEPENDENCY`) rather than in an unavailable
+operation. P2 features (render queue, crowds, mocap, OTIO, web panel) are not in the catalogue at all. The catalogue is the authority: check with `fluidblend ops --all`.
 
 Live mode covers **four operations only** (see the section above). `scene.build`, `shot.preview` and
 `game.export` are refused in a live envelope and run in batch instead. Live mode also requires an

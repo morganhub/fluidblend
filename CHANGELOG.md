@@ -3,14 +3,31 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
-## Unreleased — towards 0.4.0 (lot 4)
+## 0.4.0 — 2026-09-17 — production lot 4
+
+Dialogue on a face, bounded retargeting and the Godot check: acceptance B02, B04 and B07. With them
+every catalogue operation is available, each inside a narrow stated scope. 148 tests and 30
+acceptance scenarios pass on the reference machine (A01–A13, B01–B08, L01–L09). Technical
+measurements only: no human artistic validation is recorded. P2 stays on demand.
+
+Upgrade note: run `fluidblend runtime install --enable` again and restart Blender. A
+`rig-profile.json` mapped before this version lacks the four FK hand/foot roles needed by
+`animation.retarget` and must be mapped again.
 
 - Add the `vitruvian-face` fixture: the body fixture plus thirteen pinned CC0 facial morphs of the
   same upstream revision, as shape keys; `face_profile` on character manifests.
 - Add `lipsync.apply` (Rhubarb cues → the character's real face controllers, fractional-frame
   timing, held cues gated on real mesh motion, mouth close-ups) and `expression.apply` — B04.
   Slotted-Action access now also serves shape-key datablocks.
-- Still unavailable: `animation.retarget` (B02), `game.import_test`, `game.smoke_test` (B07).
+- Add `animation.retarget` with one preset (`simple_biped_to_rigify`): rest-pose rotation deltas onto
+  FK controls, test poses before the full range, limb directions gated on the deform chain, a
+  motionless source refused, source Action untouched — B02. Four FK roles join the Rigify profile.
+- Add `templates/game-godot/` (Godot 4.7, plain GDScript), `game.import_test` (headless import, checks
+  what the engine wrote) and `game.smoke_test` (prototype launched, 13 checks, report required) — B07.
+  GUT is not used. Every catalogue operation is now available, each within a stated narrow scope.
+- Live and Director acceptance tests now check that the session answering on the MCP port is the
+  one they opened, and declare themselves `not_run` otherwise (a user's Blender started in the same
+  seconds could take the port).
 
 ## 0.3.0 — 2026-09-17 — production lot 3
 

@@ -41,7 +41,7 @@ def test_A02_rerun_init_is_idempotent_and_keeps_manual_edits(tmp_path: Path):
     assert events["initialized_at"] is not None
 
 
-def test_cli_ops_and_version(capsys):
+def test_cli_ops_and_version(capsys, unavailable_operation):
     assert main(["ops", "--json"]) == exit_codes.OK
     rows = json.loads(capsys.readouterr().out)
     assert all(r["available"] for r in rows)
@@ -76,11 +76,18 @@ def test_cli_run_rejects_invalid_request(project_root: Path, capsys):
     assert result["status"] == "failed" and result["errors"][0]["code"] == "VALIDATION_FAILED"
 
 
-def test_cli_unavailable_operation_is_blocked_not_faked(project_root: Path, capsys):
+def test_cli_unavailable_operation_is_blocked_not_faked(project_root: Path, capsys, unavailable_operation):
     req = project_root / "requests" / "retarget.json"
     req.parent.mkdir(exist_ok=True)
     req.write_text(
-        json.dumps(make_request("animation.retarget", "rt-1", target={"shot_id": "shot010"})),
+        json.dumps(
+            make_request(
+                unavailable_operation,
+                "rt-1",
+                target={"shot_id": "shot010"},
+                parameters={"game_dir": "reviews/shot010/import/game"},
+            )
+        ),
         encoding="utf-8",
     )
     code = main(["run", "--project", str(project_root), "--operation", "requests/retarget.json", "--json"])

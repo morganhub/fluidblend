@@ -66,6 +66,18 @@ def project_root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def unavailable_operation(monkeypatch: pytest.MonkeyPatch) -> str:
+    """Every catalogue entry is implemented today; the unavailable path must stay tested anyway."""
+    from dataclasses import replace
+
+    from fluidblend.contracts.operations import OPERATIONS
+
+    name = "game.smoke_test"
+    monkeypatch.setitem(OPERATIONS, name, replace(OPERATIONS[name], available=False))
+    return name
+
+
+@pytest.fixture
 def project(project_root: Path):
     return load_project(project_root)
 

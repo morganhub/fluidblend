@@ -157,6 +157,35 @@ class AnimationBakeParams(StrictModel):
     step: int = Field(default=1, ge=1, le=10)
 
 
+class AnimationRetargetParams(StrictModel):
+    """Bounded retargeting: one named preset between two known rig profiles, never a universal solver."""
+
+    preset: Literal["simple_biped_to_rigify"] = "simple_biped_to_rigify"
+    source_instance_id: str = Field(pattern=IDENT_PATTERN)
+    source_clip: str = Field(pattern=IDENT_PATTERN, description="Clip assigned to the source instance")
+    output_clip: str = Field(pattern=IDENT_PATTERN)
+    frame_range: FrameRange
+    test_poses: int = Field(
+        default=3, ge=2, le=9, description="Poses transferred and measured before the rest"
+    )
+
+    @model_validator(mode="after")
+    def bounded_length(self):
+        length = self.frame_range.end_exclusive - self.frame_range.start
+        if not 2 <= length <= 600:
+            raise ValueError("retarget frame_range must hold 2 to 600 frames")
+        return self
+
+
+class GameImportTestParams(StrictModel):
+    export_path: str = Field(description="Published .glb from game.export, project-relative")
+    template: Literal["godot"] = "godot"
+
+
+class GameSmokeTestParams(StrictModel):
+    game_dir: str = Field(description="Game folder published by game.import_test, project-relative")
+
+
 class AudioPrepareParams(StrictModel):
     source_path: str
     integrated_lufs: float = Field(default=-16, ge=-30, le=-5)
@@ -230,6 +259,7 @@ class Measurement(StrictModel):
         "contact_error",
         "loop_pose",
         "loop_velocity",
+        "retarget_limb_direction",
         "handoff_jump",
         "handoff_rotation_jump",
     ]
@@ -239,7 +269,7 @@ class Measurement(StrictModel):
     frame_range: FrameRange
     sampling_step: int = Field(ge=1)
     value: float = Field(ge=0, allow_inf_nan=False)
-    unit: Literal["m", "m/frame", "rad"]
+    unit: Literal["m", "m/frame", "rad", "deg"]
     tolerance: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     passed: bool | None = None
 

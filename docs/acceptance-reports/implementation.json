@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17 13:18 UTC",
+  "generated_at": "2026-09-17 13:59 UTC",
   "blender": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
   "scenarios": [
     {
@@ -24,7 +24,7 @@
       "scenario": "A03",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A03_live_mcp_inspection",
       "status": "passed",
-      "duration_s": 7.08,
+      "duration_s": 7.1,
       "detail": "",
       "title": "Inspect the scene through the configured MCP",
       "notes": [
@@ -35,7 +35,7 @@
       "scenario": "A04",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A04_build_two_characters_and_prop",
       "status": "passed",
-      "duration_s": 6.01,
+      "duration_s": 6.33,
       "detail": "",
       "title": "Build two simple articulated characters and one prop (240 frames at 24 fps)",
       "notes": [
@@ -46,7 +46,7 @@
       "scenario": "A05",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A05_replay_same_operation_id",
       "status": "passed",
-      "duration_s": 5.96,
+      "duration_s": 6.32,
       "detail": "",
       "title": "Re-run the same operation after a lost response",
       "notes": [
@@ -57,7 +57,7 @@
       "scenario": "A06",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A06_interrupted_worker_reconciles_without_loss",
       "status": "passed",
-      "duration_s": 10.57,
+      "duration_s": 9.98,
       "detail": "",
       "title": "Interrupt the worker after an output is created but before commit",
       "notes": [
@@ -68,7 +68,7 @@
       "scenario": "A07",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A07_manual_change_detected_and_preserved",
       "status": "passed",
-      "duration_s": 3.61,
+      "duration_s": 3.45,
       "detail": "",
       "title": "Manually modify a protected object between two operations",
       "notes": [
@@ -79,7 +79,7 @@
       "scenario": "A08",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A08_retime_on_variant_keeps_source",
       "status": "passed",
-      "duration_s": 8.0,
+      "duration_s": 8.1,
       "detail": "",
       "title": "Slow down an animation on a variant",
       "notes": [
@@ -90,18 +90,18 @@
       "scenario": "A09",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A09_preview_frames_and_video_proof",
       "status": "passed",
-      "duration_s": 18.38,
+      "duration_s": 20.62,
       "detail": "",
       "title": "Render then assemble the preview",
       "notes": [
-        "240/240 Workbench PNG in 10.555 s, MP4 24/1 yuv420p, ffprobe nb_read_frames=240, 10 s duration, shot.validate technical_pass"
+        "240/240 Workbench PNG in 12.003 s, MP4 24/1 yuv420p, ffprobe nb_read_frames=240, 10 s duration, shot.validate technical_pass"
       ]
     },
     {
       "scenario": "A10",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A10_export_glb_validate_and_reimport",
       "status": "passed",
-      "duration_s": 8.85,
+      "duration_s": 7.5,
       "detail": "",
       "title": "Export an animation as GLB",
       "notes": [
@@ -112,7 +112,7 @@
       "scenario": "A11",
       "test": "tests/acceptance/test_p0_acceptance.py::test_A11_offline_execution",
       "status": "passed",
-      "duration_s": 3.13,
+      "duration_s": 3.03,
       "detail": "",
       "title": "Run without network after an approved preparation",
       "notes": [
@@ -134,7 +134,7 @@
       "scenario": "A13",
       "test": "tests/unit/test_runner_guards.py::test_A13_permission_and_budget_stop_controlled",
       "status": "passed",
-      "duration_s": 0.05,
+      "duration_s": 0.06,
       "detail": "",
       "title": "Exhaust the budget or request an unavailable permission",
       "notes": [
@@ -145,7 +145,7 @@
       "scenario": "B01",
       "test": "tests/acceptance/test_characters.py::test_B01_character_mapping_and_deformation",
       "status": "passed",
-      "duration_s": 26.81,
+      "duration_s": 27.58,
       "detail": "",
       "title": "Versioned skinned Rigify character: semantic mapping and five deformation poses",
       "notes": [
@@ -153,10 +153,21 @@
       ]
     },
     {
+      "scenario": "B02",
+      "test": "tests/acceptance/test_retarget.py::test_B02_biped_walk_onto_rigify",
+      "status": "passed",
+      "duration_s": 37.23,
+      "detail": "",
+      "title": "Bounded retargeting: biped walk onto the Rigify character, source preserved",
+      "notes": [
+        "biped walk -> Rigify FK controls, 48 frames after 3 test poses; limb direction error 0.00 deg max on the deform chain, leg ratio 1.008, travel 0.79 m; wrong rig pair and wrong clip refused; source Action unchanged; feet are not re-planted; artistic review pending"
+      ]
+    },
+    {
       "scenario": "B03",
       "test": "tests/acceptance/test_interactions.py::test_B03_prop_handoff",
       "status": "passed",
-      "duration_s": 34.45,
+      "duration_s": 35.56,
       "detail": "",
       "title": "Prop hand-off between two characters: contacts, jump and ownership measured",
       "notes": [
@@ -167,7 +178,7 @@
       "scenario": "B04",
       "test": "tests/acceptance/test_face.py::test_B04_lipsync_from_speech",
       "status": "passed",
-      "duration_s": 14.54,
+      "duration_s": 15.83,
       "detail": "",
       "title": "Dialogue line: audio prepared, cues analysed, mouth keyed on the real face",
       "notes": [
@@ -178,7 +189,7 @@
       "scenario": "B05",
       "test": "tests/acceptance/test_adjustments.py::test_B05_contact_lock_preview_apply_revert",
       "status": "passed",
-      "duration_s": 44.63,
+      "duration_s": 47.85,
       "detail": "",
       "title": "Sliding stance fixed with contact_lock: preview, apply, revert",
       "notes": [
@@ -189,11 +200,22 @@
       "scenario": "B06",
       "test": "tests/acceptance/test_director.py::test_B06_director_panel",
       "status": "passed",
-      "duration_s": 62.17,
+      "duration_s": 61.31,
       "detail": "",
       "title": "Director panel: Preview / Apply / Revert run the engine, the session stays clean",
       "notes": [
         "panel preview 100.0 -> 0.06 mm with the session untouched (same edit generation, not dirty); five slider moves -> one debounced preview; Apply and Revert published new revisions through the engine journal and reopened the session; Apply refused on unsaved changes, artist object preserved; driven through the panel operators, no human clicked the UI"
+      ]
+    },
+    {
+      "scenario": "B07",
+      "test": "tests/acceptance/test_game.py::test_B07_godot_import_and_smoke",
+      "status": "passed",
+      "duration_s": 46.0,
+      "detail": "",
+      "title": "Exported character imported into Godot, prototype launched headless",
+      "notes": [
+        "hero GLB imported headless by 4.7.2-stable (official) (.import and imported scene checked, not only the exit code), prototype launched: 13 checks in 6266 ms (idle/walk states, looping walk clip, wall collision, prop pickup); a broken prototype fails the operation; without Godot: MISSING_DEPENDENCY, not_tested; headless, no frame-rate claim; GDScript smoke test, GUT not used"
       ]
     },
     {
@@ -211,7 +233,7 @@
       "scenario": "L01",
       "test": "tests/acceptance/test_live_mcp.py::test_L01_live_inspect_with_identity",
       "status": "passed",
-      "duration_s": 5.71,
+      "duration_s": 6.35,
       "detail": "",
       "title": "Live: identity check and read-only inspection of the open scene",
       "notes": [
@@ -222,7 +244,7 @@
       "scenario": "L02",
       "test": "tests/acceptance/test_live_mcp.py::test_L02_live_retime_publishes_version_and_reloads",
       "status": "passed",
-      "duration_s": 8.79,
+      "duration_s": 7.74,
       "detail": "",
       "title": "Live: isolated write (retime) publishes a new version and reloads the session",
       "notes": [
@@ -233,7 +255,7 @@
       "scenario": "L03",
       "test": "tests/acceptance/test_live_mcp.py::test_L03_dirty_scene_is_blocked",
       "status": "passed",
-      "duration_s": 10.38,
+      "duration_s": 10.37,
       "detail": "",
       "title": "Live: unsaved manual changes block the write and are preserved",
       "notes": [
@@ -244,7 +266,7 @@
       "scenario": "L04",
       "test": "tests/acceptance/test_live_mcp.py::test_L04_wrong_open_file_is_refused",
       "status": "passed",
-      "duration_s": 10.82,
+      "duration_s": 10.14,
       "detail": "",
       "title": "Live: wrong file open in the session is refused",
       "notes": [
@@ -255,7 +277,7 @@
       "scenario": "L05",
       "test": "tests/acceptance/test_live_mcp.py::test_L05_lost_response_reconciles",
       "status": "passed",
-      "duration_s": 20.52,
+      "duration_s": 19.88,
       "detail": "",
       "title": "Live: lost response leaves an unknown state that reconciliation resolves",
       "notes": [
@@ -266,7 +288,7 @@
       "scenario": "L06",
       "test": "tests/acceptance/test_live_mcp.py::test_edit_between_identity_and_execution",
       "status": "passed",
-      "duration_s": 5.45,
+      "duration_s": 5.78,
       "detail": "",
       "title": "Live: edit between admission and execution is preserved",
       "notes": []
@@ -275,7 +297,7 @@
       "scenario": "L07",
       "test": "tests/acceptance/test_live_mcp.py::test_edit_before_publication",
       "status": "passed",
-      "duration_s": 7.0,
+      "duration_s": 7.51,
       "detail": "",
       "title": "Live: edit before publication prevents publishing or reloading",
       "notes": []
@@ -284,7 +306,7 @@
       "scenario": "L08",
       "test": "tests/acceptance/test_live_mcp.py::test_guarded_reload_and_undo",
       "status": "passed",
-      "duration_s": 10.57,
+      "duration_s": 10.85,
       "detail": "",
       "title": "Live: guarded reload preserves a later edit; undo generation is monotonic",
       "notes": []
@@ -293,7 +315,7 @@
       "scenario": "L09",
       "test": "tests/acceptance/test_live_cooperative.py::test_live_cancel_is_acknowledged",
       "status": "passed",
-      "duration_s": 8.63,
+      "duration_s": 8.49,
       "detail": "",
       "title": "Live: progress is reported and a cancellation is acknowledged by the session",
       "notes": [
