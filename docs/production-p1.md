@@ -1,4 +1,4 @@
-# P1 implementation status — 0.4.1
+# P1 implementation status — 0.5.0
 
 Version 0.3.0 delivered lot 3 and 0.4.0 delivers lot 4 (B02, B04, B07): every P1 acceptance scenario
 passes. It is not completion of the whole TODO — each operation works in a narrow scope, and the
@@ -188,6 +188,23 @@ pose differs from the control rig by 35.8 mm at the knees (stated in the report)
 0.2 mm. The former start/middle/end sampling missed the worst frame; quarters are now sampled. The
 re-imported skeleton matches within 0.003 mm (940 bone heads); that check first read 39 mm because
 `slide_to_zero` shifts the clip by one frame, which it now accounts for.
+
+## Web game target (0.5.0, B09)
+
+`game.import_test` and `game.smoke_test` accept `template: "web"`: the GLB is loaded by Three.js r186
+(six files vendored, MIT, pinned by SHA-256) in a headless Edge or Chrome started offline against a
+server bound to 127.0.0.1 for the run. The page drives itself through real keyboard events and fixed
+1/60 s steps: 14 checks (the 13 of Godot plus `walk_clip_moves_bones`, 0.09 m measured on the Rigify
+walk), then one rendered frame (`web-frame.png`) and `rendered_share`, read back from the GPU: 3.3 %
+for the skinned Rigify character, 3.7 % for the P0 biped, gate 1 %. About 3 s per run. Both frames
+were looked at: skin intact, mid-stride, facing the wall. Looking found two defects the checks did
+not: the P0 biped stood 1 m off the body and walked sideways — the model is now recentred
+(`recentered_m`) and turned onto the clip's own travel direction. The baked clip's 0.6 m root travel
+is removed for the loop and reported (`root_motion_removed_m`). A prototype with `SPEED = 0` fails five
+checks; edited engine files are refused; without a browser: `MISSING_DEPENDENCY`, not_tested. First
+found on Windows: Python's server took `.js` MIME types from the registry and the browser refused
+every module; the types are now stated. `fluidblend preview web` serves a published folder for the
+user to play. Limits: test bed, one frame, no frame-rate figure, Chromium only, no cross-fade.
 
 ## Dialogue workflow (after 0.3.0)
 

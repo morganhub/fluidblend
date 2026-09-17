@@ -1,6 +1,6 @@
 # Roadmap
 
-Lots 1 to 4 are released (0.4.0, refined in 0.4.1). Lots 3 and 4 pass their acceptance scenarios inside narrow scopes;
+Lots 1 to 4 are released (0.4.0, refined in 0.4.1; web game target in 0.5.0). Lots 3 and 4 pass their acceptance scenarios inside narrow scopes;
 [production-p1.md](production-p1.md) records exact scope and evidence. Planned features are not
 claims of completion.
 
@@ -76,11 +76,10 @@ Target acceptance scenarios: B01, B03, B05, B06 and B08 — all passed.
 | Godot template | implemented (B07), plain GDScript, state handled in code rather than an `AnimationTree`, original controller | Godot 4.7.2 (MIT), `CharacterBody3D`, `AnimationTree` with an `idle` ↔ `walk` state machine, based on the Jeh3no controller (MIT) |
 | GUT tests | not used: replaced by a dependency-free GDScript smoke test (exit 0/1 plus a JSON report) | GUT 9.7.1 in headless mode; check that the `.import` files exist, not only the return code |
 | `game.import_test`, `game.smoke_test` | implemented (B07) | a real import then a prototype actually launched, not merely file generation |
-| Web variant | not implemented | Three.js r186, `GLTFLoader`, `AnimationMixer.crossFadeTo`, `let` only, no jQuery |
+| Web variant | implemented in 0.5.0 (B09) | Three.js r186 vendored, `GLTFLoader`, `AnimationMixer`, `let` only, no jQuery; headless Edge/Chrome, offline; two states switched without cross-fade |
 
 Target acceptance scenarios: B02, B04, B07 — all passed after 0.3.0. Godot 4.7.2 and Rhubarb 1.14.0
-are really called by `game.import_test` / `game.smoke_test` and `lipsync.analyze`. Not done: the web
-variant, the animatic / review / final-render items of §13.
+are really called by `game.import_test` / `game.smoke_test` and `lipsync.analyze`. Not done: the animatic / review / final-render items of §13.
 
 ## Lot 5 — P2 extensions — **not implemented, on demand**
 

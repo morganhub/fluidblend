@@ -310,6 +310,24 @@ def run_doctor(
             install_hint="winget install --id GodotEngine.GodotEngine --version 4.7.2 --exact",
         )
     )
+    from fluidblend.adapters.tool_paths import find_browser
+
+    browser = find_browser(local.browser_executable if local else None)
+    caps.append(
+        Capability(
+            capability_id="game.browser",
+            provider="Chromium browser (Edge or Chrome)",
+            executable=browser,
+            transport="subprocess",
+            status=CapabilityStatus.available if browser else CapabilityStatus.not_installed,
+            verified_at=now_iso(),
+            # Browsers update themselves: the binary is recorded as evidence, never pinned by hash.
+            evidence={"sha256": None},
+            error=None if browser else "no Edge or Chrome found: the web game target stays not_tested",
+            restrictions=["run headless and offline against 127.0.0.1 only"],
+            fallback="GLB delivered as an export, web game not_tested",
+        )
+    )
     caps.append(
         _tool_capability(
             "audio.rhubarb",

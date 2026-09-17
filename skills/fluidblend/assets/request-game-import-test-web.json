@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "operation": "game.import_test",
+  "operation_id": "game-import-web-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010"
+  },
+  "parameters": {
+    "export_path": "exports/shot010/game-export-001/hero.glb",
+    "template": "web"
+  },
+  "dry_run": false
+}

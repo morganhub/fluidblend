@@ -169,6 +169,17 @@ snapshot that unsaved work.
 No external provider is enabled in P0. An external cost that has not been pre-authorised, a data
 upload, or the activation of a provider are mandatory stops.
 
+The web game target is the one place where the kit listens on a socket and starts a browser. The
+server is Python's own `http.server`, bound to `127.0.0.1` on an ephemeral port, serving one game
+folder, alive for the run only (or until Ctrl+C for `fluidblend preview web`). The headless browser
+gets a throw-away profile inside the task folder, no extensions, no background networking, and a
+resolver rule that maps every host but `127.0.0.1` to nothing: the page cannot reach the network.
+The browser sandbox is left on. Three.js is vendored and pinned by SHA-256
+(`templates/game-web/vendor/VENDOR.json`); `game.smoke_test` refuses a folder whose engine files
+differ. The template's own scripts (`src/`, `test/`) may be edited by the user — that is the point
+of a prototype — and run inside that sandboxed, offline page. Browsers update themselves, so the
+browser binary is recorded in reports but not pinned in the dependency lock.
+
 ## Concurrency
 
 One writer per project, guaranteed by a kernel file lock. The lock owner (PID, time, subject) is

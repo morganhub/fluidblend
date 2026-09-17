@@ -2,7 +2,7 @@
   "$id": "https://fluidblend.local/schemas/operations/game.import_test.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Import an exported GLB into the Godot template and check what the engine wrote",
+  "description": "Import an exported GLB into the Godot or web (Three.js) template and check what the engine read",
   "properties": {
     "export_path": {
       "description": "Published .glb from game.export, project-relative",
@@ -10,8 +10,12 @@
       "type": "string"
     },
     "template": {
-      "const": "godot",
       "default": "godot",
+      "description": "godot = Godot 4.7 template; web = Three.js page in a headless Chrome/Edge",
+      "enum": [
+        "godot",
+        "web"
+      ],
       "title": "Template",
       "type": "string"
     }
@@ -34,11 +38,12 @@
       "batch"
     ],
     "op_class": "read",
-    "optional_dependencies": [],
-    "publication": "reports_and_artifacts",
-    "required_dependencies": [
-      "game.godot"
+    "optional_dependencies": [
+      "game.godot",
+      "game.browser"
     ],
+    "publication": "reports_and_artifacts",
+    "required_dependencies": [],
     "required_targets": [
       "shot_id"
     ],

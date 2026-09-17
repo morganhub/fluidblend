@@ -1,4 +1,4 @@
-"""Godot target: a real headless import, then the prototype really launched (§14).
+"""Game targets (Godot here, the browser in `game_web`): a real headless import, then the prototype really launched (§14).
 
 Generating files proves nothing: `game.import_test` checks what the engine wrote, not its exit code
 alone, and `game.smoke_test` plays the template's scene through the same input path a player uses.
@@ -19,6 +19,7 @@ from fluidblend.core.dependencies import verify_executable
 from fluidblend.core.hashing import sha256_file
 from fluidblend.core.paths import assert_not_protected, relpath_posix, resolve_inside
 from fluidblend.core.project import kit_root
+from fluidblend.hostops import game_web
 from fluidblend.hostops.context import HostOpError
 
 TEMPLATE = "templates/game-godot"
@@ -108,6 +109,8 @@ def import_test(ctx):
     glb = admitted(ctx, ctx.params.export_path, directory=False)
     if glb.suffix.lower() != ".glb":
         raise HostOpError(ErrorCode.VALIDATION_FAILED, "export_path must be a published .glb")
+    if ctx.params.template == "web":
+        return game_web.import_test(ctx, glb)
     godot = godot_for(ctx)
     game = ctx.out_dir / "game"
     shutil.copytree(
@@ -137,6 +140,9 @@ def import_test(ctx):
 
 def smoke_test(ctx):
     source = admitted(ctx, ctx.params.game_dir, directory=True)
+    # The published folder says which engine it was made for.
+    if game_web.is_web_game(source) and (source / CHARACTER).is_file():
+        return game_web.smoke_test(ctx, source)
     if not (source / "project.godot").is_file() or not (source / CHARACTER).is_file():
         raise HostOpError(
             ErrorCode.VALIDATION_FAILED, "game_dir is not a folder published by game.import_test"

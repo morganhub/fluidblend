@@ -171,7 +171,8 @@ class OperationSpec:
         if self.name == "game.export":
             optional.append("gltf.khronos_validator")
         if self.name in ("game.import_test", "game.smoke_test"):
-            required.append("game.godot")
+            # One of the two, depending on the template; the operation checks the one it needs.
+            optional.extend(["game.godot", "game.browser"])
         targets = ["shot_id"] if self.requires_shot else []
         if self.name in {
             "character.inspect",
@@ -545,7 +546,7 @@ OPERATIONS: dict[str, OperationSpec] = {
             "host",
             "read",
             "P1",
-            "Import an exported GLB into the Godot template and check what the engine wrote",
+            "Import an exported GLB into the Godot or web (Three.js) template and check what the engine read",
             requires_shot=True,
         ),
         _spec(
@@ -554,7 +555,7 @@ OPERATIONS: dict[str, OperationSpec] = {
             "host",
             "read",
             "P1",
-            "Launch the imported Godot prototype headless and run its smoke test",
+            "Launch the imported Godot or web prototype headless and run its smoke test",
             requires_shot=True,
         ),
         # Tasks

@@ -75,6 +75,7 @@ class LocalConfig(StrictModel):
     ffprobe_executable: str | None = None
     gltf_validator_executable: str | None = None
     godot_executable: str | None = None
+    browser_executable: str | None = None
     rhubarb_executable: str | None = None
     mcp: McpLocalConfig = Field(default_factory=McpLocalConfig)
     blender_startup_timeout_s: float = Field(default=90.0, ge=5, le=3600)

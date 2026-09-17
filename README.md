@@ -6,8 +6,8 @@ and deliver scenes for music videos, short films and game prototypes — reprodu
 and resumably. Every operation is validated, journaled, versioned and verified (ffprobe, Khronos
 glTF validator, re-import). Windows 11 only for now.
 
-Status: **0.4.1** — P0, live mode and the whole P1 plan (lots 3 and 4), plus the P1 refinement. 30 acceptance scenarios pass
-on the reference machine — batch A01–A13, production B01–B08, live L01–L09 — see
+Status: **0.5.0** — P0, live mode, the whole P1 plan (lots 3 and 4), its refinement and the web game target. 31 acceptance scenarios pass
+on the reference machine — batch A01–A13, production B01–B09, live L01–L09 — see
 [docs/acceptance-reports/implementation.md](docs/acceptance-reports/implementation.md). What the kit does not
 do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is simulated.
 
@@ -53,6 +53,11 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
   unless its 13 checks pass. Without Godot the game target is reported `not_tested`. A skinned
   Rigify character gets there through `animation.bake` with `rigid_limbs` (IK stretch off, pose
   change reported) and a deform-bone export whose re-imported skeleton is gated at 1 mm.
+- **Browser check and preview**: the same two operations with `template: "web"` load the GLB in
+  Three.js r186 (vendored, MIT, offline) inside a headless Edge or Chrome: 14 checks through keyboard
+  events, then one rendered frame and the share of it the character covers — the kit's only evidence
+  of the skin drawn by a game engine. `fluidblend preview web` serves the folder on 127.0.0.1 so you
+  can play it.
 - **Retime on a variant** (`animation.retime`): the source stays untouched, before/after images,
   contact markers preserved, measured duration.
 - **Video preview** (`shot.preview`): idempotent PNG sequence then an H.264 MP4 assembled by FFmpeg,
@@ -77,7 +82,7 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 
 Every catalogue operation is now implemented, **each inside a deliberately narrow scope**; what is
 outside is refused with a stated reason (`RIG_MAPPING_REQUIRED`, `VALIDATION_FAILED`,
-`MISSING_DEPENDENCY`), never improvised. Not done at all: the Three.js prototype, and the whole P2
+`MISSING_DEPENDENCY`), never improvised. Not done at all: the whole P2
 list (multi-shot render queue, simulation caches, crowds, mocap providers, OTIO export, domain MCP
 facade, web panel). Inside the available domains the scope is: one interaction kind (prop hand-off between standing characters),
 two adjustment tools, one retargeting preset, recipes without arm swing, heel roll or finger poses.
@@ -103,6 +108,7 @@ See [the implementation status](docs/production-p1.md) for tested scope and outs
 | [MCP for Blender](https://github.com/ahujasid/mcp-for-blender) | 2.0.0 (add-on 1.7) | optional: live mode (open GUI session) |
 | Rhubarb Lip Sync | 1.14 | optional phonetic mouth-cue analysis |
 | Godot | 4.7 | optional: `game.import_test` and `game.smoke_test` |
+| Microsoft Edge or Google Chrome | any recent | optional: the same operations with `template: "web"` (Edge ships with Windows) |
 
 Optional binaries can be dropped into `%LOCALAPPDATA%\fluidblend\tools\<tool>\`: they are found
 without touching the PATH ([docs/installation.md](docs/installation.md)).
@@ -212,8 +218,9 @@ blender_runtime/        code executed inside Blender (stdlib + bpy): scenes, rig
 schemas/                JSON Schema exported from the contracts
 templates/film/         project skeleton created by `init`
 templates/game-godot/   Godot 4.7 test bed (GDScript) used by game.import_test / game.smoke_test
+templates/game-web/     browser test bed (Three.js r186 vendored) for the same operations, template "web"
 scripts/                install-skill.ps1, bootstrap.ps1, demo.ps1
-tests/                  unit tests (no Blender), acceptance A01–A13, B01–B08 (batch) and L01–L09 (live)
+tests/                  unit tests (no Blender), acceptance A01–A13, B01–B09 (batch) and L01–L09 (live)
 docs/                   installation, CLI, architecture, security, compatibility, roadmap, sources
 ```
 

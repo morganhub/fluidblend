@@ -311,6 +311,17 @@ Exit: 0 when the session answers, **2** when it is unreachable — no GUI sessio
 add-on not enabled — with the failure kind (`unreachable`, `timeout`, `tool_missing`,
 `not_configured`) in the output. 4 if the project is invalid.
 
+## `preview`
+
+```powershell
+fluidblend preview web --project . --game-dir reviews/shot010/<operation_id>/game
+```
+
+Serves a web game folder published by `game.import_test` (`template: "web"`) on `127.0.0.1`, on an
+ephemeral port, and opens the default browser; Ctrl+C stops it. `--no-open` prints the URL only,
+`--seconds N` stops by itself. A browser refuses to load a GLB from `file://`, hence the server. It
+serves that folder only, to this machine only, and changes nothing in the project.
+
 ## `capabilities`
 
 Displays the project's latest `state/diagnostics/capabilities.json`, without re-running the probes.

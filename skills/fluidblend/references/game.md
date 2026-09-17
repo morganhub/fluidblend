@@ -133,7 +133,7 @@ preparatory choice, dropped to avoid a new dependency).
 
 Limits to state: it is the kit's test bed, not the user's game; headless, so no rendering, frame-rate
 or GPU figure is claimed (`wall_time_ms` and the machine are recorded, nothing more); one character,
-one clip; Godot 4.7 only; no web (Three.js) variant. Both a P0 biped and a skinned Rigify character
+one clip; Godot 4.7 only (the browser target is below). Both a P0 biped and a skinned Rigify character
 have been exercised. The Rigify path is `animation.bake` with `rigid_limbs` (see animation.md), then
 `game.export` with `export_def_bones` (188 deform bones instead of 1063). On a baked skeleton the
 export carries that one clip and the re-import is replayed: `reimport.skeleton_fidelity` compares
@@ -141,3 +141,37 @@ every deform bone head by name at five frames and must stay within 1 mm (measure
 940 comparisons). It measures the skeleton in Blender's importer, not the skinned surface in Godot.
 Asked for a real playable game: say the kit proves the character arrives and animates in the engine,
 and stop there.
+
+## Browser: the same two operations with `"template": "web"`
+
+"Show me the character in the browser", "a web preview", "does it work in Three.js". Example:
+[request-game-import-test-web.json](../assets/request-game-import-test-web.json); the smoke request
+is the same as for Godot: `game.smoke_test` recognises the folder. Needs Edge or Chrome
+(`fluidblend doctor`, capability `game.browser`; Edge ships with Windows); without one:
+`MISSING_DEPENDENCY`, web target **not_tested**. Nothing is downloaded: Three.js r186 (MIT) is
+vendored in the template and pinned by hash.
+
+1. `game.export` as above (Rigify: `animation.bake` with `rigid_limbs`, then `export_def_bones`).
+2. `game.import_test` with `template: "web"`: copies `templates/game-web/` and the GLB, serves the
+   folder on `127.0.0.1` (ephemeral port, for the run only — a browser refuses a GLB over `file://`),
+   opens it in a **headless, offline** browser and reads what Three.js loaded: `engine`, `clips`,
+   `walk_clip`, `skinned_meshes`. Publishes the `game/` folder and `game-import.json`.
+3. `game.smoke_test` (`game_dir` = that folder): 14 checks through real keyboard events and fixed
+   1/60 s steps — the 13 of Godot plus `walk_clip_moves_bones` (a clip can "run" and move nothing).
+   Then the browser **renders**: `web-frame.png` (one deterministic mid-stride frame) and
+   `rendered_share`, the share of the frame the character covers, read back from the GPU (must be
+   ≥ 1 %). This is the only evidence the kit has of the skin drawn by a game engine: **open
+   `web-frame.png` and say you looked at it** before saying the character looks right.
+4. For the user to play it: `fluidblend preview web --project . --game-dir <published game folder>`
+   (serves on 127.0.0.1, opens the default browser, Ctrl+C stops). Arrows move, Space picks up.
+
+Reported, never hidden: `root_motion_removed_m` (the baked clip's horizontal travel is removed so
+the loop does not snap back — the body moves instead; 0.6 m on the walk fixture), `recentered_m`
+(a character exported from its place in a shot is put back under the body), and the model is turned
+so that the clip's travel direction is its forward. `webgl: false` means nothing was rendered: the
+checks still ran, the skin is **not** verified, and the report says so.
+
+Refusals: engine files that differ from the pinned hashes (`VALIDATION_FAILED` "pinned hashes"), a
+page that writes no report, a prototype that fails a check (`failed_checks`). Limits to state: the
+kit's test bed, not the user's game; one frame, no frame-rate or GPU figure; one character, one
+clip; Chromium browsers only; artistic review pending.

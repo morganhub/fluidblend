@@ -71,6 +71,27 @@ def find_executable(
 _VERSION = re.compile(r"v(\d+)\.(\d+)(?:\.(\d+))?")
 
 
+BROWSERS = (
+    "Microsoft/Edge/Application/msedge.exe",
+    "Google/Chrome/Application/chrome.exe",
+)
+
+
+def find_browser(configured: str | None = None) -> str | None:
+    """A Chromium browser able to run headless: configured, else Edge (ships with Windows), else Chrome."""
+    if configured and Path(configured).exists():
+        return configured
+    for root in _windows_program_roots() if os.name == "nt" else []:
+        for relative in BROWSERS:
+            if (root / relative).is_file():
+                return str(root / relative)
+    for name in ("msedge", "chrome", "chromium", "google-chrome"):
+        found = shutil.which(name)
+        if found:
+            return found
+    return None
+
+
 def _godot_sort_key(path: Path) -> tuple[int, int, int, int]:
     match = _VERSION.search(path.name)
     version = tuple(int(g or 0) for g in match.groups()) if match else (0, 0, 0)

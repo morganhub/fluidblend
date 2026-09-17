@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>fluidblend web test bed</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #1a1a1f; color: #e8e8ea; font: 14px system-ui, sans-serif; }
+      canvas { display: block; width: 100vw; height: 100vh; }
+      #hud { position: fixed; left: 16px; top: 12px; line-height: 1.5; text-shadow: 0 1px 2px #000; }
+      #hud b { color: #9fe8a8; }
+      #fluidblend-report { display: none; }
+    </style>
+    <!-- Three.js is vendored: the page works offline and loads nothing from a CDN. -->
+    <script type="importmap">
+      { "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div id="hud">loading…</div>
+    <pre id="fluidblend-report"></pre>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

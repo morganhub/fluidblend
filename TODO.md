@@ -1,7 +1,7 @@
 # TODO — what remains to complete the specification
 
 Reference: the "Blender Director" specification v1.0 (16 September 2026, kept outside this public
-repository) and [docs/roadmap.md](docs/roadmap.md). Status on 17 September 2026: version 0.4.1 (P0, live, lots 3 and 4: every P1 scenario passes; P1 refinement).
+repository) and [docs/roadmap.md](docs/roadmap.md). Status on 17 September 2026: version 0.5.0 (P0, live, lots 3 and 4: every P1 scenario passes; P1 refinement; web game target).
 Implementation scope and proof: [docs/production-p1.md](docs/production-p1.md).
 
 ## Amorce de reprise technique — version 0.4.0 du 17 septembre 2026
@@ -303,7 +303,10 @@ Spec §13, §14, §17 (B02, B04, B07), §18 (lot 4). Estimate: 4–6 days.
       (`tests/acceptance/test_game_rigify.py`, negative control included).
 - [ ] Performance measured on a declared machine: only headless wall time and the machine are
       recorded; no rendering, frame-rate or GPU figure.
-- [ ] `templates/game-web/` (Three.js r186, `let` only, no jQuery) only if the target is a web game.
+- [x] `templates/game-web/` (Three.js r186 vendored and pinned, `let` only, no jQuery):
+      `game.import_test` / `game.smoke_test` with `template: "web"` in a headless, offline Edge or
+      Chrome → B09 (14 checks, one rendered frame, `rendered_share`); `fluidblend preview web` to
+      play it. Both the P0 biped and the skinned Rigify character were run and their frames looked at.
 
 ## Lot 5 — studio extensions (P2, only on real demand)
 

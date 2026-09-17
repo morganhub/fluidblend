@@ -63,6 +63,18 @@
       "title": "Blender Startup Timeout S",
       "type": "number"
     },
+    "browser_executable": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Browser Executable"
+    },
     "ffmpeg_executable": {
       "anyOf": [
         {

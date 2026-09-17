@@ -11,7 +11,7 @@ description: >-
   between two characters, audio preparation and mouth-cue analysis. Check the
   operation catalogue for unsupported production features; never simulate success.
 license: MIT
-metadata: {version: "0.4.1", lot: "P0+live+P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
+metadata: {version: "0.5.0", lot: "P0+live+P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
 ---
 
 # fluidblend — driven Blender production
@@ -94,6 +94,7 @@ the dialogue.
 | Make a character say a line, smile, blink | film | `references/film.md` | `audio.prepare` → `lipsync.analyze` → `lipsync.apply`; `expression.apply` — needs a character with a `face_profile`, otherwise `RIG_MAPPING_REQUIRED`: say so |
 | Export to a game engine, broken export | game | `references/game.md` | `run` on `game.export` |
 | "Does it work in Godot?" | game | `references/game.md` | `game.export` (one character) → `game.import_test` → `game.smoke_test`; no Godot = `not_tested`, say so |
+| "Show it in the browser", web preview, Three.js | game | `references/game.md` | same three operations with `template: "web"`; open `web-frame.png`; `fluidblend preview web` lets the user play it |
 | "fix the sliding foot", "keep the hand on the handle" | tools | `references/tool-development.md` | `adjustment.preview` → look at the frames → `adjustment.apply`; `adjustment.revert` (tool `contact_lock` only) |
 | "make me a tool that…" | tools | `references/tool-development.md` | declarative `tools/custom/<id>/tool.json` narrowing `contact_lock` → `tool.inspect` → `tool.test` → `tool.register`; `unsupported` = state the limitation, stop |
 | "add a slider", gesture amplitude, gaze, partial retime | tools | `references/tool-development.md` | not implemented (P1) |
@@ -205,7 +206,8 @@ dedicated subcommand (see `docs/cli.md`). 24 bounded P1 operations are available
 `tool.inspect/test/register` (declarative custom tools, no code), `audio.prepare`,
 `lipsync.analyze`, `lipsync.apply`, `expression.apply` (characters with a face profile only),
 `animation.retarget` (one preset: P0 biped → Rigify; any other rig pair is refused),
-`game.import_test`, `game.smoke_test` (Godot 4.7, the kit's own template). Every catalogue entry is
+`game.import_test`, `game.smoke_test` (Godot 4.7 or, with `template: "web"`, Three.js r186 in a headless
+Edge/Chrome; the kit's own templates). Every catalogue entry is
 now available, **each inside a narrow, stated scope**: most requests still end in a refusal
 (`RIG_MAPPING_REQUIRED`, `VALIDATION_FAILED`, `MISSING_DEPENDENCY`) rather than in an unavailable
 operation. P2 features (render queue, crowds, mocap, OTIO, web panel) are not in the catalogue at all. The catalogue is the authority: check with `fluidblend ops --all`.
@@ -272,7 +274,7 @@ Domain error codes: `MISSING_DEPENDENCY`, `UNSUPPORTED_CAPABILITY`, `RIG_MAPPING
 - [references/film.md](references/film.md) — previews, FFmpeg, ffprobe, technical validation,
   assembly.
 - [references/game.md](references/game.md) — GLB export, axes, reimport, Khronos validator; P1
-  Godot.
+  Godot and browser (Three.js) test beds.
 - [references/tool-development.md](references/tool-development.md) — `contact_lock` preview / apply /
   revert, tool contract, adjustments that do not exist yet.
 - [references/recovery.md](references/recovery.md) — task states, idempotency, revisions,

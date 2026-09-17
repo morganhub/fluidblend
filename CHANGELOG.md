@@ -3,6 +3,20 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## 0.5.0 — 2026-09-17 — web game target
+
+The exported character in a browser: acceptance B09. 31 acceptance scenarios. Technical measurements
+only: one rendered frame per run was looked at by the assistant, no human artistic validation.
+
+- Add `templates/game-web/`: a Three.js r186 test bed (six files vendored, MIT, pinned by hash, no
+  CDN), same gameplay as the Godot template, `let` only, no framework.
+- `game.import_test` and `game.smoke_test` accept `template: "web"`: headless Edge or Chrome, offline,
+  against a server on 127.0.0.1 for the run; 14 checks through keyboard events, then `web-frame.png`
+  and `rendered_share` read back from the GPU — the first evidence of the skin drawn by a game engine.
+  Root travel removed for the loop, model recentred and turned onto its travel direction, all reported.
+- Add `fluidblend preview web` to play a published web game folder, the `game.browser` capability in
+  `doctor`, and `browser_executable` in `config/local.json`. Godot stays the default template.
+
 ## 0.4.1 — 2026-09-17 — P1 refinement
 
 Refinement of the P1 scope, no new domain. 154 tests pass on the reference machine. Technical

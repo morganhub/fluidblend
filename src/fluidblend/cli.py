@@ -469,6 +469,38 @@ def cmd_capabilities(args: argparse.Namespace) -> int:
     return exit_codes.OK
 
 
+def cmd_preview(args: argparse.Namespace) -> int:
+    """Serve a published web game folder on 127.0.0.1 and open it: a browser refuses GLB over file://."""
+    import time
+    import webbrowser
+
+    from fluidblend.core.paths import resolve_inside
+    from fluidblend.hostops.game_web import is_web_game, served
+
+    try:
+        project = _project(args)
+        folder = resolve_inside(project.root, args.game_dir, allow_missing=False)
+    except (ProjectError, ValueError, OSError) as exc:
+        _emit({"error": str(exc)}, as_json=args.json, human=f"error: {exc}")
+        return exit_codes.INVALID
+    if not is_web_game(folder) or not (folder / "assets" / "character.glb").is_file():
+        message = "game_dir is not a web game folder published by game.import_test (template web)"
+        _emit({"error": message}, as_json=args.json, human=f"error: {message}")
+        return exit_codes.INVALID
+    with served(folder) as base:
+        url = f"{base}/index.html"
+        _emit({"url": url}, as_json=args.json, human=f"serving {folder}\n  {url}\nCtrl+C to stop")
+        if not args.no_open:
+            webbrowser.open(url)
+        try:
+            deadline = time.monotonic() + args.seconds if args.seconds else None
+            while deadline is None or time.monotonic() < deadline:
+                time.sleep(0.2)
+        except KeyboardInterrupt:
+            pass
+    return exit_codes.OK
+
+
 # --- Parser ---------------------------------------------------------------------------------
 
 
@@ -600,6 +632,17 @@ def build_parser() -> argparse.ArgumentParser:
     live_sub = p.add_subparsers(dest="live_command", required=True)
     live_sub.add_parser("status", help="identity of the open session: file, project, revision, dirty flag")
     p.set_defaults(func=cmd_live)
+
+    p = sub.add_parser("preview", help="play a published game folder yourself")
+    preview_sub = p.add_subparsers(dest="preview_cmd", required=True)
+    wp = preview_sub.add_parser("web", help="serve a web game folder on 127.0.0.1 and open the browser")
+    add_common(wp)
+    wp.add_argument(
+        "--game-dir", required=True, help="game folder published by game.import_test, project-relative"
+    )
+    wp.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
+    wp.add_argument("--seconds", type=float, default=0, help="stop after this long (0 = until Ctrl+C)")
+    p.set_defaults(func=cmd_preview)
 
     p = sub.add_parser("capabilities", help="show the latest capabilities.json of the project")
     add_common(p)

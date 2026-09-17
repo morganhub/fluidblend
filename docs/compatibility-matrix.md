@@ -22,7 +22,7 @@ GeForce GTX 1080 Ti.
 | pydantic | 2.12+ | contracts and schema export |
 | filelock | 3.20+ | project lock |
 | mcp (Python SDK) | 1.30 | probe client: fake server in unit tests, real `mcp-for-blender` server in A03; live client (stdio) in L01–L09 |
-| fluidblend runtime add-on | 0.4.1 (`bl_info` 0, 4, 1) | installed in the Blender 5.2 user add-ons directory and enabled headlessly; operators `fluidblend.identity`, `start_request`, `open_file` exercised by L01–L09, Director operators by B06 |
+| fluidblend runtime add-on | 0.5.0 (`bl_info` 0, 5, 0) | installed in the Blender 5.2 user add-ons directory and enabled headlessly; operators `fluidblend.identity`, `start_request`, `open_file` exercised by L01–L09, Director operators by B06 |
 
 ## Blender
 
@@ -85,6 +85,7 @@ No global skill is installed, in any client.
 | --- | --- | --- | --- |
 | FFmpeg / ffprobe | 8.0.1 | **present, proven** | previews assembled, ffprobe proof |
 | glTF-Validator | 2.0.0-dev.3.10 win64 | **present, proven** | Khronos validation executed, acceptance A10 passed |
+| Edge / Chrome (Chromium) | as installed, not pinned (self-updating) | **present, proven headless** | web template of `game.import_test` / `game.smoke_test` (B09): WebGL context obtained, frame read back; Firefox and Safari not supported |
 | Godot | 4.7.2 stable | **present, proven headless** | `game.import_test` and `game.smoke_test` (B07) on the kit's template; no rendering or performance figure |
 | Rhubarb Lip Sync | 1.14.0 | **analysis tested** | real phonetic analysis; face application remains unavailable |
 | MCP for Blender add-on | add-on 1.7, protocol 7 (PyPI package 2.0.0) | **present, proven for reading and for the four live operations** | A03 (read-only probe) and L01–L05 (live mode) passed; safe mode left on, the engine only calls the runtime's operators |
@@ -144,6 +145,7 @@ Production scenarios on the actual skinned Vitruvian/Rigify fixture, Blender 5.2
 | B04 lip-sync applied to a face | passed (after 0.3.0) | offline Windows voice → `audio.prepare` → Rhubarb → shape keys of the `vitruvian-face` fixture; held cues only are checked |
 | B05 sliding stance fixed with `contact_lock` | passed | preview, apply, revert |
 | B06 Director panel | passed | driven through its operators in a real GUI session; layout not reviewed by a human |
+| B09 web import and smoke test | passed (0.5.0) | Three.js r186 in headless Chrome and Edge, offline on 127.0.0.1: GLB loaded, 14 checks through keyboard events, one frame rendered and read back; P0 biped and skinned Rigify character |
 | B07 Godot import and smoke test | passed (after 0.3.0) | Godot 4.7.2 headless: `.import` and imported scene checked, prototype launched, 13 checks; GDScript smoke test, GUT not used |
 | B08 custom tool: bounded and tested, or stated limitation | passed | declarative tools, no code loaded |
 
@@ -168,6 +170,7 @@ qualified by these concurrency checks.
 | mcp-for-blender | MIT | external dependency launched by `uvx` |
 | glTF-Validator | Apache-2.0 | external executable |
 | Godot | MIT | external executable (lot 4) |
+| Three.js r186 | MIT | six files vendored in `templates/game-web/vendor/three`, pinned by hash (`licenses/three.md`) |
 | Rhubarb Lip Sync | MIT | external executable (lot 4) |
 | Retarget, Expy-Kit | GPL-3 | external add-ons, never integrated (lot 3) |
 | CharMorph | GPL-3 | external tool; Vitruvian asset CC0 |

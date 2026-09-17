@@ -5,7 +5,7 @@ from tests.acceptance.test_characters import install_character
 from tests.acceptance.test_interactions import artifact
 from tests.conftest import make_request
 
-from fluidblend.adapters.tool_paths import find_godot
+from fluidblend.adapters.tool_paths import find_browser, find_godot
 from fluidblend.core.atomic import read_json
 from fluidblend.core.tasks import TaskRunner
 
@@ -80,3 +80,26 @@ def test_rigify_character_walks_in_godot(project):
     assert played.exit_code == 0, played.result.model_dump()
     smoke = read_json(project.root / artifact(played.result, "game-smoke.json"))
     assert smoke["passed"] and len(smoke["checks"]) == 13
+    if not find_browser(project.local.browser_executable):
+        return
+    # Same GLB, second engine: Three.js in a headless browser, which also renders the skin.
+    web = runner.run(
+        make_request(
+            "game.import_test",
+            "rg-web-import",
+            target=shot,
+            parameters={"export_path": glb, "template": "web"},
+        )
+    )
+    assert web.exit_code == 0, web.result.model_dump()
+    web_dir = artifact(web.result, "game-import.json").rsplit("/", 1)[0] + "/game"
+    web_played = runner.run(
+        make_request("game.smoke_test", "rg-web-smoke", target=shot, parameters={"game_dir": web_dir})
+    )
+    assert web_played.exit_code == 0, web_played.result.model_dump()
+    web_smoke = read_json(project.root / artifact(web_played.result, "game-smoke.json"))
+    assert web_smoke["passed"] and web_smoke["skinned_meshes"] == 1
+    # The baked walk carries its 0.6 m stride on the hips: removed for the loop, and said so.
+    assert web_smoke["root_motion_removed_m"] == pytest.approx(0.6, abs=0.01)
+    if web_smoke["webgl"]:
+        assert web_smoke["rendered_share"] > 0.01
