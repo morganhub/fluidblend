@@ -57,7 +57,8 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
   Three.js r186 (vendored, MIT, offline) inside a headless Edge or Chrome: 14 checks through keyboard
   events, then one rendered frame and the share of it the character covers — the kit's only evidence
   of the skin drawn by a game engine. `fluidblend preview web` serves the folder on 127.0.0.1 so you
-  can play it.
+  can play it. The Godot run is headless and draws nothing: the web run on the same GLB is how the
+  assistant (and you) can actually see the exported character, whatever the target engine.
 - **Retime on a variant** (`animation.retime`): the source stays untouched, before/after images,
   contact markers preserved, measured duration.
 - **Video preview** (`shot.preview`): idempotent PNG sequence then an H.264 MP4 assembled by FFmpeg,

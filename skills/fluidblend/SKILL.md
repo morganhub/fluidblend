@@ -93,7 +93,7 @@ the dialogue.
 | Shot preview, video, film assembly, audio | film | `references/film.md` | `shot.preview`, `film.assemble`, `audio.prepare`, `lipsync.analyze`; `fluidblend validate` |
 | Make a character say a line, smile, blink | film | `references/film.md` | `audio.prepare` → `lipsync.analyze` → `lipsync.apply`; `expression.apply` — needs a character with a `face_profile`, otherwise `RIG_MAPPING_REQUIRED`: say so |
 | Export to a game engine, broken export | game | `references/game.md` | `run` on `game.export` |
-| "Does it work in Godot?" | game | `references/game.md` | `game.export` (one character) → `game.import_test` → `game.smoke_test`; no Godot = `not_tested`, say so |
+| "Does it work in Godot?" | game | `references/game.md` | `game.export` (one character) → `game.import_test` → `game.smoke_test`; no Godot = `not_tested`, say so. Godot headless draws nothing: also run `template: "web"` on the same GLB and look at `web-frame.png` |
 | "Show it in the browser", web preview, Three.js | game | `references/game.md` | same three operations with `template: "web"`; open `web-frame.png`; `fluidblend preview web` lets the user play it |
 | "fix the sliding foot", "keep the hand on the handle" | tools | `references/tool-development.md` | `adjustment.preview` → look at the frames → `adjustment.apply`; `adjustment.revert` (tool `contact_lock` only) |
 | "make me a tool that…" | tools | `references/tool-development.md` | declarative `tools/custom/<id>/tool.json` narrowing `contact_lock` → `tool.inspect` → `tool.test` → `tool.register`; `unsupported` = state the limitation, stop |

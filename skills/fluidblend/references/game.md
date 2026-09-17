@@ -151,6 +151,12 @@ is the same as for Godot: `game.smoke_test` recognises the folder. Needs Edge or
 `MISSING_DEPENDENCY`, web target **not_tested**. Nothing is downloaded: Three.js r186 (MIT) is
 vendored in the template and pinned by hash.
 
+**Use it as your eyes, whatever the target engine.** The Godot run is headless: it proves the logic
+and draws nothing, so you cannot see the character there. The browser run draws. When the target is
+Godot, run the web template on the **same GLB** as well, open `web-frame.png`, and report what you
+saw next to the Godot checks. It shows what the GLB contains (skin, pose, orientation, scale), not
+how Godot shades it: say so.
+
 1. `game.export` as above (Rigify: `animation.bake` with `rigid_limbs`, then `export_def_bones`).
 2. `game.import_test` with `template: "web"`: copies `templates/game-web/` and the GLB, serves the
    folder on `127.0.0.1` (ephemeral port, for the run only — a browser refuses a GLB over `file://`),
