@@ -71,7 +71,7 @@ Target acceptance scenarios: B01, B03, B05, B06 and B08 — all passed.
 
 | Item | Status | Preparatory decision |
 | --- | --- | --- |
-| Rhubarb lip-sync | analysis only | Rhubarb 1.14.0 (MIT), `-f json -r phonetic`; mapping of cues A–H and X to Actions then to NLA strips |
+| Rhubarb lip-sync | analysis and application on shape keys (B04) | Rhubarb 1.14.0 (MIT), `-f json -r phonetic`; mapping of cues A–H and X to Actions then to NLA strips |
 | Audio preparation | implemented | FFmpeg, 48 kHz mono WAV, two-pass `loudnorm`, `aresample=48000` systematically; drift tolerated up to one frame at most |
 | Godot template | not implemented | Godot 4.7.2 (MIT), `CharacterBody3D`, `AnimationTree` with an `idle` ↔ `walk` state machine, based on the Jeh3no controller (MIT) |
 | GUT tests | not implemented | GUT 9.7.1 in headless mode; check that the `.import` files exist, not only the return code |
@@ -95,7 +95,6 @@ on an individual project.
 | Domain | Operations | Lot |
 | --- | --- | --- |
 | Animation | `animation.retarget` | P1 |
-| Audio and face | `lipsync.apply`, `expression.apply` | P1 |
 | Game | `game.import_test`, `game.smoke_test` | P1 |
 
 What to do when faced with one of these requests: stop, explain that the lot does not implement it,

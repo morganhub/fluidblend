@@ -14,11 +14,12 @@ POSE_PREFIX = "pose.bones["
 
 
 def _slot_for(action, obj):
-    identifier = f"OB{obj.name}"
+    """Slot of any animatable ID: objects, and shape-key datablocks (`KEY`) for facial animation."""
+    id_type = obj.id_type
     for slot in action.slots:
-        if slot.identifier == identifier:
+        if slot.target_id_type == id_type and slot.name_display == obj.name:
             return slot
-    return action.slots.new(id_type="OBJECT", name=obj.name)
+    return action.slots.new(id_type=id_type, name=obj.name)
 
 
 def _keyframe_strip(action):

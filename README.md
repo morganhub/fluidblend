@@ -7,8 +7,8 @@ and resumably. Every operation is validated, journaled, versioned and verified (
 glTF validator, re-import). Windows 11 only for now.
 
 Status: **0.3.0** — P0, live mode and production lot 3. Lot 4 (retargeting, facial lip-sync, Godot)
-is planned for 0.4. 27 acceptance scenarios pass on the reference machine — batch A01–A13,
-characters and production B01, B03, B05, B06, B08, live L01–L09 — see
+is in progress on `main` for 0.4. 28 acceptance scenarios pass on the reference machine — batch
+A01–A13, characters and production B01, B03, B04, B05, B06, B08, live L01–L09 — see
 [docs/acceptance-reports/implementation.md](docs/acceptance-reports/implementation.md). What the kit does not
 do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is simulated.
 
@@ -39,7 +39,11 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
   in a separate process. The open session is never keyed, sliders are debounced, Apply publishes a
   new revision and reopens it.
 - **Audio preparation and analysis**: real two-pass FFmpeg normalization to 48 kHz and Rhubarb
-  mouth cues. Facial animation is not yet implemented.
+  mouth cues.
+- **Dialogue on a face** *(on `main`, after 0.3.0)*: `lipsync.apply` keys the analysed cues on the
+  character's real face controllers (shape keys of the CC0 `vitruvian-face` fixture) with exact
+  fractional-frame timing, and refuses a character without a face profile; `expression.apply` keys a
+  bounded smile, blink, anger, fear or sadness. Both are gated on the mesh really moving.
 - **Retime on a variant** (`animation.retime`): the source stays untouched, before/after images,
   contact markers preserved, measured duration.
 - **Video preview** (`shot.preview`): idempotent PNG sequence then an H.264 MP4 assembled by FFmpeg,
@@ -62,9 +66,9 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
 
 ## What the kit does not do yet
 
-Retargeting (`animation.retarget`), facial cue and expression application (`lipsync.apply`,
-`expression.apply`), Godot import and smoke test (`game.import_test`, `game.smoke_test`) and the
-Three.js prototype. Those five operations exist in the catalogue with `available: false` and answer
+Retargeting (`animation.retarget`), Godot import and smoke test (`game.import_test`,
+`game.smoke_test`) and the Three.js prototype. Those three operations exist in the catalogue with
+`available: false` and answer
 `UNSUPPORTED_CAPABILITY`: the skill refuses, it does not improvise. Inside the available domains
 the scope is deliberately narrow: one interaction kind (prop hand-off between standing characters),
 one adjustment tool, recipes without arm swing, heel roll or finger poses.

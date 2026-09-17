@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "operation": "lipsync.apply",
+  "operation_id": "lipsync-apply-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010",
+    "instance_id": "hero-01"
+  },
+  "parameters": {
+    "lipsync_id": "line-01",
+    "analysis_path": "reviews/project/lipsync-analyze-001/lipsync-analysis.json",
+    "start_frame": 1,
+    "transition_frames": 2.0,
+    "strength": 1.0,
+    "preview_samples": 4
+  },
+  "dry_run": false
+}

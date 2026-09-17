@@ -13,7 +13,7 @@ runtime Blender, les contrats/schémas, les tests, la fixture binaire et la docu
 
 ### État mesuré
 
-- Catalogue : **43 opérations**, dont **19 P0 disponibles**, **19 P1 disponibles** et **5 P1
+- Catalogue : **43 opérations**, dont **19 P0 disponibles**, **21 P1 disponibles** et **3 P1
   indisponibles**. Une opération indisponible échoue au précontrôle avec
   `UNSUPPORTED_CAPABILITY`, même si aucun handler hôte n'existe.
 - Nouvelles opérations P1 qualifiées : `shot.build`, `character.inspect`, `rig.map`,
@@ -21,10 +21,11 @@ runtime Blender, les contrats/schémas, les tests, la fixture binaire et la docu
   `audio.prepare`, `lipsync.analyze`.
 - Qualifiées ensuite (même jour) : recettes `walk`, `take_prop`, `give_prop`, mesures communes,
   `interaction.plan/apply/validate` (B03), `adjustment.preview/apply/revert` + `contact_lock`
-  (B05), `tool.inspect/test/register` (B08), live coopératif (L09), panneau Director (B06). Dernière régression complète : **138 tests réussis en
-  595,39 s** (après la refonte du panneau Director), 27 scénarios passés (A01–A13, B01, B03, B05, B06, B08, L01–L09), lint/format/schémas OK.
-- Opérations encore indisponibles : `animation.retarget`, `lipsync.apply`, `expression.apply`,
-  `game.import_test`, `game.smoke_test`.
+  (B05), `tool.inspect/test/register` (B08), live coopératif (L09), panneau Director (B06). Dernière régression complète : **146 tests réussis en
+  621,85 s** (après B04), 28 scénarios passés (A01–A13, B01, B03, B04, B05, B06, B08, L01–L09), lint/format/schémas OK.
+- Après la 0.3.0 (non publié, vers 0.4.0) : fixture faciale `vitruvian-face`, `lipsync.apply` et
+  `expression.apply` (B04).
+- Opérations encore indisponibles : `animation.retarget`, `game.import_test`, `game.smoke_test`.
 - Régression combinée : **121 tests réussis en 324,35 s**, avec A01–A13, B01 et L01–L08 sur
   Blender 5.2.2 LTS. Contrôles ciblés suivants : **98 tests unitaires**, **3 tests audio réels**
   (mono, stéréo et dépendance absente) et B01 renforcé réussi. Ruff, formatage, schémas et
@@ -254,6 +255,11 @@ Spec §13, §14, §17 (B02, B04, B07), §18 (lot 4). Estimate: 4–6 days.
       (linked or appended, overrides inspected rather than applied blindly).
 - [~] Dialogue pipeline: approved text and voices, `audio.prepare` (FFmpeg `loudnorm` two-pass,
       always `aresample=48000`), exact audio/frame mapping, source track never overwritten.
+- [x] B04 done after 0.3.0: `vitruvian-face` fixture (13 pinned CC0 morphs as shape keys), face
+      profile `charmorph-l3/1`, `lipsync.apply` (fractional frames, held cues gated on real mesh
+      motion, own NLA track) and `expression.apply`. Remaining: cues shorter than two transitions
+      are passed through unchecked; no co-articulation, jaw bone or tongue; audio not placed in the
+      sequencer; manual-correction workflow is only "a track above"; no human review of the acting.
 - [~] `lipsync.analyze` (Rhubarb 1.14, `-f json -r phonetic`) and `lipsync.apply` (cues A–H + X
       mapped to the rig's real face controllers, rest mouth, transitions, manual correction),
       `expression.apply` → B04.

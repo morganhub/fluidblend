@@ -59,6 +59,7 @@ PATH_PARAMS = (
     "profile_path",
     "plan_path",
     "test_report_path",
+    "analysis_path",
 )
 # Operations whose admitted inputs are validated before any task exists.
 INPUT_CHECKED_OPERATIONS = (
@@ -68,6 +69,8 @@ INPUT_CHECKED_OPERATIONS = (
     "adjustment.preview",
     "adjustment.apply",
     "tool.test",
+    "lipsync.apply",
+    "expression.apply",
 )
 BLOCKED_EXIT = {
     ErrorCode.PERMISSION_REQUIRED: exit_codes.BLOCKED,

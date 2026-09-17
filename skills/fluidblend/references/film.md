@@ -141,10 +141,44 @@ resampling. Bounds/defaults for integrated LUFS, true peak and loudness range ar
 The report records source hash, measured passes, sample count and rational seconds/frame duration.
 
 `lipsync.analyze` accepts `source_path`, invokes Rhubarb 1.14 phonetic analysis and validates
-ordered A–H/X mouth cues. It does not animate the face or approve dialogue. `lipsync.apply`
-and `expression.apply` remain unavailable. Do not promise a dialogued shot from analysis alone.
+ordered A–H/X mouth cues. It does not animate the face or approve dialogue.
+
+## Dialogue on a face: `lipsync.apply`, `expression.apply`
+
+Chain: `audio.prepare` → `lipsync.analyze` → `lipsync.apply` (target `shot_id` + `instance_id`).
+Examples: [request-lipsync-apply.json](../assets/request-lipsync-apply.json),
+[request-expression-apply.json](../assets/request-expression-apply.json).
+
+**The character needs a face profile.** A manifest declares `face_profile` (today one profile,
+`charmorph-l3/1`: shape keys of the skinned mesh, from the CC0 `vitruvian-face` fixture). A character
+without one — the body-only `vitruvian` fixture, the P0 bipeds — answers `RIG_MAPPING_REQUIRED`: say
+the character has no drivable face, do not improvise bone or shape-key names.
+
+`lipsync.apply` parameters: `lipsync_id`, `analysis_path` (the published `lipsync-analysis.json`),
+`start_frame` (frame of audio time 0, default 1), `transition_frames` (0.5–6, default 2),
+`strength` (0.1–1), `preview_samples` (0–8 mouth close-ups). Mapping: A closed, B clenched, C open,
+D wide, E rounded, F puckered, G teeth on lip, H tongue, **X rest = every mouth shape at zero**.
+Time mapping is `frame = start_frame + seconds x fps`, kept fractional: no rounding drift.
+Consecutive identical cues are held as one. The keys live on their own NLA track (`mouth`) of the
+shape-key datablock; a second lip-sync on the same character is `SCENE_CONFLICT` (channels are never
+shared silently); a manual correction belongs on a track above.
+
+The write is gated: for every cue long enough to be held (longer than two transitions), its own
+shape must reach its value, the others stay ≤ 0.05, and the **mesh must really move** (≥ 1 mm x
+strength; rest must not move). Shorter cues are passed through and **not** checked — on normal
+speech that is most cues (10 held out of 42 on the reference line): lower `transition_frames`
+(1–1.5) for fast speech, and say how many cues were checked (`metrics.checked_cues` / `cues`).
+
+`expression.apply`: `expression_id`, `expression` (`happy`, `sad`, `angry`, `scared`, `blink`),
+`frame_range`, `strength`, `ease_frames`; own NLA track (`face`), same overlap refusal, gated on a
+visible deformation. An expression **adds** to the mouth shapes and can over-deform: look at the frames.
+
+Limits to state every time: Rhubarb's recognition, the text and the voice are not approved by these
+operations; upstream sculpted visemes, some subtle (4–6 mm); no jaw bone, tongue or co-articulation
+model; the audio is not placed in the scene's sequencer. `technical_pass` checks a mapping, not a
+performance: cite the close-ups you looked at before calling a line good.
 
 Local append `shot.build` is available; read the character reference for asset admission.
-Sequence organization, linked assets, facial fixtures, final renders and recorded human approval
+Sequence organization, linked assets, final renders and recorded human approval
 remain future work. `shot.validate` requires audit/preview evidence bound to the current revision
 and scene hash; regenerate stale evidence before claiming technical validity.

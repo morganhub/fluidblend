@@ -2,25 +2,77 @@
   "$id": "https://fluidblend.local/schemas/operations/lipsync.apply.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Mouth cues -> face",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Key the mouth of a character from analysed cues",
+  "properties": {
+    "analysis_path": {
+      "title": "Analysis Path",
+      "type": "string"
+    },
+    "lipsync_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Lipsync Id",
+      "type": "string"
+    },
+    "preview_samples": {
+      "default": 4,
+      "description": "Face close-ups at cue midpoints",
+      "maximum": 8,
+      "minimum": 0,
+      "title": "Preview Samples",
+      "type": "integer"
+    },
+    "start_frame": {
+      "default": 1,
+      "description": "Frame of audio time 0",
+      "maximum": 1000000,
+      "minimum": -100000,
+      "title": "Start Frame",
+      "type": "integer"
+    },
+    "strength": {
+      "default": 1.0,
+      "maximum": 1.0,
+      "minimum": 0.1,
+      "title": "Strength",
+      "type": "number"
+    },
+    "transition_frames": {
+      "default": 2.0,
+      "description": "Cross-fade between two mouth shapes, shortened on short cues",
+      "maximum": 6,
+      "minimum": 0.5,
+      "title": "Transition Frames",
+      "type": "number"
+    }
+  },
+  "required": [
+    "lipsync_id",
+    "analysis_path"
+  ],
+  "title": "LipsyncApplyParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
     "cli_command": null,
-    "input_paths": [],
+    "input_paths": [
+      "analysis_path"
+    ],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
     "optional_dependencies": [],
-    "publication": "reports_and_artifacts",
+    "publication": "shot_revision_and_reports",
     "required_dependencies": [
       "blender.batch"
     ],
-    "required_targets": [],
-    "requires_shot": false
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

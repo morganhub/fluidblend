@@ -1,8 +1,9 @@
 # P1 implementation status — 0.3.0
 
 Version 0.3.0 delivers lot 3 of the seven-delivery plan. It is not completion of the whole TODO:
-lot 4 (B02 retargeting, B04 facial lip-sync, B07 Godot) is not started and is planned for 0.4.0. P2 remains conditional on a real request. Existing P0 projects remain readable.
-The catalogue contains 38 available operations (19 P0, 19 P1) and 5 unavailable P1 operations.
+lot 4 is in progress on `main` for 0.4.0 — B04 facial lip-sync is done, B02 retargeting and B07 Godot
+are not started. P2 remains conditional on a real request. Existing P0 projects remain readable.
+The catalogue contains 40 available operations (19 P0, 21 P1) and 3 unavailable P1 operations.
 The historical 6–9 / 4–6 day estimates have not been revalidated against the remaining work.
 
 | Delivery | Implemented and automatically exercised | Remaining |
@@ -12,7 +13,7 @@ The historical 6–9 / 4–6 day estimates have not been revalidated against the
 | Animation | `create/apply/loop/bake`; idle, walk, turn, look-at, reach, take/give prop, react; Action slots, NLA ownership, seed and stage metadata, versioned clip indexes; shared foot-slide/contact/loop measurements, root-motion loop and apply | Full stage workflow, anatomical limits, arm swing and heel roll, finger poses |
 | Interaction/adjustment | Prop assets (`kind: prop`, grips); `interaction.plan/apply/validate` for one bounded prop hand-off: revision-bound plan, `CHILD_OF` transfer preserving the world transform, contacts measured in the prop's space, jump, single-authority and cycle checks (B03); `adjustment.preview/apply/revert` with one tool, `contact_lock`, as a removable additive NLA layer with a declared tool contract (B05); declarative custom tools through `tool.inspect/test/register`, code-free, narrowing only (B08) | Timing propagation between participants, other interaction kinds; the seven other adjustment tools |
 | Live/Director | Four operations, monotonic edit generation and guarded publication/reload; cooperative timer-driven execution with progress and acknowledged cancellation (L09); Director panel running `adjustment.*` through the engine with debounced sliders (B06) | Multi-step live operations (today a stop lands between operations' single step), live mode for more operations, in-viewport preview (the panel shows figures and before/after frames; a human clicked it on 17 September 2026 and five usability defects were fixed) |
-| Film/dialogue | Two-pass FFmpeg normalization, 48 kHz PCM, rational sample/frame durations, real Rhubarb phonetic analysis | Face controllers/application, sequences, human review workflow, final render, B04 |
+| Film/dialogue | Two-pass FFmpeg normalization, 48 kHz PCM, rational sample/frame durations, real Rhubarb phonetic analysis; after 0.3.0: `vitruvian-face` fixture, `lipsync.apply` and `expression.apply` on shape keys with fractional-frame timing and real-motion gates (B04) | Short cues are passed through unchecked, no co-articulation, audio not in the sequencer, sequences, human review workflow, final render |
 | Retarget/game | Existing GLB export only | Bounded retarget, Godot template/import/GUT, B02/B07 |
 
 ## Character workflow
@@ -120,6 +121,29 @@ and is refused; `gentle-foot-lock` (feet, 0.12 m) passes one fix and one refusal
 the foot (0.100 m → 0.06 mm), and is refused for a hand, for 0.15 m, and after its bound was edited.
 Limit: with a single built-in tool, a custom tool can only be a stricter `contact_lock`.
 
+## Dialogue workflow (after 0.3.0)
+
+`fixtures/vitruvian-face/` is the body fixture plus thirteen CC0 facial morphs of the same pinned
+upstream revision, turned into shape keys by `scripts/generate_vitruvian_face_fixture.py` (hashes in
+its `asset.json`; the Rigify face bones still carry no weights). A character manifest may declare
+`face_profile`; `charmorph-l3/1` maps Rhubarb's A–H to eight visemes, X to rest, and five
+expressions. `lipsync.apply` converts cue times to `start_frame + seconds x fps` without rounding,
+merges repeated cues, keys one Action on the shape-key datablock through the slotted helper and
+places it on its own NLA track; a character without a face profile is refused
+(`RIG_MAPPING_REQUIRED`), a second lip-sync on the same channels too (`SCENE_CONFLICT`). The write
+is gated per held cue: own shape reached, others ≤ 0.05, and the evaluated mesh moved by at least
+1 mm x strength against the same frame with the mouth shapes at rest (rest must not move).
+
+Measured (B04): an offline Windows voice line, normalized then analysed by Rhubarb into 42 cues;
+10 are long enough to be held at the default two-frame transition and all pass (B 10.5 mm, C 6.4 mm,
+F 4.9 mm, X 0); the other 32 are passed through and **not** checked. On handmade cues at 24 fps with
+audio time 0 on frame 11, 0.5 s lands on frame 23.0 and the wide-open shape moves the mouth 23 mm.
+The first version of this check reported 0 mm for every cue: a muted NLA track leaves its last values
+in place, so "with" equalled "without"; the reference is now the same frame with the shapes reset.
+The first close-ups framed the top of the skull; they now aim at the vertices the shapes move.
+Assistant visual inspection of the close-ups: mouth shapes read correctly; not an approval of the
+acting, the voice or the text.
+
 ## Audio workflow
 
 `audio.prepare` reads a project-relative `source_path`, including `audio/source/`, without changing
@@ -131,15 +155,15 @@ The source hash is checked before/after. Analysis does not apply keys or approve
 
 See `docs/acceptance-reports/implementation.md` for the combined regression and the earlier
 `production-p1.md`, `consolidation-batch.md` reports. B01 uses the actual 37,436-vertex skinned fixture; animation and audio
-integration tests use real Blender, FFmpeg and Rhubarb. B03, B05, B06 and B08 pass; B02, B04 and B07 are not declared passed.
+integration tests use real Blender, FFmpeg and Rhubarb. B03, B04, B05, B06 and B08 pass; B02 and B07 are not declared passed.
 Technical automation, assistant visual inspection and human artistic approval are separate.
 Five inspected deformation views and their hashes are in `docs/reviews/vitruvian/review.json`.
 The squat is a deformation test with floating feet; it is not a contact test.
 No human approval or fresh Claude Code/Codex skill session is recorded for this change.
 
 Latest full regression on 17 September 2026, after walk, prop recipes, the hand-off and
-`contact_lock`, custom tools, cooperative live and the Director panel: **138 passed** in 595.39 s (after the Director panel rework),
-27 scenarios passed (A01–A13, B01, B03,
+`contact_lock`, custom tools, cooperative live and the Director panel: **146 passed** in 621.85 s (after B04),
+28 scenarios passed (A01–A13, B01, B03, B04,
 B05, B06, B08, L01–L09),
 lint, formatting and schemas clean. Earlier the same day: combined regression **121 passed** in 324.35 s, including
 A01–A13, B01, L01–L08. Subsequent targeted checks passed: **98 unit tests**, **3 audio integration

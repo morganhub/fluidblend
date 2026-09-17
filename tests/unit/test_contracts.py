@@ -70,7 +70,7 @@ def test_shot_required_for_scene_ops():
 
 def test_unavailable_operations_are_declared_not_hidden():
     unavailable = [name for name, spec in OPERATIONS.items() if not spec.available]
-    assert "animation.retarget" in unavailable and "lipsync.apply" in unavailable
+    assert "animation.retarget" in unavailable and "game.smoke_test" in unavailable
     assert all(OPERATIONS[n].lot in ("P1", "P2") for n in unavailable)
 
 
@@ -96,7 +96,7 @@ def test_schema_export_is_deterministic(tmp_path: Path):
     assert {p.name: p.read_text(encoding="utf-8") for p in written} == first
     schemas = build_schemas()
     assert schemas["operations/animation.retime"]["x-fluidblend"]["available"] is True
-    assert schemas["operations/lipsync.apply"]["x-fluidblend"]["available"] is False
+    assert schemas["operations/game.smoke_test"]["x-fluidblend"]["available"] is False
 
 
 def test_repo_schemas_are_up_to_date():

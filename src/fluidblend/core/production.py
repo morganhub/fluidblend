@@ -35,6 +35,69 @@ RIGIFY_CONTROLS = {
 }
 
 
+# Semantic face mapping -> the character's real controllers (here shape keys of the skinned mesh).
+# Rhubarb shapes: A closed (M, B, P); B clenched (K, S, T); C open (EH, AE); D wide (AA);
+# E rounded (AO, ER); F puckered (UW, OW, W); G teeth on lip (F, V); H tongue up (L); X rest.
+FACE_PROFILES = {
+    "charmorph-l3/1": {
+        "kind": "shape_keys",
+        "visemes": {
+            "A": {"p_b_m_21": 1.0},
+            "B": {"s_z_15": 1.0},
+            "C": {"ey_eh_uh_04": 1.0},
+            "D": {"aa_02": 1.0},
+            "E": {"ao_03": 1.0},
+            "F": {"w_uw_07": 1.0},
+            "G": {"f_v_18": 1.0},
+            "H": {"l_14": 1.0},
+            "X": {},
+        },
+        "expressions": {
+            "happy": {"Happy": 1.0},
+            "sad": {"Sad": 1.0},
+            "angry": {"Angry": 1.0},
+            "scared": {"Scared": 1.0},
+            "blink": {"Eyes_Closed_Max": 1.0},
+        },
+    }
+}
+
+
+def lipsync_cues(project, request):
+    """Cues of a published analysis as exact frames: `start_frame + seconds x fps`, never rounded."""
+    from fractions import Fraction
+
+    analysis = read_json(admitted_path(project, request.parameters["analysis_path"]))
+    cues, end = [], Fraction(0)
+    try:
+        for cue in analysis["mouthCues"]:
+            start, stop = Fraction(str(cue["start"])), Fraction(str(cue["end"]))
+            if start < end or stop <= start or cue["value"] not in set("ABCDEFGHX"):
+                raise ValueError("invalid cue order, range or value")
+            end = stop
+            cues.append((cue["value"], start, stop))
+    except (KeyError, TypeError, ZeroDivisionError) as exc:
+        raise ValueError(f"not a lipsync.analyze report: {exc}") from exc
+    if not any(value != "X" for value, _, _ in cues):
+        raise ValueError("the analysis contains no mouth shape other than rest")
+    fps = project.manifest.fps.as_fraction()
+    first = int(request.parameters.get("start_frame", 1))
+    return {
+        "source_path": analysis.get("source_path"),
+        "source_sha256": analysis.get("source_sha256"),
+        "cues": [
+            {
+                "value": value,
+                "start_s": float(start),
+                "end_s": float(stop),
+                "start_frame": float(first + start * fps),
+                "end_frame": float(first + stop * fps),
+            }
+            for value, start, stop in cues
+        ],
+    }
+
+
 def admitted_path(project, value):
     path = resolve_inside(project.root, value, allow_missing=False)
     assert_not_protected(relpath_posix(project.root, path), project.permissions.protected_paths)
@@ -73,6 +136,10 @@ def inputs_for(project, request):
     inputs = {"rigify_controls": RIGIFY_CONTROLS}
     if request.operation == "interaction.apply":
         inputs["interaction_plan"] = admitted_plan(project, request)
+    if request.operation in ("lipsync.apply", "expression.apply"):
+        inputs["face_profiles"] = FACE_PROFILES
+    if request.operation == "lipsync.apply":
+        inputs["lipsync"] = lipsync_cues(project, request)
     if request.operation == "tool.test":
         from fluidblend.core.custom_tools import limitations, load_tool
 

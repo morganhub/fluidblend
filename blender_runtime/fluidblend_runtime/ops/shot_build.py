@@ -44,6 +44,11 @@ def run(ctx, request, builder):
         root["fluidblend_kind"] = kind
         if kind == "character":
             root["fluidblend_rig_profile"] = asset["rig_profile"]
+            # The admitted manifest is the authority, not a tag carried by the imported file.
+            if asset.get("face_profile"):
+                root["fluidblend_face_profile"] = asset["face_profile"]
+            elif "fluidblend_face_profile" in root:
+                del root["fluidblend_face_profile"]
         else:
             root["fluidblend_grips"] = json.dumps(asset["grips"])
         # Placement of the instance root at import, not a transform applied to skinned data.

@@ -1,26 +1,97 @@
 {
+  "$defs": {
+    "FrameRange": {
+      "additionalProperties": false,
+      "description": "Canonical half-open interval `[start, end_exclusive)`.",
+      "properties": {
+        "end_exclusive": {
+          "maximum": 1000001,
+          "minimum": -100000,
+          "title": "End Exclusive",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 1000000,
+          "minimum": -100000,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end_exclusive"
+      ],
+      "title": "FrameRange",
+      "type": "object"
+    }
+  },
   "$id": "https://fluidblend.local/schemas/operations/expression.apply.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Facial expressions",
-  "properties": {},
-  "title": "NoParams",
+  "description": "Key a bounded facial expression over a frame range",
+  "properties": {
+    "ease_frames": {
+      "default": 4.0,
+      "description": "Ease in and out inside frame_range",
+      "maximum": 24,
+      "minimum": 1,
+      "title": "Ease Frames",
+      "type": "number"
+    },
+    "expression": {
+      "enum": [
+        "happy",
+        "sad",
+        "angry",
+        "scared",
+        "blink"
+      ],
+      "title": "Expression",
+      "type": "string"
+    },
+    "expression_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Expression Id",
+      "type": "string"
+    },
+    "frame_range": {
+      "$ref": "#/$defs/FrameRange"
+    },
+    "strength": {
+      "default": 1.0,
+      "maximum": 1.0,
+      "minimum": 0.05,
+      "title": "Strength",
+      "type": "number"
+    }
+  },
+  "required": [
+    "expression_id",
+    "expression",
+    "frame_range"
+  ],
+  "title": "ExpressionApplyParams",
   "type": "object",
   "x-fluidblend": {
-    "available": false,
+    "available": true,
     "backend": "blender",
     "cli_command": null,
     "input_paths": [],
     "live_dependencies": [],
     "lot": "P1",
-    "modes": [],
+    "modes": [
+      "batch"
+    ],
     "op_class": "write",
     "optional_dependencies": [],
-    "publication": "reports_and_artifacts",
+    "publication": "shot_revision_and_reports",
     "required_dependencies": [
       "blender.batch"
     ],
-    "required_targets": [],
-    "requires_shot": false
+    "required_targets": [
+      "shot_id",
+      "instance_id"
+    ],
+    "requires_shot": true
   }
 }

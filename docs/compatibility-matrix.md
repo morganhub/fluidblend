@@ -141,7 +141,7 @@ Production scenarios on the actual skinned Vitruvian/Rigify fixture, Blender 5.2
 | B01 versioned skinned character, semantic mapping, five poses | passed | |
 | B02 bounded retargeting | not implemented | `animation.retarget` unavailable |
 | B03 prop hand-off between two characters | passed | contacts in the prop's space, jump, single authority |
-| B04 lip-sync applied to a face | not implemented | no facial fixture; `lipsync.apply` unavailable |
+| B04 lip-sync applied to a face | passed (after 0.3.0) | offline Windows voice → `audio.prepare` → Rhubarb → shape keys of the `vitruvian-face` fixture; held cues only are checked |
 | B05 sliding stance fixed with `contact_lock` | passed | preview, apply, revert |
 | B06 Director panel | passed | driven through its operators in a real GUI session; layout not reviewed by a human |
 | B07 Godot import and smoke test | not implemented | `game.import_test`, `game.smoke_test` unavailable |

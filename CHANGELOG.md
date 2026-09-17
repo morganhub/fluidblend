@@ -3,6 +3,15 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## Unreleased — towards 0.4.0 (lot 4)
+
+- Add the `vitruvian-face` fixture: the body fixture plus thirteen pinned CC0 facial morphs of the
+  same upstream revision, as shape keys; `face_profile` on character manifests.
+- Add `lipsync.apply` (Rhubarb cues → the character's real face controllers, fractional-frame
+  timing, held cues gated on real mesh motion, mouth close-ups) and `expression.apply` — B04.
+  Slotted-Action access now also serves shape-key datablocks.
+- Still unavailable: `animation.retarget` (B02), `game.import_test`, `game.smoke_test` (B07).
+
 ## 0.3.0 — 2026-09-17 — production lot 3
 
 Characters, clip library, measured contacts, prop hand-off, adjustments, custom tools, cooperative

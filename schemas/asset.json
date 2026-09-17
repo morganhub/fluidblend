@@ -24,6 +24,19 @@
       "title": "Blend Path",
       "type": "string"
     },
+    "face_profile": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Semantic face mapping of a character, e.g. charmorph-l3/1; None = no face",
+      "title": "Face Profile"
+    },
     "grips": {
       "additionalProperties": {
         "items": {

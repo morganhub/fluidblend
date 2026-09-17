@@ -22,10 +22,12 @@ from fluidblend.contracts.production import (
     AudioPrepareParams,
     CharacterInspectParams,
     ContactLockParams,
+    ExpressionApplyParams,
     InteractionApplyParams,
     InteractionPlanParams,
     InteractionValidateParams,
     LipsyncAnalyzeParams,
+    LipsyncApplyParams,
     RigMapParams,
     RigValidateParams,
     ShotBuildParams,
@@ -178,6 +180,8 @@ class OperationSpec:
             "adjustment.preview",
             "adjustment.apply",
             "adjustment.revert",
+            "lipsync.apply",
+            "expression.apply",
         }:
             targets.append("instance_id")
         if self.name in {"animation.loop", "animation.retime"}:
@@ -432,8 +436,26 @@ OPERATIONS: dict[str, OperationSpec] = {
         # Audio / face (P1)
         _spec("audio.prepare", AudioPrepareParams, "host", "write", "P1", "Normalize an audio track"),
         _spec("lipsync.analyze", LipsyncAnalyzeParams, "host", "read", "P1", "Rhubarb -> mouth cues"),
-        _spec("lipsync.apply", NoParams, "blender", "write", "P1", "Mouth cues -> face", available=False),
-        _spec("expression.apply", NoParams, "blender", "write", "P1", "Facial expressions", available=False),
+        _spec(
+            "lipsync.apply",
+            LipsyncApplyParams,
+            "blender",
+            "write",
+            "P1",
+            "Key the mouth of a character from analysed cues",
+            requires_shot=True,
+            creates_version=True,
+        ),
+        _spec(
+            "expression.apply",
+            ExpressionApplyParams,
+            "blender",
+            "write",
+            "P1",
+            "Key a bounded facial expression over a frame range",
+            requires_shot=True,
+            creates_version=True,
+        ),
         # Adjustment (P1)
         _spec(
             "adjustment.preview",

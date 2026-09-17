@@ -1,0 +1,100 @@
+{
+  "license": "CC0-1.0",
+  "source": "https://github.com/Upliner/CharMorph-Vitruvian",
+  "source_revision": "c252d1fc7f00ba59d87b66b3d32fa3471fc6ee44",
+  "blender": "5.2.2 LTS",
+  "rigify_version": [
+    0,
+    6,
+    10
+  ],
+  "asset_id": "vitruvian-face",
+  "version": 1,
+  "derived_from": {
+    "asset_id": "vitruvian",
+    "sha256": "d99283a272aee84c56fdc63281abd5ca33b725bf9463df2c66d0cf0e5fdbae7b"
+  },
+  "inputs": {
+    "morphs/L3/p_b_m_21.npz": "440c7da31ae3adbba563b1f00bfb35d4c124b431125663f76b4b134d076b03c8",
+    "morphs/L3/s_z_15.npz": "6a34fcacb93c7b428656ffc16eabe5018533be09704feb0b2190ce255a68d720",
+    "morphs/L3/ey_eh_uh_04.npz": "87c9de2c8da12cd3c225dd7c3392c3d1bbcf123298e9148ec10691049d8ee1ef",
+    "morphs/L3/aa_02.npz": "1a20f67fbc1050c8f5566124ab58348e497d9c9086fd45d503b2805bd68ab7c3",
+    "morphs/L3/ao_03.npz": "0e60c352bc00a00332f19aff647d9d5d18b07313c28b9d13617ffec2b24357fc",
+    "morphs/L3/w_uw_07.npz": "4bd08837132b38dcee0e0faa3091fbf8dff0dedc2705ca818b380f8e5378fde1",
+    "morphs/L3/f_v_18.npz": "3e3a6c6eb3c0c5a6cefc368f56ed59a702f3aba73ebd2007cdd5ac362931d727",
+    "morphs/L3/l_14.npz": "7357f79bc95fee27e3aea986175a88c65087c7e250c2afbee5ed4629f2b9e85f",
+    "morphs/L3/Happy.npz": "5ba840aa7fb8f65157874ea18b1f64c0533aa4b38b9d5e1d7e78c412167f4871",
+    "morphs/L3/Sad.npz": "5aa2175a1198c67b17f826d1141d1b014078086f2d2c1b4fbdf241978a82f0d6",
+    "morphs/L3/Angry.npz": "f44673ab75cda115889c2f0ffbddaab607db20ff57c378a6291c2858df748580",
+    "morphs/L3/Scared.npz": "13093c93aae043c46662df2e691f4186c9a20f3ba6f11938b88c0bdf9b91ce6d",
+    "morphs/L3/Eyes_Closed_Max.npz": "f031235bf45eb5267f421b21397b1042a3a9e222105bf841db288a8fce423644"
+  },
+  "rig_profile": "rigify/0.6.10",
+  "face_profile": "charmorph-l3/1",
+  "sha256": "268c62f390737867360c8e55a4a07c901fa2754287381bb15bfdc207014979ba",
+  "objects": [
+    "CustomRig_Vitruvian",
+    "cm_vitruvian"
+  ],
+  "armature": "CustomRig_Vitruvian",
+  "vertices": 37436,
+  "shape_keys": {
+    "p_b_m_21": {
+      "vertices": 1328,
+      "max_delta_m": 0.005943655967712402
+    },
+    "s_z_15": {
+      "vertices": 8680,
+      "max_delta_m": 0.010534048080444336
+    },
+    "ey_eh_uh_04": {
+      "vertices": 8662,
+      "max_delta_m": 0.006418943405151367
+    },
+    "aa_02": {
+      "vertices": 11071,
+      "max_delta_m": 0.023021459579467773
+    },
+    "ao_03": {
+      "vertices": 6873,
+      "max_delta_m": 0.008053421974182129
+    },
+    "w_uw_07": {
+      "vertices": 1260,
+      "max_delta_m": 0.004928708076477051
+    },
+    "f_v_18": {
+      "vertices": 1946,
+      "max_delta_m": 0.00392305850982666
+    },
+    "l_14": {
+      "vertices": 9973,
+      "max_delta_m": 0.008090972900390625
+    },
+    "Happy": {
+      "vertices": 11346,
+      "max_delta_m": 0.010275706648826599
+    },
+    "Sad": {
+      "vertices": 7286,
+      "max_delta_m": 0.004055939614772797
+    },
+    "Angry": {
+      "vertices": 7705,
+      "max_delta_m": 0.005016446113586426
+    },
+    "Scared": {
+      "vertices": 11638,
+      "max_delta_m": 0.013182878494262695
+    },
+    "Eyes_Closed_Max": {
+      "vertices": 4066,
+      "max_delta_m": 0.01090991497039795
+    }
+  },
+  "limits": [
+    "facial shape keys only: the Rigify face bones still carry no skin weights",
+    "visemes and expressions are upstream sculpted morphs, not reviewed against speech here",
+    "no external textures or particle hair"
+  ]
+}

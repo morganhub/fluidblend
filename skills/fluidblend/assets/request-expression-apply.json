@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "operation": "expression.apply",
+  "operation_id": "expression-apply-001",
+  "project_id": "demo-studio",
+  "target": {
+    "shot_id": "shot010",
+    "instance_id": "hero-01"
+  },
+  "parameters": {
+    "expression_id": "smile-01",
+    "expression": "happy",
+    "frame_range": {
+      "start": 20,
+      "end_exclusive": 60
+    },
+    "strength": 0.8,
+    "ease_frames": 4.0
+  },
+  "dry_run": false
+}

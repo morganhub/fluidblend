@@ -63,6 +63,9 @@ class AssetManifest(StrictModel):
     kind: Literal["character", "prop"] = "character"
     armature: str | None = None
     rig_profile: str | None = None
+    face_profile: str | None = Field(
+        default=None, description="Semantic face mapping of a character, e.g. charmorph-l3/1; None = no face"
+    )
     root_object: str | None = Field(default=None, description="Prop object that carries the instance")
     grips: dict[str, list[float]] = Field(
         default_factory=dict, description="Named grip points in the prop root's local space, metres"
@@ -77,7 +80,7 @@ class AssetManifest(StrictModel):
                 raise ValueError("a prop asset needs root_object among its objects")
             if "primary" not in self.grips:
                 raise ValueError("a prop asset needs a primary grip")
-            if self.armature or self.rig_profile:
+            if self.armature or self.rig_profile or self.face_profile:
                 raise ValueError("a prop asset carries no armature or rig profile")
         for name, point in self.grips.items():
             if not name or len(point) != 3:
@@ -163,6 +166,33 @@ class AudioPrepareParams(StrictModel):
 
 class LipsyncAnalyzeParams(StrictModel):
     source_path: str
+
+
+class LipsyncApplyParams(StrictModel):
+    """Key the character's mouth from a published `lipsync-analysis.json` (Rhubarb cues A-H, X)."""
+
+    lipsync_id: str = Field(pattern=IDENT_PATTERN)
+    analysis_path: str
+    start_frame: int = Field(default=1, ge=-100000, le=1_000_000, description="Frame of audio time 0")
+    transition_frames: float = Field(
+        default=2.0, ge=0.5, le=6, description="Cross-fade between two mouth shapes, shortened on short cues"
+    )
+    strength: float = Field(default=1.0, ge=0.1, le=1.0)
+    preview_samples: int = Field(default=4, ge=0, le=8, description="Face close-ups at cue midpoints")
+
+
+class ExpressionApplyParams(StrictModel):
+    expression_id: str = Field(pattern=IDENT_PATTERN)
+    expression: Literal["happy", "sad", "angry", "scared", "blink"]
+    frame_range: FrameRange
+    strength: float = Field(default=1.0, ge=0.05, le=1.0)
+    ease_frames: float = Field(default=4.0, ge=1, le=24, description="Ease in and out inside frame_range")
+
+    @model_validator(mode="after")
+    def eases_fit(self):
+        if self.frame_range.end_exclusive - 1 - self.frame_range.start < 2 * self.ease_frames:
+            raise ValueError("frame_range is shorter than the ease in plus the ease out")
+        return self
 
 
 class ContactWindow(StrictModel):

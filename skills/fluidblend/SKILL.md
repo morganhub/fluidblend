@@ -90,6 +90,7 @@ the dialogue.
 | Slow down, speed up, vary a clip | animation | `references/animation.md` | `animation.retime/create/apply/loop/bake` |
 | Pass a prop from one character to another, contacts | interactions | `references/interactions.md` | `interaction.plan` → review → `interaction.apply` → `interaction.validate` (bounded prop hand-off only) |
 | Shot preview, video, film assembly, audio | film | `references/film.md` | `shot.preview`, `film.assemble`, `audio.prepare`, `lipsync.analyze`; `fluidblend validate` |
+| Make a character say a line, smile, blink | film | `references/film.md` | `audio.prepare` → `lipsync.analyze` → `lipsync.apply`; `expression.apply` — needs a character with a `face_profile`, otherwise `RIG_MAPPING_REQUIRED`: say so |
 | Export to a game engine, broken export | game | `references/game.md` | `run` on `game.export` |
 | "fix the sliding foot", "keep the hand on the handle" | tools | `references/tool-development.md` | `adjustment.preview` → look at the frames → `adjustment.apply`; `adjustment.revert` (tool `contact_lock` only) |
 | "make me a tool that…" | tools | `references/tool-development.md` | declarative `tools/custom/<id>/tool.json` narrowing `contact_lock` → `tool.inspect` → `tool.test` → `tool.register`; `unsupported` = state the limitation, stop |
@@ -196,13 +197,13 @@ path has no identity check, no lock, no checkpoint, no version and no journal.
 19 operations are available in P0, of which only 10 run through `fluidblend run` (`scene.build`,
 `scene.inspect`, `scene.audit`, `animation.retime`, `shot.preview`, `game.export`,
 `scene.checkpoint`, `shot.validate`, `film.assemble`, `providers.check`); the others go through a
-dedicated subcommand (see `docs/cli.md`). 19 bounded P1 operations are available: `shot.build`,
+dedicated subcommand (see `docs/cli.md`). 21 bounded P1 operations are available: `shot.build`,
 `character.inspect`, `rig.map`, `rig.validate`, `animation.create/apply/loop/bake`,
 `interaction.plan/apply/validate`, `adjustment.preview/apply/revert` (one tool, `contact_lock`),
 `tool.inspect/test/register` (declarative custom tools, no code), `audio.prepare`,
-`lipsync.analyze`. The remaining catalogue entries are declared `available=false` and answer
-`UNSUPPORTED_CAPABILITY` (exit 2): `animation.retarget`, `lipsync.apply`, `expression.apply`,
-`game.import_test`, `game.smoke_test`. The catalogue is the authority: check with `fluidblend ops --all`.
+`lipsync.analyze`, `lipsync.apply`, `expression.apply` (characters with a face profile only). The
+remaining catalogue entries are declared `available=false` and answer `UNSUPPORTED_CAPABILITY`
+(exit 2): `animation.retarget`, `game.import_test`, `game.smoke_test`. The catalogue is the authority: check with `fluidblend ops --all`.
 
 Live mode covers **four operations only** (see the section above). `scene.build`, `shot.preview` and
 `game.export` are refused in a live envelope and run in batch instead. Live mode also requires an

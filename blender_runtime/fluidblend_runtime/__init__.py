@@ -35,6 +35,8 @@ BATCH_ONLY_OPERATIONS = {
     "adjustment.apply",
     "adjustment.revert",
     "tool.test",
+    "lipsync.apply",
+    "expression.apply",
 }
 
 # Blender add-on metadata: the runtime is installed and enabled for live mode (operators in addon.py).
