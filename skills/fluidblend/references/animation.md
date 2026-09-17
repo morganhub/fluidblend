@@ -117,11 +117,14 @@ Blocking affects newly authored keys only. Polish is currently a stage label, no
 
 `animation.apply` takes `clip_id`, `start_frame`. It uses a REPLACE NLA track and rejects any
 channel overlap with existing active/NLA animation. Shared-channel priority blending is not yet
-supported. `animation.loop` takes target `clip_id`, `output_clip`, `repetitions`; it verifies
+supported. Disjoint channels do not mean disjoint effects (root motion carries an IK hand away from
+a prop): the contacts of clips already applied are measured before and after, a clip that breaks
+one is refused with that `clip_id` and the failing records, and `animation-apply.json` lists the
+re-measured clips under `existing_clips`. A contact that was already failing is reported, not blamed. `animation.loop` takes target `clip_id`, `output_clip`, `repetitions`; it verifies
 endpoint curve values before adding repetition. This is not a physical contact/velocity test.
 
-`animation.bake` takes `output_clip`, `frame_range`, `step`, `rigid_limbs` and creates an export
-variant. It removes constraints, drivers and control-rig NLA tracks only in that variant (their
+`animation.bake` takes `output_clip`, `frame_range`, `step` (sample every n-th frame, 1–10,
+default 1), `rigid_limbs` and creates an export variant. It removes constraints, drivers and control-rig NLA tracks only in that variant (their
 Actions stay in the file), names the clip `<rig>.<output_clip>`, checks mesh deformation within 1 mm
 at five frames (ends and quarters), and preserves the source. Baked rigs cannot accept control recipes.
 

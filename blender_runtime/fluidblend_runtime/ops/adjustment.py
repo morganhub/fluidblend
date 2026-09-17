@@ -144,6 +144,70 @@ def lock(ctx, rig, params):
     return before, after, track, action, point
 
 
+def contact_anchor(ctx, rig, params):
+    """World position of the effector on the first frame of the window: where the contact should stay."""
+    _control, _switch, point = effector_roles(controls_for(ctx, rig), params["effector"])
+    first = measures.window_frames(params["frame_range"])[:1]
+    return Vector(measures.sample(rig, [point], first)[point][0])
+
+
+def anchor_marker(anchor, support):
+    """A flat red cross centred on the anchor, longer than a foot so its arms show around it."""
+    arm, half = 0.35, 0.006
+    verts, faces = [], []
+    for dx, dy in ((arm, half), (half, arm)):
+        base = len(verts)
+        verts += [(-dx, -dy, 0), (dx, -dy, 0), (dx, dy, 0), (-dx, dy, 0)]
+        faces.append(tuple(range(base, base + 4)))
+    mesh = bpy.data.meshes.new("fluidblend.preview.anchor")
+    mesh.from_pydata(verts, [], faces)
+    marker = bpy.data.objects.new("fluidblend.preview.anchor", mesh)
+    bpy.context.scene.collection.objects.link(marker)
+    marker.location = anchor
+    marker.color = (1.0, 0.05, 0.05, 1.0)
+    if support is not None:
+        # A moving support takes its anchor along: the contact is measured in its space.
+        marker.parent = support
+        marker.matrix_parent_inverse = support.matrix_world.inverted()
+    return marker
+
+
+def render_closeups(ctx, rig, params, folder, anchor):
+    """Top-down close-ups on the contact, clipped just above it so the body does not hide it.
+
+    The whole-body frames prove nothing to the eye on a 10 cm slide; a fixed mark under the
+    effector does: before, the effector leaves the cross; after, it stays on it.
+    """
+    scene = bpy.context.scene
+    support_id = params.get("support_instance_id")
+    support = blendio.find_instance_object(support_id) if support_id else None
+    marker = anchor_marker(anchor, support)
+    data = bpy.data.cameras.new("fluidblend.preview.closeup")
+    data.type, data.ortho_scale, data.clip_start, data.clip_end = "ORTHO", 0.8, 0.01, 1.0
+    camera = bpy.data.objects.new("fluidblend.preview.closeup", data)
+    scene.collection.objects.link(camera)
+    shading = scene.display.shading
+    previous = scene.camera, shading.color_type, scene.render.resolution_x, scene.frame_current
+    frames = measures.window_frames(params["frame_range"])
+    count = params.get("preview_samples", 4)
+    picked = sorted({frames[round(i * (len(frames) - 1) / max(1, count - 1))] for i in range(count)})
+    try:
+        scene.camera, shading.color_type = camera, "OBJECT"
+        scene.render.resolution_x = scene.render.resolution_y
+        for frame in picked:
+            scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            camera.location = marker.matrix_world.translation + Vector((0, 0, 0.3))
+            scene.render.filepath = ctx.out("review", f"closeup-{folder}", f"frame_{frame:04d}.png")
+            bpy.ops.render.render(write_still=True)
+    finally:
+        scene.camera, shading.color_type, scene.render.resolution_x = previous[:3]
+        scene.frame_set(previous[3])
+        for obj, block, owner in ((marker, marker.data, bpy.data.meshes), (camera, data, bpy.data.cameras)):
+            bpy.data.objects.remove(obj)
+            owner.remove(block)
+
+
 def render_frames(ctx, params, folder):
     count = params.get("preview_samples", 4)
     if not count:
@@ -261,11 +325,15 @@ def tool_test(ctx, request, builder):
 def preview(ctx, request, builder):
     rig = character(request)
     params = resolved(ctx, request, rig)
+    anchor = None
     if params.get("preview_samples", 4) and bpy.context.scene.camera:
         render_frames(ctx, params, "before")
+        anchor = contact_anchor(ctx, rig, params)
+        render_closeups(ctx, rig, params, "before", anchor)
     before, after, _track, _action, _point = lock(ctx, rig, params)
-    if params.get("preview_samples", 4) and bpy.context.scene.camera:
+    if anchor is not None:
         render_frames(ctx, params, "after")
+        render_closeups(ctx, rig, params, "after", anchor)
         builder.add_dir("frames", os.path.join(ctx.out_dir, "review"))
     data = {**report(params, before, after), "saved": False}
     builder.write_report("adjustment-preview.json", data)

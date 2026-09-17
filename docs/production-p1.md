@@ -37,7 +37,9 @@ Pose tests check finite responsive deformation and weights; they do not prove an
 `stage` and optional `profile_path`; supported presets are `idle_neutral`, `walk`, `turn`, `look_at`,
 `reach`, `take_prop`, `give_prop`, `react` (the two hand recipes take `hand` plus `prop_instance_id`
 or `target_point`). Clip creation creates a library Action without assigning it. `animation.apply`
-takes `clip_id` and `start_frame`; channel overlap with active animation is refused.
+takes `clip_id` and `start_frame`; channel overlap with active animation is refused. Contacts of
+clips already applied are re-measured before and after: walking away while `take_prop` holds the
+baton is refused (hand slide 0.15 m, contact error 0.375 m against 0.02 m), a head-only clip passes.
 `animation.loop` takes target `clip_id`, `output_clip`, `repetitions`; it checks endpoint curve
 values, not foot contact or velocity continuity. `animation.bake` takes `output_clip`,
 `frame_range`, `step`, `rigid_limbs`; it produces an export variant with constraints, drivers and

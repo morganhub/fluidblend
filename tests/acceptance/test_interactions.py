@@ -130,6 +130,25 @@ def test_take_and_give_prop_recipes_measure_the_palm(project, baton_blend):
     given = read_json(project.root / "animation/clips/give-left/clip.json")
     assert given["contacts"] == [] and given["measurements"][0]["space"] == "world"
     assert given["measurements"][0]["passed"] and given["layer"] == "hands"
+    # Disjoint channels, joint effect: root motion carries the IK hand away from the baton.
+    walk = create("walk-001", preset="walk", output_clip="walk")
+    assert walk.exit_code == 0, walk.result.model_dump()
+    carried = runner.run(
+        make_request("animation.apply", "walk-apply-001", target=target, parameters={"clip_id": "walk"})
+    )
+    error = carried.result.errors[0]
+    assert error.code == "VALIDATION_FAILED" and error.details["clip_id"] == "take-baton"
+    assert error.details["measurements"][0]["passed"] is False
+    # A clip that leaves the hand alone is accepted, and says which earlier clips it re-measured.
+    nod = create("nod-001", preset="look_at", output_clip="nod")
+    assert nod.exit_code == 0, nod.result.model_dump()
+    harmless = runner.run(
+        make_request("animation.apply", "nod-apply-001", target=target, parameters={"clip_id": "nod"})
+    )
+    assert harmless.exit_code == 0, harmless.result.model_dump()
+    assert harmless.result.metrics["rechecked_clips"] == ["take-baton"]
+    report = read_json(project.root / artifact(harmless.result, "animation-apply.json"))
+    assert report["existing_clips"][0]["broken"] == 0 and report["existing_clips"][0]["measurements"]
 
 
 @pytest.mark.acceptance(

@@ -90,6 +90,8 @@ def run(ctx, request, builder) -> None:
     if not chosen:
         raise OpError("VALIDATION_FAILED", "no instance object to export")
     armatures = [o for o in chosen if o.type == "ARMATURE"]
+    # Read now: the control re-import replaces the scene and these objects with it.
+    skinned = any(m.type == "ARMATURE" for o in chosen if o.type == "MESH" for m in o.modifiers)
     expected_actions = sorted(
         {o.animation_data.action.name for o in armatures if o.animation_data and o.animation_data.action}
     )
@@ -195,5 +197,6 @@ def run(ctx, request, builder) -> None:
         }
     )
     builder.warn(
-        "the GLB carries neither constraints nor drivers; P0 characters are not skinned (bone parenting)"
+        "the GLB carries neither constraints nor drivers"
+        + ("" if skinned else "; P0 characters are not skinned (bone parenting)")
     )

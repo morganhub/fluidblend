@@ -9,6 +9,14 @@ This project follows semantic versioning from 1.0.0 onwards; before that, the in
   disabled in the export variant, because a compressed limb carries a non-uniform scale that neither
   baked keys nor glTF can represent (13.8 mm at the feet, refused with the offending bones named).
   The pose change (35.8 mm at the knees on the walk fixture) is reported, IK tips are gated at 1 mm.
+- `animation.apply` re-measures the contacts of clips already applied, before and after, and refuses a
+  clip that breaks one even though their channels are disjoint (`existing_clips` in the report).
+- `adjustment.preview` renders close-ups of the contact over a fixed mark, before and after, so the
+  correction can be seen and not only read (`review/closeup-before`, `review/closeup-after`).
+- Fresh-agent test (an agent given only the skill took the Rigify character into Godot, same figures):
+  the skill now ships an exact asset manifest example and states the path, licence and `shot.build`
+  rules it had to learn from error messages; `game.export` no longer claims a skinned character is
+  not skinned.
 - `animation.bake` samples five frames instead of three, names the clip `<rig>.<output_clip>` and
   removes control-rig NLA tracks from the export variant (their Actions are kept).
 - `game.export` counts deform bones when `export_def_bones` is set, exports only the baked clip of a

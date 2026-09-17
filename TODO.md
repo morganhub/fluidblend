@@ -229,11 +229,11 @@ Spec §9, §10, §11, §12, §16.1, §18 (lot 3); acceptance B01, B03, B05, B06,
 - [x] `tools/custom/<tool_id>/` registry with `tool.inspect` / `tool.test` / `tool.register`;
       a bounded tool with tests or a clear limitation, never a fake success → B08. Declarative
       only (no code loaded); with one built-in tool a custom tool is a stricter `contact_lock`.
-- [~] Quality measures (§16.1): foot slide ≤ 0.02 m, hand/prop contact ≤ 0.02 m, loop error,
+- [x] Quality measures (§16.1): foot slide ≤ 0.02 m, hand/prop contact ≤ 0.02 m, loop error,
       with the measurement defined (space, support window, sampling, control points, tolerance).
-      Done: shared `anim/measures.py`, foot slide (world), palm/grip contact in the prop's space,
-      hand-off jump and loop pose gated, seam velocity reported ungated. Remaining: `animation.apply`
-      re-measures only the applied clip's contacts, not those of clips already on the rig.
+      Shared `anim/measures.py`, foot slide (world), palm/grip contact in the prop's space,
+      hand-off jump and loop pose gated, seam velocity reported ungated. `animation.apply`
+      re-measures the contacts of clips already on the rig, before and after, and refuses a regression.
 
 ### Native Blender panel (§12.4)
 - [x] "Director" panel — target, parameters, range, Preview / Apply / Revert, state, report path;
@@ -245,8 +245,10 @@ Spec §9, §10, §11, §12, §16.1, §18 (lot 3); acceptance B01, B03, B05, B06,
       fixed (empty character field, truncated messages, no redraw after a timer, stale work version
       not reported, unsaved scene blocking Apply/Revert with misleading "save" advice). Strict rule
       kept on purpose: Apply and Revert need a clean scene; `Reload file` discards on confirmation.
-- [ ] In-viewport preview of an adjustment (today: figures and before/after frames only), and a
-      demo shot where the fix is visible to the eye (the B05 fixture drifts 10 cm sideways).
+- [x] A fix visible to the eye: `adjustment.preview` adds top-down close-ups on the contact
+      (`review/closeup-before|after/`), clipped above the effector, over a red cross fixed at the
+      anchor. Looked at on B05: the ankle sits 10 cm off the cross before, on it after.
+- [ ] In-viewport preview of an adjustment (today: figures and rendered frames only).
 
 ## Lot 4 — voice and game target (P1)
 

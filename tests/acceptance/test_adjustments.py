@@ -70,6 +70,9 @@ def test_B05_contact_lock_preview_apply_revert(project, blender_exe):
     )
     frames = project.root / next(a.path for a in preview.result.artifacts if a.kind == "frames")
     assert len(list((frames / "before").glob("*.png"))) == 4 == len(list((frames / "after").glob("*.png")))
+    # Close-ups over a fixed mark at the contact: the whole-body frames do not show a 10 cm slide.
+    for side in ("closeup-before", "closeup-after"):
+        assert len(list((frames / side).glob("*.png"))) == 4
 
     applied = run("adjustment.apply", "lock-apply", lock)
     assert applied.exit_code == 0, applied.result.model_dump()

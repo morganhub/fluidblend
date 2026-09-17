@@ -456,6 +456,33 @@ def add_strip(rig, action, layer, name, start_frame, frame_range):
     return track, strip
 
 
+def strip_contact_records(ctx, rig, strip, manifest, supports):
+    """Contacts a clip declares, measured where its strip really plays, once per repetition."""
+    period = manifest["frame_range"]["end_exclusive"] - manifest["frame_range"]["start"]
+    records = []
+    for cycle in range(manifest.get("repetitions", 1)):
+        records += measures.contact_records(
+            rig,
+            manifest.get("contacts", []),
+            offset=int(strip.frame_start) - manifest["frame_range"]["start"] + cycle * period,
+            quality=ctx.quality,
+            supports=supports,
+        )
+    return records
+
+
+def applied_contact_clips(rig):
+    """Strips already playing on the rig whose clip declares contacts."""
+    found = []
+    for track in rig.animation_data.nla_tracks if rig.animation_data else []:
+        for strip in [] if track.mute else track.strips:
+            raw = strip.action.get("fluidblend_manifest") if strip.action else None
+            manifest = json.loads(raw) if raw else {}
+            if manifest.get("contacts"):
+                found.append((strip, manifest))
+    return found
+
+
 def apply(ctx, request, builder):
     rig = character(request)
     params = request["parameters"]
@@ -464,6 +491,14 @@ def apply(ctx, request, builder):
     if manifest["rig_profile"] != rig.get("fluidblend_rig_profile") or rig.get("fluidblend_baked"):
         raise OpError("RIG_MAPPING_REQUIRED", "clip and target control rig are incompatible")
     refuse_overlap(rig, action)
+    supports = {obj["fluidblend_instance_id"]: obj for obj in blendio.instance_objects()}
+    # Disjoint channels do not mean disjoint effects: root motion carries IK hands away from a prop.
+    # Contacts of the clips already applied are measured before and after this one.
+    earlier = applied_contact_clips(rig)
+    try:
+        baseline = [strip_contact_records(ctx, rig, s, m, supports) for s, m in earlier]
+    except ValueError as exc:
+        raise OpError("VALIDATION_FAILED", str(exc)) from exc
     track, strip = add_strip(
         rig,
         action,
@@ -482,20 +517,27 @@ def apply(ctx, request, builder):
         strip.action_frame_end = manifest["frame_range"]["start"] + period * repetitions
         strip.extrapolation = "HOLD_FORWARD"
     bpy.context.view_layer.update()
-    supports = {obj["fluidblend_instance_id"]: obj for obj in blendio.instance_objects()}
-    records = []
     try:
-        for cycle in range(repetitions):
-            records += measures.contact_records(
-                rig,
-                manifest.get("contacts", []),
-                offset=int(strip.frame_start) - manifest["frame_range"]["start"] + cycle * period,
-                quality=ctx.quality,
-                supports=supports,
-            )
+        records = strip_contact_records(ctx, rig, strip, manifest, supports)
+        rechecked = [strip_contact_records(ctx, rig, s, m, supports) for s, m in earlier]
     except ValueError as exc:
         raise OpError("VALIDATION_FAILED", str(exc)) from exc
     refuse_failed(records, "applied clip breaks its declared contacts in this scene")
+    existing = []
+    for (_, other), before, after in zip(earlier, baseline, rechecked, strict=True):
+        # A contact that already failed (a human edit, say) is reported, not blamed on this clip.
+        broken = [
+            now
+            for was, now in zip(before, after, strict=True)
+            if was["passed"] is not False and now["passed"] is False
+        ]
+        existing.append({"clip_id": other["clip_id"], "measurements": after, "broken": len(broken)})
+        if broken:
+            raise OpError(
+                "VALIDATION_FAILED",
+                "this clip breaks the contacts of a clip already applied",
+                details={"clip_id": other["clip_id"], "measurements": broken},
+            )
     travel = None
     if manifest.get("stride_m"):
         # Zero slide is only meaningful if the character really advanced.
@@ -520,10 +562,12 @@ def apply(ctx, request, builder):
             "owned_channels": manifest["owned_channels"],
             "overlap": False,
             "measurements": records,
+            "existing_clips": existing,
             "root_travel_m": travel,
         },
     )
     builder.metrics["clip_id"] = params["clip_id"]
+    builder.metrics["rechecked_clips"] = [e["clip_id"] for e in existing]
     if travel is not None:
         builder.metrics["root_travel_m"] = travel
     slides = [r["value"] for r in records if r["kind"] in ("foot_slide", "contact_slide")]

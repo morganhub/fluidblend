@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "kind": "character",
+  "asset_id": "vitruvian",
+  "version": 1,
+  "sha256": "d99283a272aee84c56fdc63281abd5ca33b725bf9463df2c66d0cf0e5fdbae7b",
+  "license": "CC0-1.0",
+  "objects": [
+    "CustomRig_Vitruvian",
+    "cm_vitruvian"
+  ],
+  "armature": "CustomRig_Vitruvian",
+  "rig_profile": "rigify/0.6.10",
+  "blend_path": "assets/characters/vitruvian/v001/character.blend",
+  "license_path": "licenses/vitruvian.md"
+}

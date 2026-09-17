@@ -44,7 +44,9 @@ It refuses instead of guessing:
 Reports (`adjustment-preview.json`, `adjustment-apply.json`) carry `before` and `after` measurement
 records (space, window, control point, tolerance — same format as the clip library), and the
 preview adds `review/before` and `review/after` frames rendered through the shot camera as it is
-framed. `technical_pass` is a contact measurement; look at the frames and say which ones you looked
+framed, plus `review/closeup-before` and `review/closeup-after`: top-down close-ups clipped just above
+the effector, over a red cross fixed at the contact anchor. Look at those first — a 10 cm slide is
+invisible on a whole-body frame, obvious against the cross. `technical_pass` is a contact measurement; look at the frames and say which ones you looked
 at before calling the fix good. Limits: translation only (no foot roll, no wrist orientation), the
 other contacts of the character are not re-planted, one effector per adjustment.
 

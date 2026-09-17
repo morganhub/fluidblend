@@ -123,8 +123,22 @@ Do not present a passing audit as an artistic validation.
 
 ## Versioned Rigify characters
 
-Use a project-local manifest matching `schemas/asset.json`: asset id/version, blend path/hash,
-license and license path, object names, armature, rig profile. `shot.build` accepts
+Use a project-local manifest: asset id/version, blend path/hash, license and license path, object
+names, armature, rig profile. Exact example: [asset-character-vitruvian.json](../assets/asset-character-vitruvian.json).
+Rules learned the hard way by a fresh agent:
+
+- Unknown fields are refused. The kit's `fixtures/vitruvian/asset.json` is **provenance metadata, not
+  a project manifest**: do not copy it as is. Copy `character.blend` to
+  `assets/characters/vitruvian/v001/`, the kit's `licenses/vitruvian.md` to the project's `licenses/`,
+  and write the manifest from the example (its `sha256` is the fixture's).
+- `blend_path` and `license_path` resolve from the **project root**, never from the manifest's folder.
+- Admission checks that both files exist inside the project and that the blend hash matches; all
+  three files are fingerprinted as inputs. The licence text itself is not judged: never write one
+  yourself, copy the one that came with the asset.
+- `shot.build` builds from its `assets` list only. It does not read the instances declared in
+  `shot.json`; on an existing shot it keeps the content and refuses an `instance_id` already present.
+
+`shot.build` accepts
 `assets: [{manifest_path, instance_id, location, rotation_z}]` (metres, radians; placement of the
 instance root at import) and `import_mode: "append"` only.
 Do not bypass hash/license admission or apply transforms to a skinned character.

@@ -83,5 +83,16 @@ def test_example_requests_validate():
         assert request.operation_id
 
 
+def test_example_asset_manifest_matches_the_shipped_fixture():
+    """A fresh agent has only this example to author a manifest: it must be the real, current one."""
+    from fluidblend.contracts.production import AssetManifest
+
+    example = json.loads((SKILL_DIR / "assets/asset-character-vitruvian.json").read_text(encoding="utf-8"))
+    manifest = AssetManifest.model_validate(example)
+    fixture = json.loads((KIT_ROOT / "fixtures/vitruvian/asset.json").read_text(encoding="utf-8"))
+    assert manifest.sha256 == fixture["sha256"] and manifest.objects == fixture["objects"]
+    assert (KIT_ROOT / manifest.license_path).exists()
+
+
 def test_wrapper_script_exists():
     assert (SKILL_DIR / "scripts" / "fluidblend.ps1").exists()
