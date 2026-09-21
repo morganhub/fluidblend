@@ -7,6 +7,7 @@ from pathlib import Path
 
 from fluidblend.contracts.capabilities import CapabilitiesReport
 from fluidblend.contracts.common import OperationResult
+from fluidblend.contracts.handoff import HandoffBundle
 from fluidblend.contracts.operations import OPERATIONS, OperationRequest
 from fluidblend.contracts.production import AssetManifest, ClipIndex, ClipManifest, RigProfile
 from fluidblend.contracts.project import (
@@ -39,6 +40,7 @@ ROOT_SCHEMAS = {
     "capabilities": CapabilitiesReport,
     "revisions": RevisionsFile,
     "dependencies-lock": DependencyLock,
+    "handoff-bundle": HandoffBundle,
 }
 
 

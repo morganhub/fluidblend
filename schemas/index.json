@@ -6,6 +6,7 @@
     "clip-index.json",
     "clip.json",
     "dependencies-lock.json",
+    "handoff-bundle.json",
     "local-config.json",
     "operation-request.json",
     "operation-result.json",
