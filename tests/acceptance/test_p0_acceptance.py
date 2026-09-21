@@ -270,6 +270,17 @@ def test_A10_export_glb_validate_and_reimport(project: Project):
         "animations_present": True,
     }
     assert report["settings"]["export_yup"] is True and report["axis_convention"]["gltf"]["up"] == "+Y"
+
+    # The demo scene is generated in place: it has no asset manifest and therefore no licence.
+    # A hand-off bundle is a redistribution format, so none is published, and the export says why
+    # instead of shipping a bundle that claims a licence it does not have.
+    assert outcome.result.metrics["bundle"] is False
+    assert not [a for a in outcome.result.artifacts if a.kind == "bundle"]
+    assert any("no hand-off bundle was published" in w for w in outcome.result.warnings), (
+        outcome.result.warnings
+    )
+    assert any("unknown license" in w for w in outcome.result.warnings)
+
     if not gltfv.find_validator(project.local.gltf_validator_executable):
         note(
             "A10",

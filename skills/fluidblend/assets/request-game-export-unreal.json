@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "operation": "game.export",
+  "operation_id": "export-shot010-hero-unreal-001",
+  "project_id": "demo-studio",
+  "target": {"shot_id": "shot010"},
+  "parameters": {
+    "output_name": "shot010-hero",
+    "instance_ids": ["hero-01"],
+    "reimport_check": true,
+    "export_def_bones": true,
+    "export_influence_nb": 4,
+    "animation_mode": "ACTIONS",
+    "slide_to_zero": true,
+    "include_cameras": false,
+    "include_lights": false,
+    "export_preset": "unreal"
+  },
+  "dry_run": false
+}

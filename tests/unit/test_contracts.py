@@ -102,3 +102,19 @@ def test_schema_export_is_deterministic(tmp_path: Path, unavailable_operation):
 def test_repo_schemas_are_up_to_date():
     stale = check_up_to_date(Path(__file__).resolve().parents[2] / "schemas")
     assert stale == [], f"stale schemas: {stale} -> `fluidblend schema export`"
+
+
+def test_the_unreal_preset_refuses_what_it_could_not_import():
+    """The preset validates; it never repairs a setting behind the user's back."""
+    from pydantic import ValidationError
+
+    from fluidblend.contracts.operations import GameExportParams
+
+    assert GameExportParams(output_name="hero").export_preset == "none"
+    assert GameExportParams(output_name="hero", export_preset="unreal").animation_mode == "ACTIONS"
+    with pytest.raises(ValidationError, match="animation_mode ACTIONS"):
+        GameExportParams(output_name="hero", export_preset="unreal", animation_mode="NLA_TRACKS")
+    with pytest.raises(ValidationError, match="slide_to_zero"):
+        GameExportParams(output_name="hero", export_preset="unreal", slide_to_zero=False)
+    with pytest.raises(ValidationError):
+        GameExportParams(output_name="hero", export_preset="godot")

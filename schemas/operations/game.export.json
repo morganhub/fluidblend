@@ -27,6 +27,16 @@
       "title": "Export Influence Nb",
       "type": "integer"
     },
+    "export_preset": {
+      "default": "none",
+      "description": "`unreal` validates the export against what the fluidunreal kit can import; it never silently changes a setting",
+      "enum": [
+        "none",
+        "unreal"
+      ],
+      "title": "Export Preset",
+      "type": "string"
+    },
     "include_cameras": {
       "default": false,
       "title": "Include Cameras",

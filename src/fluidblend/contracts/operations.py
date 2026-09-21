@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from pydantic import Field, ValidationError, field_validator
+from pydantic import Field, ValidationError, field_validator, model_validator
 
 from fluidblend.contracts.common import SCHEMA_VERSION, StrictModel
 from fluidblend.contracts.production import (
@@ -126,6 +126,22 @@ class GameExportParams(StrictModel):
     slide_to_zero: bool = True
     include_cameras: bool = False
     include_lights: bool = False
+    export_preset: Literal["none", "unreal"] = Field(
+        default="none",
+        description="`unreal` validates the export against what the fluidunreal kit can import; "
+        "it never silently changes a setting",
+    )
+
+    @model_validator(mode="after")
+    def _preset_is_consistent(self) -> GameExportParams:
+        if self.export_preset != "unreal":
+            return self
+        # The preset refuses rather than repairs: a changed setting would be a silent export.
+        if self.animation_mode != "ACTIONS":
+            raise ValueError("the unreal preset needs animation_mode ACTIONS (one clip per Action)")
+        if not self.slide_to_zero:
+            raise ValueError("the unreal preset needs slide_to_zero true (clips must start at frame 0)")
+        return self
 
 
 class FilmAssembleParams(StrictModel):

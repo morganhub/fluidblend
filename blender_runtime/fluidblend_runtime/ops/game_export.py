@@ -145,12 +145,38 @@ def _instance_report(chosen, exported, expected_actions, export_def_bones):
     return rows
 
 
+def _check_unreal_preset(chosen, export_def_bones, builder):
+    """Refuse an export the fluidunreal kit could not import, before anything is written.
+
+    Only the scene knows which asset really sits behind an instance: the shot manifest is authored
+    by hand and drifts. So the Rigify check belongs here, not in the engine.
+    """
+    for obj in chosen:
+        profile = str(obj.get("fluidblend_rig_profile") or "")
+        if profile.startswith("rigify") and not export_def_bones:
+            raise OpError(
+                "VALIDATION_FAILED",
+                "Unreal preset requires export_def_bones on a Rigify character",
+                details={"instance_id": obj.get("fluidblend_instance_id"), "rig_profile": profile},
+            )
+    for obj in chosen:
+        if obj.get("fluidblend_instance_id") and obj.type == "ARMATURE" and not obj.get("fluidblend_baked"):
+            # Not a refusal: an unbaked character still exports, and the bundle says so plainly.
+            builder.warn(
+                f"{obj.get('fluidblend_instance_id')} is not baked: "
+                "the bundle reports baked false and the engine gets the control rig as it is"
+            )
+
+
 def run(ctx, request, builder) -> None:
     params = request["parameters"]
     name = params["output_name"]
     chosen = _select_export_set(params.get("instance_ids"))
     if not chosen:
         raise OpError("VALIDATION_FAILED", "no instance object to export")
+    preset = params.get("export_preset", "none")
+    if preset == "unreal":
+        _check_unreal_preset(chosen, bool(params.get("export_def_bones", False)), builder)
     armatures = [o for o in chosen if o.type == "ARMATURE"]
     # Read now: the control re-import replaces the scene and these objects with it.
     skinned = any(m.type == "ARMATURE" for o in chosen if o.type == "MESH" for m in o.modifiers)

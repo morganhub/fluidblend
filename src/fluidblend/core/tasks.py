@@ -40,6 +40,7 @@ from fluidblend.core import budgets as budget_mod
 from fluidblend.core import exit_codes
 from fluidblend.core.atomic import atomic_write_json, read_json
 from fluidblend.core.checkpoints import create_file_checkpoint
+from fluidblend.core.handoff import LicenceUnknown, build_bundle, bundle_artifact
 from fluidblend.core.hashing import fingerprint, new_id, now_iso, sha256_file
 from fluidblend.core.locks import LockBusy, ProjectLocks
 from fluidblend.core.paths import PathRejected, assert_not_protected, relpath_posix, resolve_inside
@@ -944,7 +945,10 @@ class TaskRunner:
         if spec.name == "shot.preview":
             return self._assemble_preview(out_dir, result)
         if spec.name == "game.export":
-            return self._validate_glb(out_dir, result)
+            result = self._validate_glb(out_dir, result)
+            if result.status != OperationStatus.succeeded:
+                return result
+            return self._write_handoff_bundle(request, params, out_dir, result)
         if spec.name == "animation.retime" and result.metrics.get("duration_scale"):
             result.metrics.setdefault("convention", "duration_scale multiplies the duration")
         return result
@@ -1075,6 +1079,57 @@ class TaskRunner:
                     details={"codes": summary["blocking_errors"]},
                 )
             )
+        return result
+
+    def _write_handoff_bundle(
+        self,
+        request: OperationRequest,
+        params: StrictModel,
+        out_dir: Path,
+        result: OperationResult,
+    ) -> OperationResult:
+        """Publish the transfer contract beside the GLB, so another kit can import it with proof."""
+        revision = self.revisions.get(f"shot:{request.target.shot_id}")
+        try:
+            outcome = build_bundle(
+                root=self.project.root,
+                request=request,
+                parameters=params,
+                out_dir=out_dir,
+                result=result,
+                fps=self.project.manifest.fps,
+                source_revision=revision.revision if revision else 0,
+            )
+        except LicenceUnknown as exc:
+            raise TaskAbort(
+                ErrorCode.PERMISSION_REQUIRED,
+                "unknown license for a planned redistribution",
+                recovery=(
+                    "add a readable license_path to the asset manifest, "
+                    "or export without export_preset: unreal"
+                ),
+                details={"instance_id": exc.instance_id, "detail": exc.detail},
+            ) from exc
+        except (ValueError, OSError) as exc:
+            raise TaskAbort(
+                ErrorCode.VALIDATION_FAILED,
+                f"the hand-off bundle could not be built: {exc}",
+                recovery="read export-report.json; the GLB itself is still in the task outputs",
+                status=OperationStatus.failed,
+            ) from exc
+        result.warnings.extend(w for w in outcome.warnings if w not in result.warnings)
+        if outcome.bundle is None:
+            result.metrics["bundle"] = False
+            return result
+        atomic_write_json(out_dir / "handoff-bundle.json", outcome.bundle.model_dump(mode="json"))
+        result.artifacts.append(bundle_artifact(out_dir))
+        result.metrics["bundle"] = True
+        result.metrics["bundle_instances"] = len(outcome.bundle.instances)
+        result.metrics["bundle_clips"] = len(outcome.bundle.clips)
+        result.next_safe_actions.append(
+            "hand the published handoff-bundle.json to the fluidunreal skill "
+            "(fluidunreal run bundle.accept --source-path <the published export folder>)"
+        )
         return result
 
     def _verify_artifacts(self, task: TaskRecord, result: OperationResult) -> None:

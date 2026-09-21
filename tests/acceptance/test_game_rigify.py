@@ -6,6 +6,7 @@ from tests.acceptance.test_interactions import artifact
 from tests.conftest import make_request
 
 from fluidblend.adapters.tool_paths import find_browser, find_godot
+from fluidblend.contracts.handoff import HandoffBundle
 from fluidblend.core.atomic import read_json
 from fluidblend.core.tasks import TaskRunner
 
@@ -68,6 +69,16 @@ def test_rigify_character_walks_in_godot(project):
     fidelity = export["reimport"]["skeleton_fidelity"]
     assert fidelity["compared"] > 500 and fidelity["max_error_m"] <= 0.001
     assert export["reimport"]["action_names"] == ["CustomRig_Vitruvian.walk-baked"]
+    # A Rigify character exported for Unreal: the bundle must carry the deform skeleton it really
+    # exported and a reference pose an engine can measure its import against.
+    bundle_path = project.root / artifact(outcome.result, "handoff-bundle.json")
+    bundle = HandoffBundle.model_validate(read_json(bundle_path))
+    hero = next(i for i in bundle.instances if i.instance_id == "hero-01")
+    assert hero.rig_profile and hero.export_def_bones and hero.skinned and hero.baked
+    assert hero.bone_count == export["exported"]["armatures"][hero.gltf_node_name]
+    assert hero.reference_pose, "no reference pose: an engine could not check the scale it got"
+    assert all(len(bone.head_m) == 3 for bone in hero.reference_pose)
+    assert bundle.validation.reimport_passed is True
     glb = next(a.path for a in outcome.result.artifacts if a.kind == "glb")
     imported = runner.run(
         make_request("game.import_test", "rg-import", target=shot, parameters={"export_path": glb})
