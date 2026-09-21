@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 
 import bpy
@@ -83,6 +84,67 @@ def _skeleton_fidelity(before, frames, action_by_rig, shift):
     }
 
 
+# Bones a consumer can find again on the other side, plus the extremes that reveal height and up axis.
+REFERENCE_BONES = ("DEF-spine", "DEF-head", "DEF-hand.L", "DEF-foot.L", "DEF-upper_arm.L")
+
+
+def _reference_pose(rig, limit=5):
+    """World head of a few deform bones at REST, in metres.
+
+    This is what lets an engine-side kit *measure* the scale and the up axis it really got instead
+    of assuming a conversion factor. `head_local` is the rest head, so nothing in the scene moves.
+    """
+    deform = [b for b in rig.data.bones if b.use_deform]
+    if not deform:
+        return []
+    chosen = [b for b in deform if b.name in REFERENCE_BONES][:limit]
+    ranked = sorted(deform, key=lambda b: (rig.matrix_world @ b.head_local).z)
+    for bone in (ranked[0], ranked[-1]):
+        if bone not in chosen:
+            chosen.append(bone)
+    chosen = sorted({b.name: b for b in chosen}.values(), key=lambda b: b.name)[:limit]
+    return [
+        {"bone": b.name, "head_m": [round(v, 6) for v in (rig.matrix_world @ b.head_local)]} for b in chosen
+    ]
+
+
+def _instance_report(chosen, exported, expected_actions, export_def_bones):
+    """Per-instance facts the hand-off bundle needs, read from the scene before the re-import."""
+    skinned_by_instance = {}
+    for obj in chosen:
+        if obj.type != "MESH":
+            continue
+        owner = obj.get("fluidblend_instance_id") or obj.get("fluidblend_part_of")
+        if owner and any(m.type == "ARMATURE" for m in obj.modifiers):
+            skinned_by_instance[owner] = True
+    rows = []
+    for obj in chosen:
+        instance_id = obj.get("fluidblend_instance_id")
+        if not instance_id:
+            continue
+        is_rig = obj.type == "ARMATURE"
+        node = obj.name
+        rows.append(
+            {
+                "instance_id": instance_id,
+                "asset_id": obj.get("fluidblend_asset_id"),
+                "asset_version": obj.get("fluidblend_asset_version"),
+                "kind": obj.get("fluidblend_kind", "character"),
+                "rig_profile": obj.get("fluidblend_rig_profile"),
+                "armature": node if is_rig else None,
+                "skinned": bool(skinned_by_instance.get(instance_id, False)),
+                "baked": bool(obj.get("fluidblend_baked")),
+                "export_def_bones": bool(export_def_bones),
+                "bone_count": int(exported["armatures"].get(node, 0)),
+                "gltf_node_name": node,
+                "grips": json.loads(obj.get("fluidblend_grips", "{}")),
+                "animations": [a for a in expected_actions if a.startswith(node + ".")],
+                "reference_pose": _reference_pose(obj) if is_rig else [],
+            }
+        )
+    return rows
+
+
 def run(ctx, request, builder) -> None:
     params = request["parameters"]
     name = params["output_name"]
@@ -149,6 +211,8 @@ def run(ctx, request, builder) -> None:
         "settings": {k: v for k, v in settings.items() if k != "filepath"},
         "axis_convention": AXIS_CONVENTION,
         "exported": exported,
+        "node_names": [o.name for o in chosen],
+        "instances": _instance_report(chosen, exported, expected_actions, settings["export_def_bones"]),
         "reimport": None,
     }
     if params.get("reimport_check", True):
@@ -180,6 +244,17 @@ def run(ctx, request, builder) -> None:
             )
             reimport["skeleton_fidelity"] = fidelity
             checks["skeleton_fidelity"] = fidelity["compared"] > 0 and fidelity["max_error_m"] <= 0.001
+        # The bundle names glTF nodes; if the exporter renamed one, say so rather than assume.
+        seen_rigs = set(reimport["armatures"])
+        for row in report["instances"]:
+            if row["armature"] and row["gltf_node_name"] not in seen_rigs:
+                builder.warn(
+                    f"the exporter renamed node {row['gltf_node_name']!r}: "
+                    f"the re-import shows {sorted(seen_rigs)}"
+                )
+                row["gltf_node_name_verified"] = False
+            elif row["armature"]:
+                row["gltf_node_name_verified"] = True
         reimport["checks"] = checks
         reimport["passed"] = all(checks.values())
         report["reimport"] = reimport

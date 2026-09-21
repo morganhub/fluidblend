@@ -41,6 +41,8 @@ def run(ctx, request, builder):
                 obj["fluidblend_part_of"] = asset["instance_id"]
         root["fluidblend_instance_id"] = asset["instance_id"]
         root["fluidblend_asset_id"] = asset["asset_id"]
+        # The version travels with the object: a hand-off bundle must name the exact asset it carries.
+        root["fluidblend_asset_version"] = int(asset["version"])
         root["fluidblend_kind"] = kind
         if kind == "character":
             root["fluidblend_rig_profile"] = asset["rig_profile"]
