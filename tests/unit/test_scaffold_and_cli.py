@@ -100,3 +100,25 @@ def test_cli_client_config_prints_valid_json(capsys):
     assert main(["client-config", "--client", "claude", "--port", "9878"]) == exit_codes.OK
     data = json.loads(capsys.readouterr().out)
     assert data["mcpServers"]["blender"]["args"][-1] == "9878"
+
+
+def test_cli_init_accepts_the_unreal_engine_target(tmp_path: Path):
+    """`unreal` is a declared target like any other: the kit exports for it, fluidunreal tests it."""
+    root = tmp_path / "unreal-game"
+    assert (
+        main(
+            [
+                "init",
+                "--path",
+                str(root),
+                "--project-id",
+                "gorash",
+                "--profile",
+                "game",
+                "--game-engine",
+                "unreal",
+            ]
+        )
+        == exit_codes.OK
+    )
+    assert load_project(root).manifest.targets.game_engine == "unreal"

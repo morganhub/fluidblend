@@ -537,7 +537,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--profile", choices=["film", "game", "hybrid"], default="film")
     p.add_argument("--project-id")
     p.add_argument("--name")
-    p.add_argument("--game-engine", choices=["godot", "web", "none"], default="none")
+    p.add_argument("--game-engine", choices=["godot", "web", "unreal", "none"], default="none")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--strict", action="store_true", help="exit 3 if conflicts are detected")
     p.add_argument("--json", action="store_true")

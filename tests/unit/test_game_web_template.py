@@ -3,6 +3,9 @@
 import json
 import re
 
+import pytest
+from tests.conftest import make_request
+
 from fluidblend.contracts.operations import validate_request
 from fluidblend.contracts.production import GameImportTestParams
 from fluidblend.core.hashing import sha256_file
@@ -53,3 +56,49 @@ def test_template_parameter_selects_the_engine_and_follows_the_project_when_omit
     example = kit_root() / "skills/fluidblend/assets/request-game-import-test-web.json"
     _request, params, spec = validate_request(json.loads(example.read_text(encoding="utf-8")))
     assert params.template == "web" and spec.available
+
+
+def test_an_unreal_project_refuses_the_engine_check_and_still_offers_the_web_eyes(tmp_path):
+    """`unreal` is an export target: this kit never claims to have checked the character in Unreal."""
+    from fluidblend.contracts.common import ErrorCode
+    from fluidblend.core.project import load_project, scaffold_project
+    from fluidblend.hostops import game
+    from fluidblend.hostops.context import HostContext, HostOpError
+
+    root = tmp_path / "unreal"
+    scaffold_project(root, profile="game", project_id="gorash", game_engine="unreal")
+    project = load_project(root)
+    assert project.manifest.targets.game_engine == "unreal"
+    glb = root / "exports" / "shot010" / "a.glb"
+    glb.parent.mkdir(parents=True, exist_ok=True)
+    glb.write_bytes(b"glTF\x02\x00\x00\x00")
+
+    def context(template):
+        payload = make_request(
+            "game.import_test",
+            "import-001",
+            target={"shot_id": "shot010"},
+            parameters={"export_path": "exports/shot010/a.glb", "template": template},
+        )
+        request, params, _spec = validate_request(payload)
+        out = tmp_path / "out"
+        out.mkdir(exist_ok=True)
+        return HostContext(
+            project=project,
+            request=request,
+            params=params,
+            task_id="t-001",
+            task_dir=tmp_path,
+            out_dir=out,
+        )
+
+    with pytest.raises(HostOpError) as raised:
+        game.import_test(context(None))
+    assert raised.value.code == ErrorCode.VALIDATION_FAILED
+    assert "fluidunreal" in (raised.value.recovery or "")
+
+    # With an explicit template the eyes stay available: it gets as far as the web handler.
+    try:
+        game.import_test(context("web"))
+    except HostOpError as exc:
+        assert exc.code != ErrorCode.VALIDATION_FAILED or "Unreal" not in str(exc)

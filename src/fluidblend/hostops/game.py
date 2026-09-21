@@ -111,6 +111,16 @@ def import_test(ctx):
         raise HostOpError(ErrorCode.VALIDATION_FAILED, "export_path must be a published .glb")
     # An omitted template follows what the project declares it is made for.
     declared = ctx.project.manifest.targets.game_engine
+    if declared == "unreal" and not ctx.params.template:
+        # This kit exports for Unreal; it never claims to have checked the character inside it.
+        raise HostOpError(
+            ErrorCode.VALIDATION_FAILED,
+            "this kit does not check a character in Unreal Engine",
+            recovery=(
+                "the Unreal engine check belongs to the fluidunreal kit; "
+                'pass template: "web" to look at the GLB'
+            ),
+        )
     template = ctx.params.template or ("web" if declared == "web" else "godot")
     ctx.metrics["template"] = template
     ctx.metrics["template_from"] = "request" if ctx.params.template else "project targets.game_engine"

@@ -10,7 +10,7 @@ from fluidblend.contracts.common import SCHEMA_VERSION, Fps, FrameRange, StrictM
 
 Profile = Literal["film", "game", "hybrid"]
 AutonomyMode = Literal["inspect", "assisted", "local_autonomous", "batch_approved"]
-GameEngine = Literal["godot", "web", "none"]
+GameEngine = Literal["godot", "web", "unreal", "none"]
 
 IDENT_PATTERN = r"^[a-z0-9][a-z0-9._-]{0,63}$"
 

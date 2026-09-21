@@ -57,7 +57,7 @@ Creates or completes a project. Idempotent, never replaces an existing file.
 | `--profile` | `film` | `film`, `game`, `hybrid` |
 | `--project-id` | derived from the folder | lowercase letters, digits, `.`, `_`, `-` |
 | `--name` | `project_id` | display name |
-| `--game-engine` | `none` | `godot`, `web`, `none` (forced to `none` in the `film` profile) |
+| `--game-engine` | `none` | `godot`, `web`, `unreal`, `none` (forced to `none` in the `film` profile). `unreal` means export only: `game.import_test` then needs an explicit `template`, because the engine check belongs to the `fluidunreal` kit |
 | `--dry-run` | — | writes nothing |
 | `--strict` | — | exits with 3 if conflicts are detected |
 | `--json` | — | structured output |
