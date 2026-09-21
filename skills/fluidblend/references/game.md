@@ -206,8 +206,14 @@ revision), `fps`, the axis convention, every file with its sha256 (model, export
 report when it ran, the licences, copied in), `validation` (`khronos: passed | failed | not_run`,
 `reimport_passed`, `skeleton_fidelity_max_error_m`), the instances (asset id and version, licence,
 rig profile, skinned, baked, bone count, glTF node name, grips, and a **reference pose**: two to five
-deform bone heads at rest in metres) and the clips (glTF animation name, frame range, loop, root
-motion, stride, repetitions).
+deform bone heads at rest in metres) and the clips (glTF animation name, `frame_range` as the GLB
+has it, from 0, `source_frame_range` as Blender has it, loop, root motion, stride, repetitions). A
+request sent back to this kit about a clip, an `animation.bake` for instance, names the
+`source_frame_range`.
+
+`schema_version` is `1.1`. A minor version only adds optional fields: a reader reads any 1.x,
+strictly up to its own minor, and drops the fields of a newer one with a note in `warnings`. A
+new major is refused.
 
 The reference pose is the point of the bundle: it lets the engine-side kit **measure** the scale and
 the up axis it really got instead of assuming a conversion factor. Unmatched animations, an

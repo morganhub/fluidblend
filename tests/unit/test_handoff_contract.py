@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from fluidblend.contracts.handoff import HandoffBundle
+from fluidblend.contracts.handoff import BUNDLE_SCHEMA_VERSION, HandoffBundle
 
 SHA = "a" * 64
 
@@ -129,3 +129,52 @@ def test_unknown_fields_and_duplicate_paths_are_refused():
 def test_khronos_status_is_a_closed_list():
     with pytest.raises(ValidationError):
         HandoffBundle.model_validate(bundle(validation={"khronos": "probably fine"}))
+
+
+def test_a_bundle_carries_the_blender_range_beside_the_glb_one():
+    parsed = HandoffBundle.model_validate(bundle())
+    assert parsed.schema_version == BUNDLE_SCHEMA_VERSION and parsed.clips[0].source_frame_range is None
+    data = bundle()
+    data["clips"][0]["source_frame_range"] = {"start": 1, "end_exclusive": 97}
+    clip = HandoffBundle.model_validate(data).clips[0]
+    assert clip.frame_range.start == 0 and clip.source_frame_range.start == 1
+    assert clip.source_frame_range.count == clip.frame_range.count
+
+
+def test_a_10_bundle_is_still_read():
+    assert HandoffBundle.model_validate(bundle(schema_version="1.0")).schema_version == "1.0"
+
+
+def test_a_newer_minor_loses_only_what_this_reader_cannot_know_and_says_so():
+    """An older consumer keeps reading; what it drops is named, never silently lost."""
+    data = bundle(schema_version="1.7", surprise=1)
+    data["clips"][0]["phase_offset"] = 3
+    data["instances"][0]["reference_pose"][0]["tail_m"] = [0.0, 0.0, 1.2]
+    data["warnings"] = ["from the producer"]
+    parsed = HandoffBundle.model_validate(data)
+    assert parsed.schema_version == "1.7" and parsed.clips[0].stride_m == 0.6
+    assert parsed.warnings[0] == "from the producer"
+    note = parsed.warnings[-1]
+    assert f"newer than this reader ({BUNDLE_SCHEMA_VERSION})" in note
+    for dropped in ("surprise", "clips[0].phase_offset", "instances[0].reference_pose[0].tail_m"):
+        assert dropped in note
+    # A newer minor adds fields; it does not relax the ones this reader knows.
+    data = bundle(schema_version="1.7")
+    data["validation"]["khronos"] = "probably fine"
+    with pytest.raises(ValidationError):
+        HandoffBundle.model_validate(data)
+
+
+def test_a_newer_minor_with_nothing_new_adds_no_warning():
+    assert HandoffBundle.model_validate(bundle(schema_version="1.7")).warnings == []
+
+
+def test_up_to_the_known_minor_an_unknown_field_is_still_refused():
+    with pytest.raises(ValidationError):
+        HandoffBundle.model_validate(bundle(schema_version=BUNDLE_SCHEMA_VERSION, surprise=1))
+
+
+@pytest.mark.parametrize("version", ["2.0", "1", "1.x", "01.0", "1.01", ""])
+def test_another_major_or_a_malformed_version_is_refused(version):
+    with pytest.raises(ValidationError, match="schema_version"):
+        HandoffBundle.model_validate(bundle(schema_version=version, surprise=1))

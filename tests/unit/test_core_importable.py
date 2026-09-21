@@ -7,6 +7,7 @@ than no table at all.
 
 from __future__ import annotations
 
+import importlib
 import re
 import subprocess
 import sys
@@ -67,6 +68,28 @@ def test_the_documented_surface_and_this_test_say_the_same_thing():
     documented = set(re.findall(r"^\| `([a-z_.]+)` \|", section, re.M))
     assert documented == {m.removeprefix("fluidblend.") for m in REUSABLE}
     assert "breaking for fluidunreal" in section
+
+
+def test_every_promised_name_exists_in_its_module():
+    """fluidunreal imports these names; a rename that the table still promises would break it silently."""
+    doc = (kit_root() / "docs/architecture.md").read_text(encoding="utf-8")
+    section = doc.split("## Reusable core", 1)[1].split("\n## ", 1)[0]
+    promised: dict[str, set[str]] = {}
+    for module, cell in re.findall(r"^\| `([a-z_.]+)` \| ([^|]+)\|", section, re.M):
+        # A cell reads "`Name`, `other()`: what it gives"; the prose after the colon promises nothing.
+        names = cell.split(":", 1)[0]
+        promised.setdefault(module, set()).update(re.findall(r"`([A-Za-z_][A-Za-z0-9_]*)(?:\(\))?`", names))
+    # The paragraph under the table: `contracts.tasks` (`TaskRecord`, ...) come along transitively.
+    for module, names in re.findall(r"`(contracts\.[a-z_]+)` \(([^)]*)\)", section):
+        promised.setdefault(module, set()).update(re.findall(r"`([A-Za-z_][A-Za-z0-9_]*)`", names))
+    assert {"SCHEMA_VERSION", "HandoffBundle", "IDENT_PATTERN"} <= set().union(*promised.values())
+    missing = [
+        f"{module}.{name}"
+        for module, names in sorted(promised.items())
+        for name in sorted(names)
+        if not hasattr(importlib.import_module(f"fluidblend.{module}"), name)
+    ]
+    assert not missing, f"docs/architecture.md promises names that do not exist: {missing}"
 
 
 def test_the_runtime_is_not_part_of_the_promise():

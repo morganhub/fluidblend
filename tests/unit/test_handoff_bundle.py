@@ -284,8 +284,13 @@ def test_the_clip_range_describes_the_glb_not_the_blender_scene(scene):
     bundle = run_build(scene, report=report).bundle
     assert bundle.clips[0].frame_range.start == 0
     assert bundle.clips[0].frame_range.count == 48
+    # The Blender range travels beside it: an animation.bake sent back here must name frames 1-48,
+    # and a request built from the GLB's range would bake one frame too early.
+    source = bundle.clips[0].source_frame_range
+    assert (source.start, source.end_exclusive) == (1, 49)
 
     # Without it, the scene's own range is what the GLB carries, so it is kept as it is.
     report["settings"]["export_anim_slide_to_zero"] = False
     bundle = run_build(scene, report=report).bundle
     assert bundle.clips[0].frame_range.start == 1 and bundle.clips[0].frame_range.count == 48
+    assert bundle.clips[0].source_frame_range == bundle.clips[0].frame_range

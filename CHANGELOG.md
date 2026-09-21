@@ -3,6 +3,27 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## 0.6.2 — 2026-09-21 — the bundle names the range to bake, and grows without breaking readers
+
+- **Breaking for fluidunreal: bundles are `schema_version` 1.1.** A reader pinned on fluidblend
+  0.6.0 or 0.6.1 accepts `1.0` only and refuses them; move the pin to `v0.6.2` and refresh the
+  vendored `schemas/handoff-bundle.json`. From 0.6.2 on, a reader reads any 1.x: strictly up to its
+  own minor, and from a newer minor it drops the fields it does not know and names them in
+  `warnings`. A minor only adds optional fields; a new major is refused.
+- **`clips[].source_frame_range`**: the clip's range in Blender, beside `frame_range`, which is the
+  GLB's and starts at 0 after `slide_to_zero`. A request sent back to this kit names the Blender
+  one: fluidunreal's `bake_rigid_limbs` template built its `animation.bake` from the GLB range, and
+  baked the walk fixture over frames 0–47 instead of 1–48.
+- **`animation.bake` said `loop: false` whatever it baked.** It now declares a loop when every clip
+  playing over the range loops. A declared loop or stride also needs each strip to play over the
+  whole range a whole number of its cycles: frames outside a strip hold a pose, so a range that
+  runs past the strip no longer passes as one stride. Otherwise neither is declared and a limit says
+  why. The baked Rigify walk is `loop: true`; the library scenario's half cycle is not, and says so.
+- **Reusable core**: `SCHEMA_VERSION`, `IDENT_PATTERN` and `BUNDLE_SCHEMA_VERSION`, which
+  fluidunreal imports, are now part of the promise. The test also checks that every name the table
+  promises exists in its module.
+- Runtime and add-on move to 0.6.2: re-run `fluidblend runtime install --enable`.
+
 ## 0.6.1 — 2026-09-21 — a baked clip says what it does with the root
 
 - **`animation.bake` declared every baked clip in place.** Its manifest carried no `root_motion`, so

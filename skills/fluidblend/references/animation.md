@@ -135,6 +135,13 @@ refused and names the bones (`non_uniform_scale_bones`, `hint`). With it, IK str
 the new version only, so knees and elbows bend instead: the report states `max_pose_delta_m`
 (35.8 mm on the walk fixture, at the knees) and refuses if an IK tip leaves its target by more than
 1 mm (`ik_tip_drift_m`). Say it plainly: the baked pose is not the control-rig pose, contacts are kept.
+
+The baked clip inherits what the clips playing over `frame_range` declare, never a guess:
+`root_motion` and its channels from a travelling clip, `stride_m` (and `repetitions` from two
+cycles) from a single travelling clip, `loop: true` only when every clip loops. Stride and loop
+also need each strip to play over the whole range a whole number of its cycles; otherwise neither
+is declared and a limit says why. Bake the range the clip plays in the scene: a hand-off bundle
+gives it as `source_frame_range`, while its `frame_range` is the GLB's, starting at 0.
 Indexes at `animation/clips/<id>/clip.json` cite versioned blend/report hashes. Only `walk` and
 `take_prop` declare contacts; do not claim measured locomotion or hand contact from the other clips.
 

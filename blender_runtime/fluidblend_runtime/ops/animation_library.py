@@ -720,17 +720,19 @@ def rigid_limbs(rig, meshes, frames):
     return report
 
 
-def baked_root_motion(rig, interval):
-    """What the baked clip does with the root, taken from the clips it bakes.
+def baked_playback(rig, interval):
+    """What the baked clip does with the root, and whether it loops, taken from the clips it bakes.
 
     The bake keys the evaluated pose, travel included. Until 0.6.1 its manifest said nothing about
     root motion, so the default, `in_place`, reached the game bundle: fluidunreal measured the baked
-    walk travelling 0.6 m per loop under an in-place declaration. The bake now inherits what the
-    clips playing over its range declare. It does not guess a stride it cannot state: over a range
-    that is not a whole number of cycles, or from two travelling clips at once, none is declared.
+    walk travelling 0.6 m per loop under an in-place declaration. Until 0.6.2 it said `loop: false`
+    whatever it baked. Both are inherited from the clips playing over the range, never guessed: a
+    stride needs one travelling clip, a loop needs every clip to loop, and both need each strip to
+    play over the whole range a whole number of its cycles. Anything else declares nothing and a
+    limit says why.
     """
     start, end = interval["start"], interval["end_exclusive"]
-    sources, travelling = [], []
+    playing = []
     for track in rig.animation_data.nla_tracks:
         for strip in [] if track.mute else track.strips:
             if strip.mute or strip.action is None:
@@ -739,33 +741,45 @@ def baked_root_motion(rig, interval):
                 continue
             raw = strip.action.get("fluidblend_manifest")
             manifest = json.loads(raw) if raw else {}
-            sources.append(manifest.get("clip_id") or strip.action.name)
-            if manifest.get("root_motion", "in_place") != "in_place":
-                travelling.append(manifest)
-    declared = {"root_motion": "in_place"}
+            playing.append((strip, manifest, manifest.get("clip_id") or strip.action.name))
+
+    def whole_cycles(strip, manifest, name):
+        """Cycles of the clip the range covers, or why they cannot be counted."""
+        # Frames outside the strip hold a pose: they neither travel nor repeat.
+        if strip.frame_start > start or strip.frame_end < end:
+            played = f"[{int(strip.frame_start)}, {int(strip.frame_end)})"
+            return None, f"the baked range [{start}, {end}) runs outside the strip of {name} {played}"
+        span = manifest.get("frame_range") or {}
+        period = span.get("end_exclusive", 0) - span.get("start", 0)
+        cycles = (end - start) / period if period > 0 else 0.0
+        if abs(cycles - round(cycles)) > 1e-6 or round(cycles) < 1:
+            return None, f"the baked range covers {cycles:.3f} cycles of {name}"
+        return int(round(cycles)), None
+
+    declared = {"root_motion": "in_place", "loop": False}
     limits = []
-    if len(sources) == 1:
-        declared["source_clip"] = sources[0]
-    if not travelling:
-        return declared, limits
-    first = travelling[0]
-    declared["root_motion"] = first["root_motion"]
-    declared["root_motion_channels"] = first.get("root_motion_channels", [])
+    if len(playing) == 1:
+        declared["source_clip"] = playing[0][2]
+    travelling = [p for p in playing if p[1].get("root_motion", "in_place") != "in_place"]
+    if travelling:
+        declared["root_motion"] = travelling[0][1]["root_motion"]
+        declared["root_motion_channels"] = travelling[0][1].get("root_motion_channels", [])
     if len(travelling) > 1:
         limits.append("several travelling clips were baked together: no single stride is declared")
-        return declared, limits
-    period = first["frame_range"]["end_exclusive"] - first["frame_range"]["start"]
-    cycles = (end - start) / period if period > 0 else 0.0
-    if first.get("stride_m") is None:
-        return declared, limits
-    if abs(cycles - round(cycles)) > 1e-6 or round(cycles) < 1:
-        limits.append(
-            f"the baked range covers {cycles:.3f} cycles of {first['clip_id']}: no stride is declared"
-        )
-        return declared, limits
-    declared["stride_m"] = first["stride_m"]
-    if round(cycles) >= 2:
-        declared["repetitions"] = int(round(cycles))
+    elif travelling and travelling[0][1].get("stride_m") is not None:
+        cycles, reason = whole_cycles(*travelling[0])
+        if cycles is None:
+            limits.append(f"{reason}: no stride is declared")
+        else:
+            declared["stride_m"] = travelling[0][1]["stride_m"]
+            if cycles >= 2:
+                declared["repetitions"] = cycles
+    if playing and all(p[1].get("loop") for p in playing):
+        reasons = [reason for _, reason in (whole_cycles(*p) for p in playing) if reason]
+        if reasons:
+            limits.append(f"{'; '.join(reasons)}: the baked clip is not declared as a loop")
+        else:
+            declared["loop"] = True
     return declared, limits
 
 
@@ -795,7 +809,7 @@ def bake(ctx, request, builder):
         before[frame] = positions(meshes)
     sheared = sheared_bones(rig)
     # Read before the bake: the strips that say what the clip does are removed below.
-    root_motion, root_limits = baked_root_motion(rig, interval)
+    playback, playback_limits = baked_playback(rig, interval)
     bpy.ops.object.select_all(action="DESELECT")
     rig.select_set(True)
     bpy.context.view_layer.objects.active = rig
@@ -858,15 +872,14 @@ def bake(ctx, request, builder):
         interval["start"],
         interval["end_exclusive"],
         "baked",
-        loop=False,
         limits=["export skeleton variant; control rig constraints removed in this new work version"]
         + (
             ["rigid limbs: IK stretch disabled, the pose differs from the control rig by rigid_limbs"]
             if rigid
             else []
         )
-        + root_limits,
-        **root_motion,
+        + playback_limits,
+        **playback,
     )
     save_version(ctx, request, builder)
     builder.write_report("clip.json", manifest)
@@ -875,7 +888,8 @@ def bake(ctx, request, builder):
     builder.metrics.update(
         {
             "baked": True,
-            "root_motion": root_motion["root_motion"],
+            "root_motion": playback["root_motion"],
+            "loop": playback["loop"],
             "channels": len(channels(action)),
             "max_geometry_error_m": error,
             "sample_frames": sample_frames,

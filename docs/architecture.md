@@ -41,9 +41,9 @@ letting it copy them and drift, these modules are a **published surface**. They 
 
 | Module | What it gives a sibling kit |
 | --- | --- |
-| `contracts.common` | `StrictModel`, `Fps`, `FrameRange`, `ErrorCode`, `ErrorRecord`, `Artifact`, `ChangedEntity`, `OperationStatus`, `OperationResult` |
+| `contracts.common` | `SCHEMA_VERSION`, `StrictModel`, `Fps`, `FrameRange`, `ErrorCode`, `ErrorRecord`, `Artifact`, `ChangedEntity`, `OperationStatus`, `OperationResult` |
 | `contracts.capabilities` | `Capability`, `CapabilitiesReport`: one shape for every diagnostic |
-| `contracts.handoff` | `HandoffBundle`: the transfer contract itself |
+| `contracts.handoff` | `HandoffBundle`, `BUNDLE_SCHEMA_VERSION`: the transfer contract itself. A reader reads any 1.x bundle, strictly up to its own minor; from a newer minor it drops the fields it does not know and lists them in `warnings`. A new major is refused |
 | `contracts.operations` | `OperationRequest`, `Target`, `validate_request`: a sibling builds and validates a request for **this** kit with them |
 | `core.paths` | the whole path guard: root confinement, reparse points, protected patterns |
 | `core.atomic` | atomic JSON/text writes, append-only JSONL |
@@ -59,14 +59,15 @@ letting it copy them and drift, these modules are a **published surface**. They 
 | `adapters.tool_paths` | `user_tools_dir()`, `find_executable()`: `%LOCALAPPDATA%\fluidblend\tools\` is **shared** between kits, so the Khronos validator is installed once |
 | `adapters.gltf_validator` | Khronos validation of any GLB |
 
-`contracts.tasks` (`TaskRecord`, `WorkerInfo`, `Plan`) and `contracts.project` (`Budgets`,
-`Autonomy`, `Permissions`, `RevisionRecord`, `RevisionsFile`, `DependencyEntry`, `DependencyLock`)
+`contracts.tasks` (`TaskRecord`, `WorkerInfo`, `Plan`) and `contracts.project` (`IDENT_PATTERN`,
+`Budgets`, `Autonomy`, `Permissions`, `RevisionRecord`, `RevisionsFile`, `DependencyEntry`, `DependencyLock`)
 come along transitively and fall under the same promise. The rest of `contracts.project`
 (`ProjectManifest`, `ShotManifest`) describes *this* kit's project and does not.
 
 **The promise**: the public API of these modules changes only with a `CHANGELOG.md` entry marked
 **breaking for fluidunreal**. `tests/unit/test_core_importable.py` enforces both halves — that each
-module imports clean, and that this table and the test never drift apart.
+module imports clean, and that this table and the test never drift apart, down to every name above
+existing in its module. A change to the bundle that an older reader would refuse is breaking too.
 
 Explicitly **not** reusable, because they are bound to Blender or to this kit's project shape:
 `core.tasks`, `core.project`, `core.planner`, `core.permissions`, `core.production`,

@@ -163,6 +163,7 @@ def _describe_clips(
     known = _clip_indexes(root)
     # The bundle describes the GLB, not the Blender scene: with slide_to_zero the exported
     # animation starts at frame 0, and a consumer measuring its length must be told that range.
+    # The Blender range travels beside it: a request sent back to this kit names that one.
     slid = bool(report.get("settings", {}).get("export_anim_slide_to_zero", True))
     clips: list[BundleClip] = []
     for action in report.get("exported", {}).get("actions", []):
@@ -182,6 +183,7 @@ def _describe_clips(
                 instance_id=instance.instance_id,
                 gltf_animation_name=action,
                 frame_range=span,
+                source_frame_range=index.frame_range,
                 loop=index.loop,
                 root_motion=index.root_motion,
                 stride_m=index.stride_m,

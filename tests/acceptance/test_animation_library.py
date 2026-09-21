@@ -144,3 +144,8 @@ def test_rigify_library_layers_loop_and_bake(project):
     assert clip["source_sha256"] == sha256_file(project.root / clip["source_blend"])
     # Two in-place clips baked together: in place, and no single source to name.
     assert clip["root_motion"] == "in_place" and clip.get("source_clip") is None
+    # Both clips loop, but 24 frames are half a cycle of each: not a loop, and the reason is written.
+    assert clip["loop"] is False
+    assert any(
+        "0.500 cycles of idle-loop" in limit and "not declared as a loop" in limit for limit in clip["limits"]
+    )

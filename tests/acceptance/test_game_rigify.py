@@ -70,6 +70,8 @@ def test_rigify_character_walks_in_godot(project):
             assert baked["root_motion"] == "root_bone" and baked["source_clip"] == "walk"
             assert baked["stride_m"] == pytest.approx(0.6) and baked.get("repetitions") is None
             assert metrics["root_motion"] == "root_bone"
+            # One whole cycle of a looping walk, over its whole strip: until 0.6.2 it said no loop.
+            assert baked["loop"] is True and metrics["loop"] is True
     export = read_json(project.root / artifact(outcome.result, "export-report.json"))
     assert export["reimport"]["passed"] and export["exported"]["meshes"] == 1
     fidelity = export["reimport"]["skeleton_fidelity"]
@@ -87,7 +89,10 @@ def test_rigify_character_walks_in_godot(project):
     assert bundle.validation.reimport_passed is True
     # What the engine is told the clip does is what the clip does: it travels one stride.
     walk = next(c for c in bundle.clips if c.clip_id == "walk-baked")
-    assert walk.root_motion == "root_bone" and walk.stride_m == pytest.approx(0.6)
+    assert walk.root_motion == "root_bone" and walk.stride_m == pytest.approx(0.6) and walk.loop
+    # The GLB's range starts at 0; the range a request sent back here must bake is the scene's.
+    assert (walk.frame_range.start, walk.frame_range.end_exclusive) == (0, 48)
+    assert (walk.source_frame_range.start, walk.source_frame_range.end_exclusive) == (1, 49)
     glb = next(a.path for a in outcome.result.artifacts if a.kind == "glb")
     imported = runner.run(
         make_request("game.import_test", "rg-import", target=shot, parameters={"export_path": glb})
