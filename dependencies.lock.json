@@ -75,11 +75,11 @@
     },
     "blender.runtime_addon": {
       "name": "fluidblend runtime (Blender add-on)",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "path": null,
       "sha256": null,
       "source": null,
-      "verified_at": "2026-09-17T21:24:46.215Z",
+      "verified_at": "2026-09-21T08:16:09.414Z",
       "status": "available"
     },
     "blender.mcp_addon": {
@@ -103,7 +103,7 @@
   },
   "extra": {
     "generated_at": "2026-09-17T21:24:46.220Z",
-    "fluidblend": "0.5.1",
+    "fluidblend": "0.6.0",
     "blender_locked_series": "5.2",
     "platform": "Windows-11-10.0.26200-SP0",
     "python": "3.13.5"

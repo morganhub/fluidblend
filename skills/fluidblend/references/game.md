@@ -93,8 +93,11 @@ and A10 becomes partial again. Never present an export as glTF-compliant without
 ## Published artifacts
 
 In `exports/<shot>/<operation_id>/`: `<output_name>.glb`, `export-report.json` (full settings, axis
-convention, exported content, reimport report) and `gltf-validator.json` if the validator ran.
-Metrics: `glb_bytes`, `armatures`, `actions`, `reimport_passed`, `khronos_validation`.
+convention, exported content, per-instance facts and reference pose, reimport report),
+`gltf-validator.json` if the validator ran, `handoff-bundle.json` and the `licenses/` it carries.
+Metrics: `glb_bytes`, `armatures`, `actions`, `reimport_passed`, `khronos_validation`, `bundle`
+(false when no licence could be established, with the reason in `warnings`), `bundle_instances`,
+`bundle_clips`.
 
 ## Limits to state with every export
 
@@ -182,3 +185,39 @@ Refusals: engine files that differ from the pinned hashes (`VALIDATION_FAILED` "
 page that writes no report, a prototype that fails a check (`failed_checks`). Limits to state: the
 kit's test bed, not the user's game; one frame, no frame-rate or GPU figure; one character, one
 clip; Chromium browsers only; artistic review pending.
+## Unreal: hand over to fluidunreal
+
+This kit does **not** import into Unreal Engine, does not read its skeleton, does not play its
+prototype and never says a character works in Unreal. It exports a bundle and hands it over. The
+sibling kit `fluidunreal` imports it, audits what the engine really wrote, runs its own test bed and
+publishes its own evidence.
+
+Export with the preset: [request-game-export-unreal.json](../assets/request-game-export-unreal.json).
+`export_preset: "unreal"` **validates, it never repairs**: `animation_mode` other than `ACTIONS` or
+`slide_to_zero: false` is refused at the request (exit 4); a Rigify character without
+`export_def_bones: true` is refused by the runtime before anything is written; an unbaked character
+is a warning, not a refusal, and the bundle reports `baked: false`. An instance whose asset manifest
+has no readable `license_path` stops the task (`PERMISSION_REQUIRED`, exit 2): a bundle is a
+redistribution format and never travels without the licence of what it carries.
+
+`handoff-bundle.json` is published beside the GLB on **every** successful `game.export`, not only
+with the preset. It contains: the producer (kit, version, operation_id, project, shot, source
+revision), `fps`, the axis convention, every file with its sha256 (model, export report, Khronos
+report when it ran, the licences, copied in), `validation` (`khronos: passed | failed | not_run`,
+`reimport_passed`, `skeleton_fidelity_max_error_m`), the instances (asset id and version, licence,
+rig profile, skinned, baked, bone count, glTF node name, grips, and a **reference pose**: two to five
+deform bone heads at rest in metres) and the clips (glTF animation name, frame range, loop, root
+motion, stride, repetitions).
+
+The reference pose is the point of the bundle: it lets the engine-side kit **measure** the scale and
+the up axis it really got instead of assuming a conversion factor. Unmatched animations, an
+unconfirmed node name or a skipped re-import become `warnings[]` and `limits[]` rather than silence.
+
+Next step, to say to the user and to the agent: hand the published `handoff-bundle.json` to the
+`fluidunreal` skill (`fluidunreal run bundle.accept --source-path <the published export folder>`),
+then `asset.import`, `asset.audit`, `game.smoke_test`, `game.screenshot` over there.
+
+On a project whose `targets.game_engine` is `unreal`, `game.import_test` without an explicit
+`template` is refused (`VALIDATION_FAILED`) and points at the fluidunreal kit. With
+`template: "web"` the browser eyes stay available on the same GLB, and they remain the only visual
+evidence this kit can produce.

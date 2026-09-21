@@ -81,6 +81,20 @@ Target acceptance scenarios: B01, B03, B05, B06 and B08 — all passed.
 Target acceptance scenarios: B02, B04, B07 — all passed after 0.3.0. Godot 4.7.2 and Rhubarb 1.14.0
 are really called by `game.import_test` / `game.smoke_test` and `lipsync.analyze`. Not done: the animatic / review / final-render items of §13.
 
+## Hand-off to fluidunreal — **done (version 0.6.0)**
+
+This kit exports for Unreal Engine 5; it does not import into it, does not read its skeleton, does
+not play its prototype and never claims a character works there. `game.export` publishes
+`handoff-bundle.json`, a hashed transfer contract with the licences it carries and a reference pose
+an engine-side kit can measure its import against. The sibling kit `fluidunreal` consumes it.
+
+`docs/architecture.md` publishes the reusable core a sibling kit may import, with a stability
+promise: a change to it carries a CHANGELOG entry marked **breaking for fluidunreal**.
+
+Not planned here: Unreal import, retargeting to the UE5 Mannequin, packaging, a live Unreal session.
+Those belong to `fluidunreal`, and `format: "fbx"` on `game.export` stays unimplemented until that
+kit's feasibility lot asks for it.
+
 ## Lot 5 — P2 extensions — **not implemented, on demand**
 
 Nothing is planned until a real production asks for it. Identified candidates: a multi-shot render

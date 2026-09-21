@@ -3,6 +3,36 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## 0.6.0 — 2026-09-21 — hand-off to fluidunreal
+
+Written so a sibling kit can drive another engine without copying this one. Nothing about the
+existing targets changes; the 31 acceptance scenarios still pass, A10 and the Rigify scenario are
+extended rather than altered.
+
+- **`handoff-bundle.json`** (`contracts/handoff.py`, `schemas/handoff-bundle.json`): the transfer
+  contract. Published beside the GLB on every successful `game.export`. Carries the producer, the
+  axis convention, every file with its sha256, the licences copied in, the instances (asset id and
+  version, licence, rig profile, skinned, baked, bone count, glTF node name, grips, reference pose)
+  and the clips. Artifact `kind: "bundle"`, metrics `bundle`, `bundle_instances`, `bundle_clips`.
+- **Reference pose**: the runtime records two to five deform bone heads at rest, in metres, so an
+  engine-side kit measures the scale and the up axis it really got instead of assuming a conversion
+  factor. `shot.build` stamps `fluidblend_asset_version` on the instance root.
+- **`export_preset: "unreal"`** on `game.export`: validates, never repairs. Refuses an
+  `animation_mode` other than `ACTIONS`, `slide_to_zero: false`, and a Rigify character without
+  `export_def_bones`. An unbaked character is a warning; the bundle reports `baked: false`.
+- **Licence rule**: an instance without a readable `license_path` stops the task under the preset
+  (`PERMISSION_REQUIRED`, exit 2). Without the preset it is left out with a warning, and if no
+  licence at all can be established no bundle is published: a bundle never redistributes an asset
+  without its licence.
+- **`targets.game_engine` accepts `"unreal"`**. On such a project, `game.import_test` without an
+  explicit `template` is refused and points at the `fluidunreal` kit; `template: "web"` keeps the
+  browser eyes. The project's `AGENTS.md` says the same.
+- **Reusable core** (`docs/architecture.md`): 17 modules a sibling kit may import, with the promise
+  that their API changes only with a CHANGELOG entry marked **breaking for fluidunreal**.
+  `tests/unit/test_core_importable.py` proves each imports without pulling in `bpy`, a Blender
+  adapter or `core.tasks`, and that the documented table cannot drift from the enforced list.
+- Runtime and add-on move to 0.6.0 with the package: re-run `fluidblend runtime install --enable`.
+
 ## 0.5.1 — 2026-09-17 — game project scaffold
 
 Found by installing the kit in a real game project: the assistant was handed a film shot with a

@@ -6,7 +6,7 @@ and deliver scenes for music videos, short films and game prototypes — reprodu
 and resumably. Every operation is validated, journaled, versioned and verified (ffprobe, Khronos
 glTF validator, re-import). Windows 11 only for now.
 
-Status: **0.5.1** — P0, live mode, the whole P1 plan (lots 3 and 4), its refinement and the web game target. 31 acceptance scenarios pass
+Status: **0.6.0** — P0, live mode, the whole P1 plan (lots 3 and 4), its refinement, the web game target and the Unreal hand-off. 31 acceptance scenarios pass
 on the reference machine — batch A01–A13, production B01–B09, live L01–L09 — see
 [docs/acceptance-reports/implementation.md](docs/acceptance-reports/implementation.md). What the kit does not
 do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is simulated.
@@ -59,6 +59,13 @@ do yet is listed below and in [docs/roadmap.md](docs/roadmap.md) — nothing is 
   of the skin drawn by a game engine. `fluidblend preview web` serves the folder on 127.0.0.1 so you
   can play it. The Godot run is headless and draws nothing: the web run on the same GLB is how the
   assistant (and you) can actually see the exported character, whatever the target engine.
+- **Unreal hand-off**: every successful `game.export` publishes `handoff-bundle.json` beside the GLB
+  — producer, axis convention, every file with its sha256, the licences copied in, the instances with
+  a reference pose (deform bone heads at rest, in metres) and the clips. The sibling kit
+  `fluidunreal` imports it into Unreal Engine 5, audits what the engine really wrote and runs its own
+  test bed; this kit never claims a character works in Unreal. `export_preset: "unreal"` validates
+  the export rather than repairing it, and refuses to redistribute an asset without a readable
+  licence.
 - **Retime on a variant** (`animation.retime`): the source stays untouched, before/after images,
   contact markers preserved, measured duration.
 - **Video preview** (`shot.preview`): idempotent PNG sequence then an H.264 MP4 assembled by FFmpeg,

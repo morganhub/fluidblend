@@ -11,7 +11,7 @@ description: >-
   between two characters, audio preparation and mouth-cue analysis. Check the
   operation catalogue for unsupported production features; never simulate success.
 license: MIT
-metadata: {version: "0.5.1", lot: "P0+live+P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
+metadata: {version: "0.6.0", lot: "P0+live+P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
 ---
 
 # fluidblend — driven Blender production
@@ -94,6 +94,7 @@ the dialogue.
 | Make a character say a line, smile, blink | film | `references/film.md` | `audio.prepare` → `lipsync.analyze` → `lipsync.apply`; `expression.apply` — needs a character with a `face_profile`, otherwise `RIG_MAPPING_REQUIRED`: say so |
 | Export to a game engine, broken export | game | `references/game.md` | `run` on `game.export` |
 | "Does it work in Godot?" | game | `references/game.md` | `game.export` (one character) → `game.import_test` → `game.smoke_test`; no Godot = `not_tested`, say so. Godot headless draws nothing: also run `template: "web"` on the same GLB and look at `web-frame.png` |
+| "Does it work in Unreal?", export for Unreal Engine | game | `references/game.md` | `game.export` with `export_preset: "unreal"`, then hand the published `handoff-bundle.json` to the `fluidunreal` skill; this kit never claims the character works in Unreal |
 | "Show it in the browser", web preview, Three.js | game | `references/game.md` | same three operations with `template: "web"`; open `web-frame.png`; `fluidblend preview web` lets the user play it |
 | "fix the sliding foot", "keep the hand on the handle" | tools | `references/tool-development.md` | `adjustment.preview` → look at the frames → `adjustment.apply`; `adjustment.revert` (tool `contact_lock` only) |
 | "make me a tool that…" | tools | `references/tool-development.md` | declarative `tools/custom/<id>/tool.json` narrowing `contact_lock` → `tool.inspect` → `tool.test` → `tool.register`; `unsupported` = state the limitation, stop |
@@ -111,6 +112,7 @@ the dialogue.
 | Slow a clip down into a variant | `fluidblend run --project . --operation requests/animation-retime.json` |
 | Produce a preview and validate it | `fluidblend run --project . --operation requests/shot-preview.json` then `fluidblend validate --project . --target shot010` |
 | Export a GLB | `fluidblend run --project . --operation requests/game-export.json` |
+| Export a GLB for Unreal | `fluidblend run --project . --operation requests/game-export-unreal.json` then hand `exports/<shot>/<operation_id>/handoff-bundle.json` to the `fluidunreal` skill |
 | Diagnose a broken export | `fluidblend doctor --project . --json` then read `exports/<shot>/<operation_id>/export-report.json` and `gltf-validator.json` |
 
 The five copy-ready example requests live in `assets/`:
