@@ -122,6 +122,10 @@ def load_project(root: Path) -> Project:
 
 _PLACEHOLDER = re.compile(r"\{\{\s*([a-z_]+)\s*\}\}")
 
+# Only on an unreal project: this kit exports the bundle, the fluidunreal kit is what tests it.
+UNREAL_AGENTS_LINE = """
+- Unreal target: the fluidunreal skill imports and tests the published bundles; this kit only exports them."""
+
 
 def _render(text: str, values: dict[str, str]) -> str:
     def replace(match: re.Match[str]) -> str:
@@ -157,11 +161,15 @@ def scaffold_project(
     if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", project_id):
         raise ProjectError("invalid project_id (lowercase letters, digits, . _ -)")
     structure = _structure_for(profile)
+    engine = game_engine if profile != "film" else "none"
+    # Appended to the last bullet, so every other project still renders byte-identical to before.
+    unreal_line = UNREAL_AGENTS_LINE if engine == "unreal" else ""
     values = {
         "project_id": project_id,
         "project_name": name or project_id,
         "profile": profile,
-        "game_engine": game_engine if profile != "film" else "none",
+        "game_engine": engine,
+        "unreal_line": unreal_line,
         "film_target": "false" if profile == "game" else "true",
         "created_at": now_iso(),
         "fluidblend_version": fluidblend.__version__,

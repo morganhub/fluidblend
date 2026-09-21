@@ -122,3 +122,18 @@ def test_cli_init_accepts_the_unreal_engine_target(tmp_path: Path):
         == exit_codes.OK
     )
     assert load_project(root).manifest.targets.game_engine == "unreal"
+
+
+def test_an_unreal_project_tells_the_agent_where_the_engine_check_lives(tmp_path: Path):
+    """The line appears only for an unreal target; every other project renders exactly as before."""
+    unreal = tmp_path / "unreal"
+    scaffold_project(unreal, profile="game", project_id="gorash", game_engine="unreal")
+    text = (unreal / "AGENTS.md").read_text(encoding="utf-8")
+    assert "the fluidunreal skill imports and tests the published bundles" in text
+
+    godot = tmp_path / "godot"
+    scaffold_project(godot, profile="game", project_id="gorash", game_engine="godot")
+    film = tmp_path / "film"
+    scaffold_project(film, profile="film", project_id="clip")
+    for other in (godot, film):
+        assert "fluidunreal" not in (other / "AGENTS.md").read_text(encoding="utf-8")
