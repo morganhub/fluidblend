@@ -3,6 +3,19 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## 0.6.1 — 2026-09-21 — a baked clip says what it does with the root
+
+- **`animation.bake` declared every baked clip in place.** Its manifest carried no `root_motion`, so
+  the default, `in_place`, reached `clip.json` and the hand-off bundle whatever the clip did. The
+  Rigify walk baked for the Unreal preset travels its 0.6 m stride per loop; fluidunreal 0.3.1
+  measured that on the imported bones and failed the declaration. The bake now inherits what the
+  clips playing over its range declare: `root_motion`, `root_motion_channels`, and the stride when
+  the range is a whole number of cycles of a single travelling clip (`repetitions` from two
+  cycles). It names its `source_clip` when there is exactly one. It never guesses a stride: over a
+  partial cycle, or from two travelling clips, none is declared and a limit says why.
+- The Rigify scenario asserts the baked walk is `root_bone` with 0.6 m, in `clip.json` and in the
+  bundle; the library scenario asserts two in-place clips bake to an in-place one.
+
 ## 0.6.0 — 2026-09-21 — hand-off to fluidunreal
 
 Written so a sibling kit can drive another engine without copying this one. Nothing about the

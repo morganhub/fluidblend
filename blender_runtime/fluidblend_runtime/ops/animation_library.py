@@ -720,6 +720,55 @@ def rigid_limbs(rig, meshes, frames):
     return report
 
 
+def baked_root_motion(rig, interval):
+    """What the baked clip does with the root, taken from the clips it bakes.
+
+    The bake keys the evaluated pose, travel included. Until 0.6.1 its manifest said nothing about
+    root motion, so the default, `in_place`, reached the game bundle: fluidunreal measured the baked
+    walk travelling 0.6 m per loop under an in-place declaration. The bake now inherits what the
+    clips playing over its range declare. It does not guess a stride it cannot state: over a range
+    that is not a whole number of cycles, or from two travelling clips at once, none is declared.
+    """
+    start, end = interval["start"], interval["end_exclusive"]
+    sources, travelling = [], []
+    for track in rig.animation_data.nla_tracks:
+        for strip in [] if track.mute else track.strips:
+            if strip.mute or strip.action is None:
+                continue
+            if strip.frame_end <= start or strip.frame_start >= end:
+                continue
+            raw = strip.action.get("fluidblend_manifest")
+            manifest = json.loads(raw) if raw else {}
+            sources.append(manifest.get("clip_id") or strip.action.name)
+            if manifest.get("root_motion", "in_place") != "in_place":
+                travelling.append(manifest)
+    declared = {"root_motion": "in_place"}
+    limits = []
+    if len(sources) == 1:
+        declared["source_clip"] = sources[0]
+    if not travelling:
+        return declared, limits
+    first = travelling[0]
+    declared["root_motion"] = first["root_motion"]
+    declared["root_motion_channels"] = first.get("root_motion_channels", [])
+    if len(travelling) > 1:
+        limits.append("several travelling clips were baked together: no single stride is declared")
+        return declared, limits
+    period = first["frame_range"]["end_exclusive"] - first["frame_range"]["start"]
+    cycles = (end - start) / period if period > 0 else 0.0
+    if first.get("stride_m") is None:
+        return declared, limits
+    if abs(cycles - round(cycles)) > 1e-6 or round(cycles) < 1:
+        limits.append(
+            f"the baked range covers {cycles:.3f} cycles of {first['clip_id']}: no stride is declared"
+        )
+        return declared, limits
+    declared["stride_m"] = first["stride_m"]
+    if round(cycles) >= 2:
+        declared["repetitions"] = int(round(cycles))
+    return declared, limits
+
+
 def bake(ctx, request, builder):
     rig = character(request)
     if rig.library or rig.override_library:
@@ -745,6 +794,8 @@ def bake(ctx, request, builder):
         bpy.context.view_layer.update()
         before[frame] = positions(meshes)
     sheared = sheared_bones(rig)
+    # Read before the bake: the strips that say what the clip does are removed below.
+    root_motion, root_limits = baked_root_motion(rig, interval)
     bpy.ops.object.select_all(action="DESELECT")
     rig.select_set(True)
     bpy.context.view_layer.objects.active = rig
@@ -813,7 +864,9 @@ def bake(ctx, request, builder):
             ["rigid limbs: IK stretch disabled, the pose differs from the control rig by rigid_limbs"]
             if rigid
             else []
-        ),
+        )
+        + root_limits,
+        **root_motion,
     )
     save_version(ctx, request, builder)
     builder.write_report("clip.json", manifest)
@@ -822,6 +875,7 @@ def bake(ctx, request, builder):
     builder.metrics.update(
         {
             "baked": True,
+            "root_motion": root_motion["root_motion"],
             "channels": len(channels(action)),
             "max_geometry_error_m": error,
             "sample_frames": sample_frames,

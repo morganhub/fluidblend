@@ -142,3 +142,5 @@ def test_rigify_library_layers_loop_and_bake(project):
     assert bake.result.metrics["channels"] > 0 and sha256_file(before) == digest
     clip = read_json(project.root / "animation/clips/baked-idle/clip.json")
     assert clip["source_sha256"] == sha256_file(project.root / clip["source_blend"])
+    # Two in-place clips baked together: in place, and no single source to name.
+    assert clip["root_motion"] == "in_place" and clip.get("source_clip") is None

@@ -64,6 +64,12 @@ def test_rigify_character_walks_in_godot(project):
             assert metrics["max_geometry_error_m"] <= 0.001 and rigid["ik_tip_drift_m"] <= 0.001
             # The knees really bend instead: a zero delta would mean the option did nothing.
             assert rigid["bones"] and rigid["max_pose_delta_m"] > 0.005
+            # The baked walk travels, and says so: until 0.6.1 it was declared in place, and
+            # fluidunreal measured it carrying the body 0.6 m per loop under that declaration.
+            baked = read_json(project.root / "animation/clips/walk-baked/clip.json")
+            assert baked["root_motion"] == "root_bone" and baked["source_clip"] == "walk"
+            assert baked["stride_m"] == pytest.approx(0.6) and baked.get("repetitions") is None
+            assert metrics["root_motion"] == "root_bone"
     export = read_json(project.root / artifact(outcome.result, "export-report.json"))
     assert export["reimport"]["passed"] and export["exported"]["meshes"] == 1
     fidelity = export["reimport"]["skeleton_fidelity"]
@@ -79,6 +85,9 @@ def test_rigify_character_walks_in_godot(project):
     assert hero.reference_pose, "no reference pose: an engine could not check the scale it got"
     assert all(len(bone.head_m) == 3 for bone in hero.reference_pose)
     assert bundle.validation.reimport_passed is True
+    # What the engine is told the clip does is what the clip does: it travels one stride.
+    walk = next(c for c in bundle.clips if c.clip_id == "walk-baked")
+    assert walk.root_motion == "root_bone" and walk.stride_m == pytest.approx(0.6)
     glb = next(a.path for a in outcome.result.artifacts if a.kind == "glb")
     imported = runner.run(
         make_request("game.import_test", "rg-import", target=shot, parameters={"export_path": glb})
