@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from fluidblend import __version__
-from fluidblend.contracts.common import Artifact, OperationResult
+from fluidblend.contracts.common import Artifact, FrameRange, OperationResult
 from fluidblend.contracts.handoff import (
     AxisConvention,
     BundleClip,
@@ -161,6 +161,9 @@ def _describe_clips(
     """Match `<node>.<clip_id>` exactly: a near-miss is reported, never attributed to a guess."""
     by_node = {i.gltf_node_name: i for i in instances}
     known = _clip_indexes(root)
+    # The bundle describes the GLB, not the Blender scene: with slide_to_zero the exported
+    # animation starts at frame 0, and a consumer measuring its length must be told that range.
+    slid = bool(report.get("settings", {}).get("export_anim_slide_to_zero", True))
     clips: list[BundleClip] = []
     for action in report.get("exported", {}).get("actions", []):
         node, _, clip_id = action.partition(".")
@@ -170,12 +173,15 @@ def _describe_clips(
                 f"animation {action!r} was exported but could not be matched to an instance and a clip"
             )
             continue
+        span = index.frame_range
+        if slid and span.start != 0:
+            span = FrameRange(start=0, end_exclusive=span.count)
         clips.append(
             BundleClip(
                 clip_id=index.clip_id,
                 instance_id=instance.instance_id,
                 gltf_animation_name=action,
-                frame_range=index.frame_range,
+                frame_range=span,
                 loop=index.loop,
                 root_motion=index.root_motion,
                 stride_m=index.stride_m,

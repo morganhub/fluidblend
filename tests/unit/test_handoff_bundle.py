@@ -270,3 +270,22 @@ def test_a_bundle_needs_a_glb_artifact(scene):
     with pytest.raises(ValueError, match="no GLB artifact"):
         run_build(scene, result=result)
     assert project.manifest.targets.game_engine == "unreal"
+
+
+def test_the_clip_range_describes_the_glb_not_the_blender_scene(scene):
+    """With slide_to_zero the exported animation starts at 0: that is the range a consumer measures."""
+    clips = scene[0].root / "animation" / "clips" / "walk" / "clip.json"
+    index = json.loads(clips.read_text(encoding="utf-8"))
+    index["frame_range"] = {"start": 1, "end_exclusive": 49}
+    clips.write_text(json.dumps(index), encoding="utf-8")
+
+    report = export_report()
+    report["settings"]["export_anim_slide_to_zero"] = True
+    bundle = run_build(scene, report=report).bundle
+    assert bundle.clips[0].frame_range.start == 0
+    assert bundle.clips[0].frame_range.count == 48
+
+    # Without it, the scene's own range is what the GLB carries, so it is kept as it is.
+    report["settings"]["export_anim_slide_to_zero"] = False
+    bundle = run_build(scene, report=report).bundle
+    assert bundle.clips[0].frame_range.start == 1 and bundle.clips[0].frame_range.count == 48

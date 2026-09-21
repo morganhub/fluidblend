@@ -14,6 +14,9 @@ extended rather than altered.
   axis convention, every file with its sha256, the licences copied in, the instances (asset id and
   version, licence, rig profile, skinned, baked, bone count, glTF node name, grips, reference pose)
   and the clips. Artifact `kind: "bundle"`, metrics `bundle`, `bundle_instances`, `bundle_clips`.
+- **Clip ranges describe the GLB, not the scene**: with `slide_to_zero` the exported animation
+  starts at frame 0, so that is the range the bundle reports. The Blender range stays in the clip
+  index, where it belongs.
 - **Reference pose**: the runtime records two to five deform bone heads at rest, in metres, so an
   engine-side kit measures the scale and the up axis it really got instead of assuming a conversion
   factor. `shot.build` stamps `fluidblend_asset_version` on the instance root.
