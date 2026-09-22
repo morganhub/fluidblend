@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -137,3 +140,17 @@ def test_an_unreal_project_tells_the_agent_where_the_engine_check_lives(tmp_path
     scaffold_project(film, profile="film", project_id="clip")
     for other in (godot, film):
         assert "fluidunreal" not in (other / "AGENTS.md").read_text(encoding="utf-8")
+
+
+def test_redirected_output_is_utf8_so_an_accented_path_comes_back_intact(tmp_path: Path):
+    """An agent reads the pipe as UTF-8. Windows used to write the ANSI code page into it."""
+    target = tmp_path / "Démo Studio é"
+    environment = {k: v for k, v in os.environ.items() if not k.startswith("PYTHON")}
+    done = subprocess.run(  # noqa: S603 - argument list, no shell
+        [sys.executable, "-m", "fluidblend.cli", "init", "--path", str(target), "--dry-run", "--json"],
+        capture_output=True,
+        env=environment,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr.decode("utf-8", "replace")
+    assert json.loads(done.stdout.decode("utf-8"))["root"] == str(target)

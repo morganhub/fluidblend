@@ -72,6 +72,18 @@ def test_rigify_character_walks_in_godot(project):
             assert metrics["root_motion"] == "root_bone"
             # One whole cycle of a looping walk, over its whole strip: until 0.6.2 it said no loop.
             assert baked["loop"] is True and metrics["loop"] is True
+    # Baking the baked skeleton again used to succeed and declare the walk in place, not looping,
+    # with no IK left to make rigid. fluidunreal's bake template asked for exactly that.
+    rebake = runner.run(
+        make_request(
+            "animation.bake",
+            "rg-rebake",
+            target=hero,
+            parameters={"output_clip": "walk-baked-again", "frame_range": span, "rigid_limbs": True},
+        )
+    )
+    assert rebake.exit_code != 0 and rebake.result.errors[0].code == "UNSUPPORTED_CAPABILITY"
+    assert "baked again" in rebake.result.errors[0].message and rebake.result.errors[0].recovery
     export = read_json(project.root / artifact(outcome.result, "export-report.json"))
     assert export["reimport"]["passed"] and export["exported"]["meshes"] == 1
     fidelity = export["reimport"]["skeleton_fidelity"]

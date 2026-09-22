@@ -1126,9 +1126,13 @@ class TaskRunner:
         result.metrics["bundle"] = True
         result.metrics["bundle_instances"] = len(outcome.bundle.instances)
         result.metrics["bundle_clips"] = len(outcome.bundle.clips)
+        # fluidunreal takes the folder as a parameter of a typed request, never as a CLI flag, and
+        # needs its absolute path: its root is not this one.
+        published = self._published_dir("export", request.target.shot_id, request.operation_id)
         result.next_safe_actions.append(
-            "hand the published handoff-bundle.json to the fluidunreal skill "
-            "(fluidunreal run bundle.accept --source-path <the published export folder>)"
+            "hand the published handoff-bundle.json to the fluidunreal skill: a bundle.accept request "
+            f'whose parameters.source_path is "{published}", run with '
+            "fluidunreal run --project <the fluidunreal project> --operation <that request>"
         )
         return result
 
@@ -1263,6 +1267,11 @@ class TaskRunner:
             sha256=artifact.sha256,
         )
 
+    def _published_dir(self, op_class: str, shot_id: str | None, operation_id: str) -> Path:
+        """Where a result that creates no work version is published."""
+        folder = {"render": "renders", "export": "exports"}.get(op_class, "reviews")
+        return self.project.root / folder / (shot_id or "project") / operation_id
+
     def _publish(
         self, request: OperationRequest, spec: OperationSpec, task: TaskRecord, result: OperationResult
     ) -> OperationResult:
@@ -1274,8 +1283,7 @@ class TaskRunner:
             base = self.project.root / "reviews" / shot_id / request.operation_id
         else:
             version_no, version_dir = None, None
-            folder = {"render": "renders", "export": "exports"}.get(spec.op_class, "reviews")
-            base = self.project.root / folder / (shot_id or "project") / request.operation_id
+            base = self._published_dir(spec.op_class, shot_id, request.operation_id)
         if base.exists() and any(base.iterdir()):
             raise TaskAbort(
                 ErrorCode.SCENE_CONFLICT,

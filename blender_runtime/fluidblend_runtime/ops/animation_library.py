@@ -787,6 +787,17 @@ def bake(ctx, request, builder):
     rig = character(request)
     if rig.library or rig.override_library:
         raise OpError("UNSUPPORTED_CAPABILITY", "bake requires a local control-rig copy")
+    if rig.get("fluidblend_baked"):
+        # A second bake has no clip strips left to inherit from and no IK left to make rigid: it
+        # succeeded and declared the travelling walk in place and not looping (found by fluidunreal).
+        raise OpError(
+            "UNSUPPORTED_CAPABILITY",
+            "baked export skeleton cannot be baked again: its clip is already the baked one",
+            recovery=(
+                "export it as it is with game.export; the control rig stays in the work version "
+                "before the bake, which no operation of this kit reopens"
+            ),
+        )
     params = request["parameters"]
     require_new(params["output_clip"])
     interval = params["frame_range"]

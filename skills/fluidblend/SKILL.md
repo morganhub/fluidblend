@@ -11,7 +11,7 @@ description: >-
   between two characters, audio preparation and mouth-cue analysis. Check the
   operation catalogue for unsupported production features; never simulate success.
 license: MIT
-metadata: {version: "0.6.2", lot: "P0+live+P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
+metadata: {version: "0.6.3", lot: "P0+live+P1", compatibility: "Windows 11, Blender 5.2.x LTS, uv, PowerShell 7"}
 ---
 
 # fluidblend — driven Blender production

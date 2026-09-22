@@ -220,8 +220,11 @@ the up axis it really got instead of assuming a conversion factor. Unmatched ani
 unconfirmed node name or a skipped re-import become `warnings[]` and `limits[]` rather than silence.
 
 Next step, to say to the user and to the agent: hand the published `handoff-bundle.json` to the
-`fluidunreal` skill (`fluidunreal run bundle.accept --source-path <the published export folder>`),
-then `asset.import`, `asset.audit`, `game.smoke_test`, `game.screenshot` over there.
+`fluidunreal` skill. Over there it is a typed request, not a CLI flag: `bundle.accept` with
+`parameters.source_path` set to the **absolute** path of the published export folder (the result's
+`next_safe_actions` prints it), run as `fluidunreal run --project <the fluidunreal project>
+--operation <that request>`; then `asset.import`, `asset.audit`, `game.smoke_test`,
+`game.screenshot`. The two kits keep separate project roots, each with its own `project.json`.
 
 On a project whose `targets.game_engine` is `unreal`, `game.import_test` without an explicit
 `template` is refused (`VALIDATION_FAILED`) and points at the fluidunreal kit. With

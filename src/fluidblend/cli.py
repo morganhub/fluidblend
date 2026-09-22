@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
 from pathlib import Path
@@ -650,7 +651,17 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _utf8_output() -> None:
+    """Redirected, Windows writes the ANSI code page: `Démo` reached an agent reading the pipe as
+    UTF-8 as `D�mo`, and a command it copied from `next_safe_actions` named a folder that does
+    not exist. The output is UTF-8 whatever it is written to."""
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
+    _utf8_output()
     parser = build_parser()
     args = parser.parse_args(argv)
     try:

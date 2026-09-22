@@ -3,6 +3,25 @@
 Format: one entry per released version. Dates are those of the development machine.
 This project follows semantic versioning from 1.0.0 onwards; before that, the interface may change.
 
+## 0.6.3 — 2026-09-22 — what the round trip with fluidunreal found
+
+Found by running fluidunreal's four hand-off requests for real, in Blender, against a bundle
+fluidblend 0.6.2 had just exported.
+
+- **`animation.bake` refuses a baked skeleton.** Baking it again used to succeed: no clip strip was
+  left to inherit from and no IK to make rigid, so the travelling walk came back declared in place
+  and not looping. It now stops (`UNSUPPORTED_CAPABILITY`), as `animation.create` already did, and
+  says the control rig stays in the work version before the bake.
+- **The command handed to fluidunreal exists.** After an export, `next_safe_actions` said
+  `fluidunreal run bundle.accept --source-path …`, a flag that kit never had. It now describes the
+  `bundle.accept` request and gives the absolute path of the published folder, which is what that
+  kit needs; `references/game.md` says the same.
+- **Output is UTF-8 even when redirected.** Windows wrote the ANSI code page into a pipe, so an agent
+  reading it as UTF-8 got `D�mo Studio` for `Démo Studio`, and copied a path that does not
+  exist.
+- Runtime and add-on move to 0.6.3: re-run `fluidblend runtime install --enable`. Nothing changes
+  for fluidunreal: the bundle stays 1.1 and the reusable core is untouched.
+
 ## 0.6.2 — 2026-09-21 — the bundle names the range to bake, and grows without breaking readers
 
 - **Breaking for fluidunreal: bundles are `schema_version` 1.1.** A reader pinned on fluidblend
